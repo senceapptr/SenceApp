@@ -1,0 +1,173 @@
+export const featuredQuestions = [
+  {
+    id: 1,
+    title: "Erdoğan sonraki mitinginde saçını sağa tarar mı?",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop&crop=face",
+    gradient: "from-purple-600 via-purple-700 to-purple-500",
+    yesPercentage: 65,
+    votes: "14,6K oy",
+    timeLeft: "14 saat kaldı",
+    category: "politika",
+    description: "Cumhurbaşkanı Erdoğan'ın sonraki mitinginde saç stilinde değişiklik yapıp yapmayacağı tahmin konusu.",
+    yesOdds: 1.47,
+    noOdds: 2.28,
+    boostedYesOdds: 1.89,
+    boostedNoOdds: 2.95
+  },
+  {
+    id: 2,
+    title: "Bitcoin 100.000$ geçecek mi?",
+    image: "https://images.unsplash.com/photo-1518544866273-fc7986c2da2c?w=400&h=500&fit=crop",
+    gradient: "from-orange-500 via-red-500 to-purple-600",
+    yesPercentage: 72,
+    votes: "22,1K oy",
+    timeLeft: "3 gün kaldı",
+    category: "kripto",
+    description: "Bitcoin'in 2025 sonuna kadar 100.000 dolara ulaşıp ulaşmayacağı hakkında tahmin.",
+    yesOdds: 1.35,
+    noOdds: 3.10,
+    boostedYesOdds: 1.75,
+    boostedNoOdds: 4.02
+  },
+  {
+    id: 3,
+    title: "Tesla yeni model açıklayacak mı?",
+    image: "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=400&h=500&fit=crop",
+    gradient: "from-red-500 via-pink-500 to-purple-600",
+    yesPercentage: 58,
+    votes: "8,7K oy",
+    timeLeft: "1 gün kaldı",
+    category: "teknoloji",
+    description: "Tesla'nın bu yıl içinde yeni bir araç modeli açıklayıp açıklamayacağı.",
+    yesOdds: 1.65,
+    noOdds: 2.25,
+    boostedYesOdds: 2.14,
+    boostedNoOdds: 2.93
+  },
+  {
+    id: 4,
+    title: "Apple VR gözlük fiyatını düşürecek mi?",
+    image: "https://images.unsplash.com/photo-1592478411213-6153e4ebc696?w=400&h=500&fit=crop",
+    gradient: "from-blue-500 via-indigo-500 to-purple-600",
+    yesPercentage: 43,
+    votes: "12,5K oy",
+    timeLeft: "5 gün kaldı",
+    category: "teknoloji",
+    description: "Apple Vision Pro'nun fiyatının bu yıl içinde düşürülüp düşürülmeyeceği.",
+    yesOdds: 2.15,
+    noOdds: 1.70,
+    boostedYesOdds: 2.79,
+    boostedNoOdds: 2.21
+  },
+  {
+    id: 5,
+    title: "Spotify bu hafta Trend 1'e girer mi?",
+    image: "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=400&h=500&fit=crop",
+    gradient: "from-green-500 via-emerald-500 to-teal-600",
+    yesPercentage: 62,
+    votes: "18,7K oy",
+    timeLeft: "2 gün kaldı",
+    category: "teknoloji",
+    description: "Spotify'ın bu hafta trend listelerinde 1 numaraya çıkıp çıkmayacağı.",
+    yesOdds: 1.75,
+    noOdds: 2.10,
+    boostedYesOdds: 2.28,
+    boostedNoOdds: 2.73
+  }
+];
+
+export const questions = [
+  {
+    id: 6,
+    title: "Netflix yeni dizi sayısını artıracak mı?",
+    image: "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=400&h=300&fit=crop",
+    yesPercentage: 67,
+    votes: "9,8K oy",
+    timeLeft: "2 gün kaldı",
+    category: "teknoloji",
+    yesOdds: 1.48,
+    noOdds: 2.65,
+    boostedYesOdds: 1.92,
+    boostedNoOdds: 3.45
+  },
+  {
+    id: 7,
+    title: "Spotify podcast yatırımını artıracak mı?",
+    image: "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=400&h=300&fit=crop",
+    yesPercentage: 54,
+    votes: "7,3K oy",
+    timeLeft: "5 gün kaldı",
+    category: "teknoloji",
+    yesOdds: 1.85,
+    noOdds: 1.95,
+    boostedYesOdds: 2.41,
+    boostedNoOdds: 2.54
+  },
+  {
+    id: 8,
+    title: "Amazon drone teslimatı başlatacak mı?",
+    image: "https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=400&h=300&fit=crop",
+    yesPercentage: 39,
+    votes: "15,1K oy",
+    timeLeft: "1 hafta kaldı",
+    category: "teknoloji",
+    yesOdds: 2.45,
+    noOdds: 1.55,
+    boostedYesOdds: 3.19,
+    boostedNoOdds: 2.02
+  },
+  {
+    id: 9,
+    title: "Real Madrid Şampiyonlar Ligi kazanacak mı?",
+    image: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&h=300&fit=crop",
+    yesPercentage: 71,
+    votes: "18,3K oy",
+    timeLeft: "3 saat kaldı",
+    category: "spor",
+    yesOdds: 1.40,
+    noOdds: 2.95,
+    boostedYesOdds: 1.82,
+    boostedNoOdds: 3.84
+  },
+  {
+    id: 10,
+    title: "Ethereum 5000$ seviyesini görecek mi?",
+    image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=300&fit=crop",
+    yesPercentage: 63,
+    votes: "14,7K oy",
+    timeLeft: "6 saat kaldı",
+    category: "kripto",
+    yesOdds: 1.58,
+    noOdds: 2.42,
+    boostedYesOdds: 2.05,
+    boostedNoOdds: 3.15
+  },
+  {
+    id: 11,
+    title: "Galatasaray şampiyonluğu alacak mi?",
+    image: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400&h=300&fit=crop",
+    yesPercentage: 82,
+    votes: "25,1K oy",
+    timeLeft: "4 saat kaldı",
+    category: "spor",
+    yesOdds: 1.22,
+    noOdds: 4.10,
+    boostedYesOdds: 1.59,
+    boostedNoOdds: 5.33
+  },
+  {
+    id: 12,
+    title: "Google yeni AI modelini duyuracak mı?",
+    image: "https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?w=400&h=300&fit=crop",
+    yesPercentage: 45,
+    votes: "11,9K oy",
+    timeLeft: "2 gün kaldı",
+    category: "teknoloji",
+    yesOdds: 2.22,
+    noOdds: 1.65,
+    boostedYesOdds: 2.89,
+    boostedNoOdds: 2.15
+  }
+];
+
+export const allPredictQuestions = [...featuredQuestions, ...questions];
