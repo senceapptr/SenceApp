@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { League } from '../types';
 
 interface MyLeagueModalProps {
@@ -10,6 +11,7 @@ interface MyLeagueModalProps {
   onQuestions: () => void;
   onLeaderboard: () => void;
   onChat: () => void;
+  onShare: () => void;
 }
 
 export function MyLeagueModal({ 
@@ -18,7 +20,8 @@ export function MyLeagueModal({
   onClose,
   onQuestions,
   onLeaderboard,
-  onChat
+  onChat,
+  onShare
 }: MyLeagueModalProps) {
   if (!league) return null;
 
@@ -31,8 +34,9 @@ export function MyLeagueModal({
     >
       <View style={styles.overlay}>
         <View style={styles.content}>
+          {/* Header with Gradient */}
           <LinearGradient
-            colors={['#432870', '#5A3A8B', '#B29EFD']}
+            colors={['#c61585', '#5a3a8f', '#432870']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.header}
@@ -42,14 +46,15 @@ export function MyLeagueModal({
               onPress={onClose}
               activeOpacity={0.7}
             >
-              <Text style={styles.closeText}>✕</Text>
+              <Ionicons name="close" size={24} color="white" />
             </TouchableOpacity>
 
-            <View style={styles.headerIcon}>
-              <Text style={styles.headerIconText}>🏆</Text>
+            <View style={styles.leagueIcon}>
+              <Text style={styles.leagueIconText}>🏆</Text>
             </View>
-            <Text style={styles.headerTitle}>{league.name}</Text>
-            <Text style={styles.headerSubtitle}>{league.description}</Text>
+
+            <Text style={styles.leagueTitle}>{league.name}</Text>
+            <Text style={styles.leagueDescription}>{league.description}</Text>
             
             <View style={styles.creator}>
               <Text style={styles.creatorIcon}>👤</Text>
@@ -57,76 +62,107 @@ export function MyLeagueModal({
             </View>
           </LinearGradient>
 
-          <View style={styles.body}>
-            {/* 2x2 Stats Grid */}
-            <View style={styles.statsGrid}>
-              <View style={styles.statsRow}>
-                <View style={[styles.statCard, styles.statCardParticipants]}>
-                  <Text style={styles.statLabel}>KATILIMCI</Text>
-                  <Text style={styles.statValue}>{league.participants}</Text>
-                  <Text style={styles.statSubtext}>/ {league.maxParticipants} maksimum</Text>
-                </View>
-                
-                <View style={[styles.statCard, styles.statCardReward]}>
-                  <Text style={styles.statLabel}>ÖDÜL</Text>
-                  <Text style={styles.statValue}>{league.prize}</Text>
-                </View>
-              </View>
-
-              <View style={styles.statsRow}>
-                <View style={[styles.statCard, styles.statCardEnd]}>
-                  <Text style={styles.statLabel}>BİTİŞ</Text>
-                  <Text style={styles.statValue}>{league.endDate}</Text>
-                </View>
-                
-                <View style={[styles.statCard, styles.statCardParticipation]}>
-                  <Text style={styles.statLabel}>KATILIM</Text>
-                  <Text style={styles.statValue}>
-                    {league.joinCost === 0 ? 'Ücretsiz' : `${league.joinCost} kredi`}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Categories */}
-            <View style={styles.categoriesSection}>
-              <Text style={styles.categoriesSectionTitle}>🎯 Kategoriler</Text>
-              <View style={styles.categoriesList}>
-                {league.categories.map((cat, index) => (
-                  <View key={index} style={styles.categoryTag}>
-                    <Text style={styles.categoryTagText}>{cat}</Text>
+          {/* Body Content */}
+          <ScrollView 
+            style={styles.scrollView} 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            <View style={styles.body}>
+              {/* Stats Grid 2x2 */}
+              <View style={styles.statsGrid}>
+                <View style={styles.statsRow}>
+                  <View style={[styles.statCard, styles.statCardParticipants]}>
+                    <Text style={styles.statLabel}>KATILIMCI</Text>
+                    <Text style={styles.statValue}>{league.participants}</Text>
+                    <Text style={styles.statSubtext}>/ {league.maxParticipants} maksimum</Text>
                   </View>
-                ))}
-              </View>
-            </View>
+                  
+                  <View style={[styles.statCard, styles.statCardReward]}>
+                    <Text style={styles.statLabel}>ÖDÜL</Text>
+                    <Text style={styles.statValue}>{league.prize}</Text>
+                  </View>
+                </View>
 
-            {/* Action Buttons */}
-            <View style={styles.actions}>
-              <TouchableOpacity
-                style={styles.questionsButton}
-                onPress={onQuestions}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.questionsText}>📝 Lig Soruları</Text>
-              </TouchableOpacity>
-              <View style={styles.secondaryButtons}>
+                <View style={styles.statsRow}>
+                  <View style={[styles.statCard, styles.statCardEnd]}>
+                    <Text style={styles.statLabel}>BİTİŞ</Text>
+                    <Text style={styles.statValue}>{league.endDate}</Text>
+                  </View>
+                  
+                  <View style={[styles.statCard, styles.statCardParticipation]}>
+                    <Text style={styles.statLabel}>KATILIM</Text>
+                    <Text style={styles.statValue}>
+                      {league.joinCost === 0 ? 'Ücretsiz' : `${league.joinCost} kredi`}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Categories */}
+              <View style={styles.categoriesSection}>
+                <Text style={styles.categoriesSectionTitle}>🎯 Kategoriler</Text>
+                <View style={styles.categoriesList}>
+                  {league.categories.map((cat, index) => (
+                    <View key={index} style={styles.categoryTag}>
+                      <Text style={styles.categoryTagText}>{cat}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.actions}>
                 <TouchableOpacity
-                  style={styles.secondaryButton}
-                  onPress={onLeaderboard}
+                  style={styles.primaryButton}
+                  onPress={onQuestions}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.secondaryText}>🏆 Sıralama</Text>
+                  <LinearGradient
+                    colors={['#432870', '#5a3a8f']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.primaryButtonGradient}
+                  >
+                    <Text style={styles.primaryButtonText}>📝 Lig Soruları</Text>
+                  </LinearGradient>
                 </TouchableOpacity>
+
+                <View style={styles.secondaryButtons}>
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={onLeaderboard}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.secondaryButtonText}>🏆 Sıralama</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={onChat}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.secondaryButtonText}>💬 Sohbet</Text>
+                  </TouchableOpacity>
+                </View>
+
                 <TouchableOpacity
-                  style={styles.secondaryButton}
-                  onPress={onChat}
+                  style={styles.shareButton}
+                  onPress={onShare}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.secondaryText}>💬 Sohbet</Text>
+                  <LinearGradient
+                    colors={['#c61585', '#ff1a8c']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.shareButtonGradient}
+                  >
+                    <Ionicons name="person-add" size={20} color="white" />
+                    <Text style={styles.shareButtonText}>Lige Davet Et</Text>
+                  </LinearGradient>
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -137,43 +173,33 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
+    justifyContent: 'flex-end',
   },
   content: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    marginTop: 60,
-    marginBottom: 20,
-    marginHorizontal: 16,
-    maxHeight: '85%',
-    minHeight: '70%',
+    backgroundColor: 'white',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: '84%',
     overflow: 'hidden',
   },
   header: {
-    padding: 32,
+    padding: 24,
+    paddingTop: 32,
     position: 'relative',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
   },
   closeButton: {
     position: 'absolute',
     top: 16,
     right: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
   },
-  closeText: {
-    fontSize: 20,
-    color: '#FFFFFF',
-  },
-  headerIcon: {
+  leagueIcon: {
     width: 80,
     height: 80,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -182,24 +208,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  headerIconText: {
+  leagueIconText: {
     fontSize: 40,
   },
-  headerTitle: {
+  leagueTitle: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: 'white',
     marginBottom: 8,
   },
-  headerSubtitle: {
+  leagueDescription: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 12,
   },
   creator: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 16,
   },
   creatorIcon: {
     fontSize: 14,
@@ -208,19 +234,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   body: {
-    padding: 24,
-    paddingBottom: 32,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
   },
   statsGrid: {
-    paddingHorizontal: 8,
-    paddingTop: 4,
-    paddingBottom: 12,
+    marginBottom: 24,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
+    gap: 12,
+    marginBottom: 12,
   },
   statCard: {
     flex: 1,
@@ -289,42 +320,52 @@ const styles = StyleSheet.create({
     color: '#202020',
   },
   actions: {
-    borderTopWidth: 2,
-    borderTopColor: '#F2F3F5',
-    paddingTop: 16,
     gap: 12,
   },
-  questionsButton: {
-    backgroundColor: '#432870',
+  primaryButton: {
     borderRadius: 16,
+    overflow: 'hidden',
+  },
+  primaryButtonGradient: {
     paddingVertical: 16,
-    paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#432870',
   },
-  questionsText: {
+  primaryButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: 'white',
   },
   secondaryButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
   },
   secondaryButton: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 16,
     backgroundColor: '#F2F3F5',
     borderRadius: 16,
     alignItems: 'center',
   },
-  secondaryText: {
+  secondaryButtonText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#202020',
   },
+  shareButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  shareButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
+  shareButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: 'white',
+  },
 });
-

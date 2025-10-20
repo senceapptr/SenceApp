@@ -4,6 +4,7 @@ export interface League {
   description: string;
   category: string;
   categories: string[];
+  icon: string;
   participants: number;
   maxParticipants: number;
   prize: string;

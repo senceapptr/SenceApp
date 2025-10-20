@@ -8,6 +8,7 @@ import { TabBar } from './shared/TabBar';
 import { KesfetTab } from './Kesfet';
 import { LiglerimTab } from './Liglerim';
 import { OlusturTab } from './Olustur';
+import { LeagueQuestionsPage } from './LeagueQuestionsPage';
 
 interface LeaguePageProps {
   onBack: () => void;
@@ -24,6 +25,8 @@ export function LeaguePage({
 }: LeaguePageProps) {
   const [activeTab, setActiveTab] = useState<TabType>('discover');
   const [leagues, setLeagues] = useState<League[]>(mockLeaguesData);
+  const [showLeagueQuestions, setShowLeagueQuestions] = useState(false);
+  const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const { headerTranslateY, handleScroll } = useHeaderAnimation();
 
   const handleJoinLeague = (league: League) => {
@@ -42,6 +45,28 @@ export function LeaguePage({
   const handleDiscoverTab = () => {
     setActiveTab('discover');
   };
+
+  const handleShowLeagueQuestions = (league: League) => {
+    setSelectedLeague(league);
+    setShowLeagueQuestions(true);
+  };
+
+  const handleCloseLeagueQuestions = () => {
+    setShowLeagueQuestions(false);
+    setSelectedLeague(null);
+  };
+
+  // Show League Questions Page
+  if (showLeagueQuestions && selectedLeague) {
+    return (
+      <LeagueQuestionsPage
+        league={selectedLeague}
+        onClose={handleCloseLeagueQuestions}
+        handleQuestionDetail={handleQuestionDetail}
+        handleVote={handleVote}
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -73,6 +98,7 @@ export function LeaguePage({
               leagues={leagues}
               currentUser={mockCurrentUser}
               onDiscoverTab={handleDiscoverTab}
+              onShowLeagueQuestions={handleShowLeagueQuestions}
             />
           )}
 

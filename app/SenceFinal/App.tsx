@@ -4,9 +4,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ThemeTransition } from './components/ThemeTransition';
-import { NewHomePage } from './components/NewHomePage';
+import { HomePage } from './components/HomePage';
 import { AlternativeSearchPage } from './components/AlternativeSearchPage';
-import { AlternativeCouponsPage } from './components/AlternativeCouponsPage';
+import { CouponsPage } from './components/CouponsPage';
 import { LeaguePage } from './components/LeaguePage';
 import { WriteQuestionPage } from './components/WriteQuestionPage';
 import { TasksPage } from './components/TasksPage';
@@ -16,12 +16,20 @@ import { NotificationsPage } from './components/NotificationsPage';
 import { ProfilePage } from './components/ProfilePage';
 import { QuestionDetailPage } from './components/QuestionDetailPage';
 import { QuestionCardDesignPage } from './components/QuestionCardDesignPage';
+import { EditProfilePage } from './components/EditProfilePage';
+import { PrivacySettingsPage } from './components/PrivacySettingsPage';
+import { HelpCenterPage } from './components/HelpCenterPage';
+import { SupportPage } from './components/SupportPage';
+import { FAQPage } from './components/FAQPage';
+import { FeedbackPage } from './components/FeedbackPage';
+import { AboutPage } from './components/AboutPage';
+import { NewDiscoverPage } from './components/NewDiscoverPage';
 import { CouponDrawer } from './components/CouponDrawer';
 import { ConfettiAnimation } from './components/ConfettiAnimation';
 import { BottomTabs } from './components/BottomTabs';
 import { SlideOutMenu } from './components/SlideOutMenu';
 
-type PageType = 'home' | 'discover' | 'coupons' | 'leagues' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign';
+type PageType = 'home' | 'discover' | 'coupons' | 'leagues' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign' | 'editProfile' | 'privacySettings' | 'helpCenter' | 'support' | 'faq' | 'feedback' | 'about';
 
 interface Question {
   id: number;
@@ -49,6 +57,15 @@ interface CouponSelection {
   boosted?: boolean;
 }
 
+interface UserProfile {
+  username: string;
+  fullName: string;
+  bio: string;
+  email: string;
+  profileImage: string;
+  coverImage: string;
+}
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -59,6 +76,16 @@ export default function App() {
   const [isCouponDrawerOpen, setIsCouponDrawerOpen] = useState(false);
   const [couponSelections, setCouponSelections] = useState<CouponSelection[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
+
+  // User Profile state
+  const [userProfile, setUserProfile] = useState<UserProfile>({
+    username: 'mehmet_k',
+    fullName: 'Mehmet Kaya',
+    bio: 'Tahmin tutkunuyum! 🎯',
+    email: 'mehmet@example.com',
+    profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
+    coverImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop'
+  });
 
   const handleQuestionDetail = (questionId: number) => {
     // Mock question data - in real app this would come from API
@@ -160,11 +187,15 @@ export default function App() {
     setIsMenuOpen(false);
   };
 
+  const handleUpdateProfile = (updatedProfile: Partial<UserProfile>) => {
+    setUserProfile(prev => ({ ...prev, ...updatedProfile }));
+  };
+
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'home':
         return (
-          <NewHomePage
+          <HomePage
             onBack={handleBack}
             handleQuestionDetail={handleQuestionDetail}
             handleVote={handleVote}
@@ -174,16 +205,18 @@ export default function App() {
         );
       case 'discover':
         return (
-          <AlternativeSearchPage
-            onQuestionDetail={handleQuestionDetail}
-            onVote={handleVote}
+          <NewDiscoverPage
+            onBack={handleBack}
             onMenuToggle={handleMenuToggle}
+            handleQuestionDetail={handleQuestionDetail}
+            handleVote={handleVote}
           />
         );
       case 'coupons':
         return (
-          <AlternativeCouponsPage 
+          <CouponsPage 
             onMenuToggle={handleMenuToggle}
+            onQuestionDetail={handleQuestionDetail}
           />
         );
       case 'leagues':
@@ -214,6 +247,59 @@ export default function App() {
           <SettingsPage 
             onBack={handleBack}
             onMenuToggle={handleMenuToggle}
+            onEditProfile={() => setCurrentPage('editProfile')}
+            onPrivacySettings={() => setCurrentPage('privacySettings')}
+            onHelpCenter={() => setCurrentPage('helpCenter')}
+            onSecurity={() => console.log('Security page - to be implemented')}
+            onFeedback={() => setCurrentPage('feedback')}
+            onAbout={() => setCurrentPage('about')}
+          />
+        );
+      case 'editProfile':
+        return (
+          <EditProfilePage 
+            onBack={handleBack}
+            userProfile={userProfile}
+            onUpdateProfile={handleUpdateProfile}
+          />
+        );
+      case 'privacySettings':
+        return (
+          <PrivacySettingsPage 
+            onBack={handleBack}
+          />
+        );
+      case 'helpCenter':
+        return (
+          <HelpCenterPage 
+            onBack={handleBack}
+            onSupport={() => setCurrentPage('support')}
+            onFAQ={() => setCurrentPage('faq')}
+            onTerms={() => console.log('Terms page - to be implemented')}
+          />
+        );
+      case 'support':
+        return (
+          <SupportPage 
+            onBack={handleBack}
+          />
+        );
+      case 'faq':
+        return (
+          <FAQPage 
+            onBack={handleBack}
+          />
+        );
+      case 'feedback':
+        return (
+          <FeedbackPage 
+            onBack={handleBack}
+          />
+        );
+      case 'about':
+        return (
+          <AboutPage 
+            onBack={handleBack}
           />
         );
       case 'market':
@@ -236,6 +322,7 @@ export default function App() {
           <ProfilePage 
             onBack={handleBack}
             onMenuToggle={handleMenuToggle}
+            userProfile={userProfile}
           />
         );
       case 'questionDetail':
@@ -256,7 +343,7 @@ export default function App() {
         );
       default:
         return (
-          <NewHomePage
+          <HomePage
             onBack={handleBack}
             handleQuestionDetail={handleQuestionDetail}
             handleVote={handleVote}

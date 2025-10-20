@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { League } from '../types';
 import { mockLeaderboardData } from '../utils';
@@ -12,12 +12,65 @@ interface LeaderboardModalProps {
 
 export function LeaderboardModal({ visible, league, onClose }: LeaderboardModalProps) {
   const [scrollY, setScrollY] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const [scrollViewHeight, setScrollViewHeight] = useState(0);
+  
+  // Animation for gold rank glow effect
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  
+  useEffect(() => {
+    // Glow animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+      ])
+    ).start();
+    
+    // Pulse animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1500,
+          useNativeDriver: false,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: false,
+        }),
+      ])
+    ).start();
+  }, []);
   
   if (!league) return null;
 
   const currentUser = mockLeaderboardData.find(user => user.isCurrentUser);
-  const shouldShowAtTop = currentUser && (currentUser.rank <= 3 || scrollY > 200);
-  const shouldShowAtBottom = currentUser && currentUser.rank > 10 && scrollY < 200;
+  
+  // Calculate if current user should be sticky
+  const currentUserIndex = currentUser ? currentUser.rank - 1 : -1;
+  const itemHeight = 80; // Approximate height of each item
+  const currentUserPosition = currentUserIndex * itemHeight;
+  const stickyThreshold = 50; // Threshold for showing sticky
+  
+  // Always keep at bottom (sticky), regardless of scroll position
+  const shouldShowAtBottom = Boolean(currentUser);
+  
+  // Never show at top - always keep at bottom
+  const shouldShowAtTop = false;
+  
+  // Sticky is always shown at bottom if current user exists
+  const shouldShowSticky = shouldShowAtBottom;
 
   return (
     <Modal
@@ -46,19 +99,43 @@ export function LeaderboardModal({ visible, league, onClose }: LeaderboardModalP
           </LinearGradient>
 
           <ScrollView 
-            style={styles.body} 
+            style={styles.body}
             showsVerticalScrollIndicator={true}
             onScroll={(event) => setScrollY(event.nativeEvent.contentOffset.y)}
+            onContentSizeChange={(width, height) => setContentHeight(height)}
+            onLayout={(event) => setScrollViewHeight(event.nativeEvent.layout.height)}
             scrollEventThrottle={16}
           >
-            {mockLeaderboardData.map((user) => (
-              <View
-                key={user.rank}
-                style={[
-                  styles.item,
-                  user.isCurrentUser && styles.itemCurrent
-                ]}
-              >
+            {mockLeaderboardData.map((user) => {
+              const isGoldRank = user.rank === 1;
+              const animatedOpacity = glowAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.3, 1],
+              });
+              
+              const ItemComponent = isGoldRank ? Animated.View : View;
+              const itemStyle = isGoldRank 
+                ? [
+                    styles.item,
+                    styles.itemGold,
+                    user.isCurrentUser && styles.itemCurrent,
+                    {
+                      transform: [{ scale: pulseAnim }],
+                      shadowOpacity: animatedOpacity,
+                    }
+                  ]
+                : [
+                    styles.item,
+                    user.rank === 2 && styles.itemSilver,
+                    user.rank === 3 && styles.itemBronze,
+                    user.isCurrentUser && styles.itemCurrent
+                  ];
+              
+              return (
+                <ItemComponent
+                  key={user.rank}
+                  style={itemStyle}
+                >
                 <View
                   style={[
                     styles.rank,
@@ -73,11 +150,11 @@ export function LeaderboardModal({ visible, league, onClose }: LeaderboardModalP
                   <Text style={styles.avatarText}>👤</Text>
                 </View>
                 <View style={styles.userInfo}>
-                  <Text style={styles.username}>
+                  <Text style={styles.username} numberOfLines={1} ellipsizeMode="tail">
                     {user.username}
                     {user.isCurrentUser && <Text style={styles.currentLabel}> (Sen)</Text>}
                   </Text>
-                  <Text style={styles.userStats}>
+                  <Text style={styles.userStats} numberOfLines={1}>
                     {user.correctPredictions}/{user.totalPredictions} doğru
                   </Text>
                 </View>
@@ -85,74 +162,79 @@ export function LeaderboardModal({ visible, league, onClose }: LeaderboardModalP
                   <Text style={styles.pointsValue}>{user.points}</Text>
                   <Text style={styles.pointsLabel}>puan</Text>
                 </View>
-              </View>
-            ))}
+              </ItemComponent>
+            )})}
           </ScrollView>
 
-          {/* Fixed User Rank */}
-          {shouldShowAtTop && currentUser && (
-            <View style={styles.fixedTop}>
-              <View style={[
-                styles.fixedItem,
-                currentUser.rank === 1 && styles.fixedGold,
-                currentUser.rank === 2 && styles.fixedSilver,
-                currentUser.rank === 3 && styles.fixedBronze
-              ]}>
-                <View style={[
-                  styles.fixedRank,
-                  currentUser.rank === 1 && styles.fixedRankGold,
-                  currentUser.rank === 2 && styles.fixedRankSilver,
-                  currentUser.rank === 3 && styles.fixedRankBronze
-                ]}>
-                  <Text style={styles.fixedRankText}>#{currentUser.rank}</Text>
-                </View>
-                <View style={styles.fixedAvatar}>
-                  <Text style={styles.fixedAvatarText}>👤</Text>
-                </View>
-                <View style={styles.fixedInfo}>
-                  <Text style={styles.fixedName}>{currentUser.username}</Text>
-                  <Text style={styles.fixedStats}>
-                    {currentUser.correctPredictions}/{currentUser.totalPredictions} doğru
-                  </Text>
-                </View>
-                <View style={styles.fixedPoints}>
-                  <Text style={styles.fixedPointsValue}>{currentUser.points}</Text>
-                  <Text style={styles.fixedPointsLabel}>puan</Text>
-                </View>
-              </View>
-            </View>
-          )}
-
-          {shouldShowAtBottom && currentUser && (
+          {/* Fixed User Rank - Always show at bottom */}
+          {shouldShowSticky && currentUser && (
             <View style={styles.fixedBottom}>
-              <View style={[
-                styles.fixedItem,
-                currentUser.rank === 1 && styles.fixedGold,
-                currentUser.rank === 2 && styles.fixedSilver,
-                currentUser.rank === 3 && styles.fixedBronze
-              ]}>
-                <View style={[
-                  styles.fixedRank,
-                  currentUser.rank === 1 && styles.fixedRankGold,
-                  currentUser.rank === 2 && styles.fixedRankSilver,
-                  currentUser.rank === 3 && styles.fixedRankBronze
+              {currentUser.rank === 1 ? (
+                <Animated.View style={[
+                  styles.fixedItem,
+                  styles.fixedItemGold,
+                  currentUser.isCurrentUser && styles.fixedCurrent,
+                  {
+                    transform: [{ scale: pulseAnim }],
+                    shadowOpacity: glowAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.3, 1],
+                    }),
+                  }
                 ]}>
-                  <Text style={styles.fixedRankText}>#{currentUser.rank}</Text>
+                  <View style={[
+                    styles.fixedRank,
+                    styles.fixedRankGold,
+                  ]}>
+                    <Text style={styles.fixedRankText}>#{currentUser.rank}</Text>
+                  </View>
+                  <View style={styles.fixedAvatar}>
+                    <Text style={styles.fixedAvatarText}>👤</Text>
+                  </View>
+                  <View style={styles.fixedInfo}>
+                    <Text style={styles.fixedName} numberOfLines={1} ellipsizeMode="tail">
+                      {currentUser.username} (Sen)
+                    </Text>
+                    <Text style={styles.fixedStats} numberOfLines={1}>
+                      {currentUser.correctPredictions}/{currentUser.totalPredictions} doğru
+                    </Text>
+                  </View>
+                  <View style={styles.fixedPoints}>
+                    <Text style={styles.fixedPointsValue}>{currentUser.points}</Text>
+                    <Text style={styles.fixedPointsLabel}>puan</Text>
+                  </View>
+                </Animated.View>
+              ) : (
+                <View style={[
+                  styles.fixedItem,
+                  currentUser.rank === 2 && styles.fixedItemSilver,
+                  currentUser.rank === 3 && styles.fixedItemBronze,
+                  currentUser.isCurrentUser && styles.fixedCurrent
+                ]}>
+                  <View style={[
+                    styles.fixedRank,
+                    currentUser.rank === 2 && styles.fixedRankSilver,
+                    currentUser.rank === 3 && styles.fixedRankBronze
+                  ]}>
+                    <Text style={styles.fixedRankText}>#{currentUser.rank}</Text>
+                  </View>
+                  <View style={styles.fixedAvatar}>
+                    <Text style={styles.fixedAvatarText}>👤</Text>
+                  </View>
+                  <View style={styles.fixedInfo}>
+                    <Text style={styles.fixedName} numberOfLines={1} ellipsizeMode="tail">
+                      {currentUser.username} (Sen)
+                    </Text>
+                    <Text style={styles.fixedStats} numberOfLines={1}>
+                      {currentUser.correctPredictions}/{currentUser.totalPredictions} doğru
+                    </Text>
+                  </View>
+                  <View style={styles.fixedPoints}>
+                    <Text style={styles.fixedPointsValue}>{currentUser.points}</Text>
+                    <Text style={styles.fixedPointsLabel}>puan</Text>
+                  </View>
                 </View>
-                <View style={styles.fixedAvatar}>
-                  <Text style={styles.fixedAvatarText}>👤</Text>
-                </View>
-                <View style={styles.fixedInfo}>
-                  <Text style={styles.fixedName}>{currentUser.username}</Text>
-                  <Text style={styles.fixedStats}>
-                    {currentUser.correctPredictions}/{currentUser.totalPredictions} doğru
-                  </Text>
-                </View>
-                <View style={styles.fixedPoints}>
-                  <Text style={styles.fixedPointsValue}>{currentUser.points}</Text>
-                  <Text style={styles.fixedPointsLabel}>puan</Text>
-                </View>
-              </View>
+              )}
             </View>
           )}
         </View>
@@ -178,8 +260,10 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 24,
     marginTop: 60,
     marginBottom: 20,
-    marginHorizontal: 8,
+    marginHorizontal: 2,
     maxHeight: '85%',
+    overflow: 'hidden',
+    minWidth: 360,
   },
   header: {
     paddingHorizontal: 24,
@@ -220,6 +304,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
+    paddingBottom: 76, // leave space for sticky bottom
   },
   item: {
     flexDirection: 'row',
@@ -230,6 +315,26 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    minHeight: 80,
+  },
+  itemGold: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FFD700',
+    borderWidth: 3,
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  itemSilver: {
+    backgroundColor: '#F3E8FF',
+    borderColor: '#8B5CF6',
+    borderWidth: 2,
+  },
+  itemBronze: {
+    backgroundColor: '#FED7AA',
+    borderColor: '#F59E0B',
   },
   itemCurrent: {
     backgroundColor: '#FDF4FF',
@@ -237,25 +342,31 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   rank: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#6B7280',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 8,
   },
   rankGold: {
     backgroundColor: '#FFD700',
+    borderWidth: 2,
+    borderColor: '#FFA500',
   },
   rankSilver: {
-    backgroundColor: '#C0C0C0',
+    backgroundColor: '#8B5CF6',
+    borderWidth: 2,
+    borderColor: '#7C3AED',
   },
   rankBronze: {
-    backgroundColor: '#CD7F32',
+    backgroundColor: '#F59E0B',
+    borderWidth: 2,
+    borderColor: '#D97706',
   },
   rankText: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -273,12 +384,15 @@ const styles = StyleSheet.create({
   },
   userInfo: {
     flex: 1,
+    minWidth: 0, // Allow text to shrink
+    marginRight: 12,
   },
   username: {
     fontSize: 16,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 2,
+    flexShrink: 1,
   },
   currentLabel: {
     color: '#432870',
@@ -290,6 +404,7 @@ const styles = StyleSheet.create({
   },
   points: {
     alignItems: 'flex-end',
+    minWidth: 90,
   },
   pointsValue: {
     fontSize: 18,
@@ -321,6 +436,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   fixedItem: {
     flexDirection: 'row',
@@ -330,6 +447,25 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+  },
+  fixedItemGold: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FFD700',
+    borderWidth: 3,
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fixedItemSilver: {
+    backgroundColor: '#F3E8FF',
+    borderColor: '#8B5CF6',
+    borderWidth: 2,
+  },
+  fixedItemBronze: {
+    backgroundColor: '#FED7AA',
+    borderColor: '#F59E0B',
   },
   fixedGold: {
     backgroundColor: '#FFF8DC',
@@ -344,25 +480,31 @@ const styles = StyleSheet.create({
     borderColor: '#CD7F32',
   },
   fixedRank: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#6B7280',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 8,
   },
   fixedRankGold: {
     backgroundColor: '#FFD700',
+    borderWidth: 2,
+    borderColor: '#FFA500',
   },
   fixedRankSilver: {
-    backgroundColor: '#C0C0C0',
+    backgroundColor: '#8B5CF6',
+    borderWidth: 2,
+    borderColor: '#7C3AED',
   },
   fixedRankBronze: {
-    backgroundColor: '#CD7F32',
+    backgroundColor: '#F59E0B',
+    borderWidth: 2,
+    borderColor: '#D97706',
   },
   fixedRankText: {
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -380,12 +522,19 @@ const styles = StyleSheet.create({
   },
   fixedInfo: {
     flex: 1,
+    minWidth: 0, // Allow text to shrink
   },
   fixedName: {
     fontSize: 14,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 1,
+    flexShrink: 1,
+  },
+  fixedCurrent: {
+    backgroundColor: '#FDF4FF',
+    borderColor: '#432870',
+    borderWidth: 2,
   },
   fixedStats: {
     fontSize: 12,

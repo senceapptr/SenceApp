@@ -67,7 +67,7 @@ export function CouponDrawer({
     if (isOpen) {
       // Reset animations to initial state
       slideAnim.setValue(SCREEN_HEIGHT);
-      contentScale.setValue(0.95);
+      contentScale.setValue(1);
       backdropOpacity.setValue(0);
       
       // Smooth opening animation with spring physics
@@ -86,18 +86,10 @@ export function CouponDrawer({
           useNativeDriver: true,
           easing: Easing.out(Easing.cubic),
         }),
-      ]).start(() => {
-        // Content animation after drawer slides up
-        Animated.spring(contentScale, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 80,
-          friction: 6,
-        }).start();
-      });
+      ]).start();
     } else {
       // Reset content animations
-      contentScale.setValue(0.95);
+      contentScale.setValue(1);
       
       // Smooth closing animation with spring physics
       Animated.parallel([
@@ -189,22 +181,23 @@ export function CouponDrawer({
     if (event.nativeEvent.state === State.BEGAN) {
       setIsDragging(true);
     } else if (event.nativeEvent.state === State.END) {
-      setIsDragging(false);
       const { translationY, velocityY } = event.nativeEvent;
       
       // Determine if should close based on gesture
       if (translationY > 100 || velocityY > 500) {
-        // Close drawer smoothly from current position
-        const currentPosition = translationY;
+        // Transfer panY to slideAnim to maintain position before resetting
+        slideAnim.setValue(translationY);
+        panY.setValue(0);
+        setIsDragging(false);
         
-        // Animate from current dragged position to closed position
+        // Animate from current position to closed position
         Animated.parallel([
           Animated.spring(slideAnim, {
-            toValue: SCREEN_HEIGHT - currentPosition,
+            toValue: SCREEN_HEIGHT,
             useNativeDriver: true,
             tension: 60,
             friction: 8,
-            velocity: velocityY,
+            velocity: velocityY / 2,
           }),
           Animated.timing(backdropOpacity, {
             toValue: 0,
@@ -216,6 +209,10 @@ export function CouponDrawer({
           onClose();
         });
       } else {
+        // Reset pan value first
+        panY.setValue(0);
+        setIsDragging(false);
+        
         // Snap back to open position
         Animated.spring(slideAnim, {
           toValue: 0,
@@ -224,9 +221,6 @@ export function CouponDrawer({
           friction: 6,
         }).start();
       }
-      
-      // Reset pan value
-      panY.setValue(0);
     }
   };
 
