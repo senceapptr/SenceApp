@@ -8,6 +8,7 @@ import { PageHeader } from './components/PageHeader';
 import { UserCard } from './components/UserCard';
 import { SettingSection } from './components/SettingSection';
 import { SocialSection } from './components/SocialSection';
+import { LogoutButton } from './components/LogoutButton';
 import { DangerButton } from './components/DangerButton';
 
 export function SettingsPage({ 
@@ -28,6 +29,7 @@ export function SettingsPage({
     toggleSetting,
     handleNavigate,
     handleSocialLink,
+    handleLogout,
     handleDeleteAccount,
   } = useSettings({
     onPrivacySettings,
@@ -75,6 +77,10 @@ export function SettingsPage({
 
           <View style={styles.dangerSection}>
             <View style={styles.dangerItems}>
+              <LogoutButton
+                onPress={handleLogout}
+                isDarkMode={isDarkMode}
+              />
               <DangerButton
                 onPress={handleDeleteAccount}
                 isDarkMode={isDarkMode}

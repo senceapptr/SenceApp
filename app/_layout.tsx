@@ -8,6 +8,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'react-native';
+import { AuthProvider } from './SenceFinal/contexts/AuthContext';
 
 import '../global.css';
 
@@ -18,7 +19,7 @@ export {
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: 'index',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -49,7 +50,9 @@ export default function RootLayout() {
     <>
       <StatusBar hidden />
       <SafeAreaProvider>
-        <RootLayoutNav />
+        <AuthProvider>
+          <RootLayoutNav />
+        </AuthProvider>
       </SafeAreaProvider>
     </>
   );
@@ -61,6 +64,8 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="SenceHome/index" options={{ headerShown: false }} />
         <Stack.Screen name="SenceHome/SenceTransitionScreen" options={{ headerShown: false }} />

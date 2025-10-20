@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { Alert, Linking } from 'react-native';
 import { SettingsState } from './types';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useRouter } from 'expo-router';
 
 export function useSettings(props: {
   onPrivacySettings?: () => void;
@@ -10,7 +12,9 @@ export function useSettings(props: {
   onFeedback?: () => void;
   onAbout?: () => void;
 }) {
+  const router = useRouter();
   const { theme, isDarkMode, toggleTheme, themeMode } = useTheme();
+  const { signOut } = useAuth();
   const [settings, setSettings] = useState<SettingsState>({
     notifications: true,
     pushNotifications: true,
@@ -75,6 +79,27 @@ export function useSettings(props: {
     Linking.openURL(url);
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Çıkış Yap',
+      'Çıkış yapmak istediğinizden emin misiniz?',
+      [
+        {
+          text: 'Vazgeç',
+          style: 'cancel'
+        },
+        {
+          text: 'Çıkış Yap',
+          style: 'destructive',
+          onPress: async () => {
+            await signOut();
+            router.replace('/auth/login');
+          }
+        }
+      ]
+    );
+  };
+
   const handleDeleteAccount = () => {
     Alert.alert(
       '⚠️ Hesabı Sil',
@@ -113,6 +138,7 @@ export function useSettings(props: {
     // Navigation
     handleNavigate,
     handleSocialLink,
+    handleLogout,
     handleDeleteAccount,
   };
 }

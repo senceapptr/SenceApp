@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, StatusBar } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, StatusBar, Animated, Dimensions, Modal } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ThemeTransition } from './components/ThemeTransition';
 import { HomePage } from './components/HomePage';
@@ -28,6 +29,8 @@ import { CouponDrawer } from './components/CouponDrawer';
 import { ConfettiAnimation } from './components/ConfettiAnimation';
 import { BottomTabs } from './components/BottomTabs';
 import { SlideOutMenu } from './components/SlideOutMenu';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type PageType = 'home' | 'discover' | 'coupons' | 'leagues' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign' | 'editProfile' | 'privacySettings' | 'helpCenter' | 'support' | 'faq' | 'feedback' | 'about';
 
@@ -73,6 +76,7 @@ export default function App() {
   
   // Question Detail and Coupon states
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  const [isQuestionDetailOpen, setIsQuestionDetailOpen] = useState(false);
   const [isCouponDrawerOpen, setIsCouponDrawerOpen] = useState(false);
   const [couponSelections, setCouponSelections] = useState<CouponSelection[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -86,6 +90,9 @@ export default function App() {
     profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
     coverImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop'
   });
+
+  // Question Detail slide animation
+  const questionDetailSlideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
 
   const handleQuestionDetail = (questionId: number) => {
     // Mock question data - in real app this would come from API
@@ -107,7 +114,29 @@ export default function App() {
     };
     
     setSelectedQuestion(mockQuestion);
-    setCurrentPage('questionDetail');
+    setIsQuestionDetailOpen(true);
+    
+    // Animate slide in
+    questionDetailSlideAnim.setValue(SCREEN_WIDTH);
+    Animated.spring(questionDetailSlideAnim, {
+      toValue: 0,
+      tension: 50,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleCloseQuestionDetail = () => {
+    // Animate slide out
+    Animated.spring(questionDetailSlideAnim, {
+      toValue: SCREEN_WIDTH,
+      tension: 50,
+      friction: 10,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsQuestionDetailOpen(false);
+      setSelectedQuestion(null);
+    });
   };
 
   const handleVote = (questionId: number, vote: 'yes' | 'no', odds: number, questionTitle?: string) => {
@@ -325,15 +354,6 @@ export default function App() {
             userProfile={userProfile}
           />
         );
-      case 'questionDetail':
-        return selectedQuestion ? (
-          <QuestionDetailPage
-            onBack={handleBack}
-            onMenuToggle={handleMenuToggle}
-            question={selectedQuestion}
-            onVote={handleVote}
-          />
-        ) : null;
       case 'questionCardDesign':
         return (
           <QuestionCardDesignPage
@@ -356,14 +376,15 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ThemeProvider>
-        <StatusBar 
-          barStyle="light-content" 
-          backgroundColor="transparent" 
-          translucent 
-          hidden={false}
-        />
-        <ThemeTransition>
+        <AuthProvider>
+          <ThemeProvider>
+          <StatusBar 
+            barStyle="light-content" 
+            backgroundColor="transparent" 
+            translucent 
+            hidden={false}
+          />
+          <ThemeTransition>
           <View style={styles.container}>
             <SlideOutMenu isOpen={isMenuOpen} onClose={handleMenuClose} onNavigate={handleNavigateToPage}>
               <View style={styles.pageWrapper}>
@@ -391,9 +412,36 @@ export default function App() {
             isVisible={showConfetti}
             onComplete={() => setShowConfetti(false)}
           />
+
+          {/* Question Detail Modal with Slide Animation */}
+          <Modal
+            visible={isQuestionDetailOpen}
+            animationType="none"
+            transparent={true}
+            onRequestClose={handleCloseQuestionDetail}
+          >
+            <Animated.View
+              style={[
+                styles.questionDetailContainer,
+                {
+                  transform: [{ translateX: questionDetailSlideAnim }],
+                },
+              ]}
+            >
+              {selectedQuestion && (
+                <QuestionDetailPage
+                  onBack={handleCloseQuestionDetail}
+                  onMenuToggle={handleMenuToggle}
+                  question={selectedQuestion}
+                  onVote={handleVote}
+                />
+              )}
+            </Animated.View>
+          </Modal>
           </View>
         </ThemeTransition>
-        </ThemeProvider>
+          </ThemeProvider>
+        </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -418,5 +466,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#111827',
     fontWeight: '600',
+  },
+  questionDetailContainer: {
+    flex: 1,
+    width: SCREEN_WIDTH,
+    height: '100%',
+    backgroundColor: '#FFFFFF',
   },
 });
