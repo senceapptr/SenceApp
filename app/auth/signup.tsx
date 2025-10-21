@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,21 +21,33 @@ import { useAuth } from '../SenceFinal/contexts/AuthContext';
 export default function SignUpScreen() {
   const router = useRouter();
   const { signUp } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [showEmailSignUp, setShowEmailSignUp] = useState(false);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const validateEmail = (email: string) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
+
+  const handleGoogleSignUp = () => {
+    Alert.alert('Google ile Giriş', 'Google ile giriş özelliği yakında eklenecek!');
   };
 
-  const handleSignUp = async () => {
-    // Validations
+  const handleAppleSignUp = () => {
+    Alert.alert('Apple ile Giriş', 'Apple ile giriş özelliği yakında eklenecek!');
+  };
+
+  const handlePhoneSignUp = () => {
+    Alert.alert('Telefon ile Giriş', 'Telefon ile giriş özelliği yakında eklenecek!');
+  };
+
+  const handleEmailSignUp = () => {
+    setShowEmailSignUp(true);
+  };
+
+  const handleEmailSignUpSubmit = async () => {
     if (!username || !email || !password || !confirmPassword) {
       Alert.alert('Hata', 'Lütfen tüm alanları doldurun');
       return;
@@ -45,7 +58,8 @@ export default function SignUpScreen() {
       return;
     }
 
-    if (!validateEmail(email)) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       Alert.alert('Hata', 'Geçerli bir e-posta adresi girin');
       return;
     }
@@ -69,11 +83,14 @@ export default function SignUpScreen() {
       } else {
         Alert.alert(
           'Başarılı!',
-          'Hesabınız oluşturuldu. Şimdi giriş yapabilirsiniz.',
+          'Hesabınız oluşturuldu.',
           [
             {
               text: 'Tamam',
-              onPress: () => router.replace('/SenceFinal'),
+              onPress: () => {
+                closeEmailSignUp();
+                router.replace('/SenceFinal');
+              },
             },
           ]
         );
@@ -83,6 +100,16 @@ export default function SignUpScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const closeEmailSignUp = () => {
+    setShowEmailSignUp(false);
+    setUsername('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   };
 
   const handleLogin = () => {
@@ -100,12 +127,12 @@ export default function SignUpScreen() {
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Logo */}
+          {/* Logo & Welcome */}
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../assets/images/sencelogo.png')}
+              source={require('../../assets/images/icon.png')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -115,152 +142,35 @@ export default function SignUpScreen() {
 
           {/* Sign Up Form */}
           <View style={styles.formContainer}>
-            {/* Username Input */}
-            <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color="#667eea" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Kullanıcı Adı"
-                placeholderTextColor="#999"
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-                editable={!loading}
-                autoComplete="off"
-                autoCorrect={false}
-                textContentType="none"
-                importantForAutofill="no"
-                underlineColorAndroid="transparent"
-              />
-            </View>
-
-            {/* Email Input */}
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#667eea" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="E-posta"
-                placeholderTextColor="#999"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                editable={!loading}
-                autoComplete="off"
-                autoCorrect={false}
-                textContentType="none"
-                importantForAutofill="no"
-                underlineColorAndroid="transparent"
-              />
-            </View>
-
-            {/* Password Input */}
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#667eea" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Şifre"
-                placeholderTextColor="#999"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                editable={!loading}
-                autoComplete="off"
-                autoCorrect={false}
-                textContentType="none"
-                importantForAutofill="no"
-                underlineColorAndroid="transparent"
-                selectionColor="#667eea"
-                caretHidden={false}
-                contextMenuHidden={false}
-                keyboardType="default"
-                returnKeyType="done"
-                blurOnSubmit={false}
-                multiline={false}
-                numberOfLines={1}
-                maxLength={50}
-                clearButtonMode="never"
-                enablesReturnKeyAutomatically={true}
-                spellCheck={false}
-                autoCapitalize="none"
-                passwordRules=""
-                textBreakStrategy="simple"
-              />
+            {/* Social Login Buttons */}
+            <View style={styles.socialButtonsContainer}>
               <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeIcon}
+                style={[styles.socialButton, styles.googleButton]}
+                onPress={handleGoogleSignUp}
+                disabled={loading}
               >
-                <Ionicons
-                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                  size={20}
-                  color="#667eea"
-                />
+                <Ionicons name="logo-google" size={20} color="#fff" />
+                <Text style={styles.socialButtonText}>Google ile Devam Et</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.socialButton, styles.appleButton]}
+                onPress={handleAppleSignUp}
+                disabled={loading}
+              >
+                <Ionicons name="logo-apple" size={20} color="#fff" />
+                <Text style={styles.socialButtonText}>Apple ile Devam Et</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.socialButton, styles.phoneButton]}
+                onPress={handlePhoneSignUp}
+                disabled={loading}
+              >
+                <Ionicons name="call-outline" size={20} color="#fff" />
+                <Text style={styles.socialButtonText}>Telefon ile Devam Et</Text>
               </TouchableOpacity>
             </View>
-
-            {/* Confirm Password Input */}
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#667eea" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Şifre Tekrar"
-                placeholderTextColor="#999"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={!showConfirmPassword}
-                editable={!loading}
-                autoComplete="off"
-                autoCorrect={false}
-                textContentType="none"
-                importantForAutofill="no"
-                underlineColorAndroid="transparent"
-                selectionColor="#667eea"
-                caretHidden={false}
-                contextMenuHidden={false}
-                keyboardType="default"
-                returnKeyType="done"
-                blurOnSubmit={false}
-                multiline={false}
-                numberOfLines={1}
-                maxLength={50}
-                clearButtonMode="never"
-                enablesReturnKeyAutomatically={true}
-                spellCheck={false}
-                autoCapitalize="none"
-                passwordRules=""
-                textBreakStrategy="simple"
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={styles.eyeIcon}
-              >
-                <Ionicons
-                  name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
-                  size={20}
-                  color="#667eea"
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* Terms & Privacy */}
-            <Text style={styles.termsText}>
-              Kayıt olarak{' '}
-              <Text style={styles.termsLink}>Kullanım Koşulları</Text> ve{' '}
-              <Text style={styles.termsLink}>Gizlilik Politikası</Text>'nı kabul etmiş olursunuz.
-            </Text>
-
-            {/* Sign Up Button */}
-            <TouchableOpacity
-              style={[styles.signUpButton, loading && styles.signUpButtonDisabled]}
-              onPress={handleSignUp}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.signUpButtonText}>Kayıt Ol</Text>
-              )}
-            </TouchableOpacity>
 
             {/* Divider */}
             <View style={styles.dividerContainer}>
@@ -268,6 +178,23 @@ export default function SignUpScreen() {
               <Text style={styles.dividerText}>VEYA</Text>
               <View style={styles.divider} />
             </View>
+
+            {/* Email Sign Up Button */}
+            <TouchableOpacity
+              style={[styles.emailButton, loading && styles.emailButtonDisabled]}
+              onPress={handleEmailSignUp}
+              disabled={loading}
+            >
+              <Ionicons name="mail-outline" size={20} color="#667eea" style={styles.emailIcon} />
+              <Text style={styles.emailButtonText}>E-posta ile Kayıt Ol</Text>
+            </TouchableOpacity>
+
+            {/* Terms & Privacy */}
+            <Text style={styles.termsText}>
+              Kayıt olarak{' '}
+              <Text style={styles.termsLink}>Kullanım Koşulları</Text> ve{' '}
+              <Text style={styles.termsLink}>Gizlilik Politikası</Text>'nı kabul ediyorsunuz.
+            </Text>
 
             {/* Login Link */}
             <View style={styles.loginContainer}>
@@ -279,6 +206,135 @@ export default function SignUpScreen() {
           </View>
         </ScrollView>
       </LinearGradient>
+
+      {/* Email Sign Up Modal - STYLESHEET & ÇALIŞIR */}
+      <Modal
+        visible={showEmailSignUp}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeEmailSignUp}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
+        >
+          <TouchableOpacity 
+            style={styles.modalOverlay} 
+            activeOpacity={1} 
+            onPress={closeEmailSignUp}
+          >
+            <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalContent}>
+                {/* Header */}
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>E-posta ile Kayıt</Text>
+                  <TouchableOpacity onPress={closeEmailSignUp} style={styles.closeButton}>
+                    <Ionicons name="close" size={28} color="#374151" />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                  {/* Username */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Kullanıcı Adı</Text>
+                    <View style={styles.inputBox}>
+                      <Ionicons name="person" size={20} color="#667eea" />
+                      <TextInput
+                        style={styles.textInput}
+                        value={username}
+                        onChangeText={setUsername}
+                        placeholder="kullaniciadi"
+                        placeholderTextColor="#999"
+                        autoCapitalize="none"
+                        editable={!loading}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Email */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>E-posta</Text>
+                    <View style={styles.inputBox}>
+                      <Ionicons name="mail" size={20} color="#667eea" />
+                      <TextInput
+                        style={styles.textInput}
+                        value={email}
+                        onChangeText={setEmail}
+                        placeholder="ornek@email.com"
+                        placeholderTextColor="#999"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        editable={!loading}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Password */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Şifre</Text>
+                    <View style={styles.inputBox}>
+                      <Ionicons name="lock-closed" size={20} color="#667eea" />
+                      <TextInput
+                        style={styles.textInput}
+                        value={password}
+                        onChangeText={setPassword}
+                        placeholder="En az 6 karakter"
+                        placeholderTextColor="#999"
+                        secureTextEntry={!showPassword}
+                        editable={!loading}
+                      />
+                      <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                        <Ionicons
+                          name={showPassword ? 'eye' : 'eye-off'}
+                          size={22}
+                          color="#999"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Confirm Password */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Şifre Tekrar</Text>
+                    <View style={styles.inputBox}>
+                      <Ionicons name="lock-closed" size={20} color="#667eea" />
+                      <TextInput
+                        style={styles.textInput}
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        placeholder="Şifreyi tekrar girin"
+                        placeholderTextColor="#999"
+                        secureTextEntry={!showConfirmPassword}
+                        editable={!loading}
+                      />
+                      <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                        <Ionicons
+                          name={showConfirmPassword ? 'eye' : 'eye-off'}
+                          size={22}
+                          color="#999"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Submit Button */}
+                  <TouchableOpacity
+                    style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+                    onPress={handleEmailSignUpSubmit}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                      <Text style={styles.submitButtonText}>Kayıt Ol</Text>
+                    )}
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -325,43 +381,59 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 5,
   },
-  inputContainer: {
+  socialButtonsContainer: {
+    gap: 12,
+    marginBottom: 24,
+  },
+  socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    justifyContent: 'center',
     borderRadius: 12,
-    marginBottom: 16,
+    height: 54,
     paddingHorizontal: 16,
-    borderWidth: 2,
-    borderColor: '#dee2e6',
-    overflow: 'hidden',
-    elevation: 0,
-    shadowOpacity: 0,
-    minHeight: 54,
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  inputIcon: {
+  googleButton: {
+    backgroundColor: '#4285F4',
+  },
+  appleButton: {
+    backgroundColor: '#000000',
+  },
+  phoneButton: {
+    backgroundColor: '#25D366',
+  },
+  socialButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 12,
+  },
+  emailButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8f9fa',
+    borderWidth: 2,
+    borderColor: '#667eea',
+    borderRadius: 12,
+    height: 54,
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  emailButtonDisabled: {
+    opacity: 0.6,
+  },
+  emailIcon: {
     marginRight: 12,
   },
-  input: {
-    flex: 1,
-    height: 50,
+  emailButtonText: {
+    color: '#667eea',
     fontSize: 16,
-    color: '#333',
-    backgroundColor: '#ffffff',
-    paddingVertical: 0,
-    paddingHorizontal: 0,
-    borderWidth: 0,
-    outlineStyle: 'none',
-    borderRadius: 0,
-    textAlignVertical: 'center',
-    includeFontPadding: false,
-    writingDirection: 'ltr',
-  },
-  eyeIcon: {
-    padding: 8,
+    fontWeight: '600',
   },
   termsText: {
     color: '#666',
@@ -373,26 +445,6 @@ const styles = StyleSheet.create({
   termsLink: {
     color: '#667eea',
     fontWeight: '600',
-  },
-  signUpButton: {
-    backgroundColor: '#667eea',
-    borderRadius: 12,
-    height: 54,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  signUpButtonDisabled: {
-    opacity: 0.6,
-  },
-  signUpButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
   },
   dividerContainer: {
     flexDirection: 'row',
@@ -424,5 +476,84 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: 'bold',
   },
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    maxHeight: '90%',
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#1f2937',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalScroll: {
+    padding: 24,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  inputBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 56,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1f2937',
+    marginLeft: 12,
+    height: 56,
+  },
+  submitButton: {
+    backgroundColor: '#2563eb',
+    borderRadius: 12,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 24,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
 });
-

@@ -1,3 +1,6 @@
+// Import accessibility fix FIRST - before any React Native imports
+import '../accessibility-fix';
+
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
@@ -7,7 +10,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar } from 'react-native';
+import { StatusBar, Platform } from 'react-native';
 import { AuthProvider } from './SenceFinal/contexts/AuthContext';
 
 import '../global.css';

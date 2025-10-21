@@ -100,13 +100,13 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
   // Merge userProfile with profile data
   const mergedProfileData = {
     ...profileData,
-    coverImage: profile?.cover_image || userProfile.coverImage,
-    profileImage: profile?.profile_image || userProfile.profileImage,
-    name: profile?.full_name || userProfile.fullName,
-    username: `@${profile?.username || userProfile.username}`,
-    bio: profile?.bio || userProfile.bio,
+    coverImage: profile?.cover_image || userProfile?.coverImage || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
+    profileImage: profile?.profile_image || userProfile?.profileImage || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
+    name: profile?.full_name || userProfile?.fullName || user?.email?.split('@')[0] || 'Kullanıcı',
+    username: `@${profile?.username || userProfile?.username || user?.email?.split('@')[0] || 'kullanici'}`,
+    bio: profile?.bio || userProfile?.bio || 'Henüz bio eklenmedi',
     predictions: stats?.total_predictions || 0,
-    credits: profile?.credits || 0,
+    credits: profile?.credits || 10000,
     followers: 0, // TODO: Follower sistemi eklenince burası güncellenecek
     following: 0, // TODO: Following sistemi eklenince burası güncellenecek
   };

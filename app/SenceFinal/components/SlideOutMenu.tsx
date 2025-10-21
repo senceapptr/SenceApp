@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '../contexts/AuthContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -24,6 +25,7 @@ interface SlideOutMenuProps {
 }
 
 export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOutMenuProps) {
+  const { user, profile } = useAuth();
   const slideAnim = useRef(new Animated.Value(0)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [isAnimating, setIsAnimating] = useState(false);
@@ -290,14 +292,18 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
             <View style={styles.profileContent}>
               <View style={styles.avatarContainer}>
                 <Image
-                  source={{ uri: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face" }}
+                  source={{ uri: profile?.profile_image || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face" }}
                   style={styles.userAvatar}
                 />
                 <View style={styles.onlineIndicator} />
               </View>
               <View style={styles.userDetails}>
-                <Text style={styles.userName}>Ahmet Yılmaz</Text>
-                <Text style={styles.balanceAmount}>₺2,450.00</Text>
+                <Text style={styles.userName}>
+                  {profile?.full_name || user?.email?.split('@')[0] || 'Kullanıcı'}
+                </Text>
+                <Text style={styles.balanceAmount}>
+                  {profile?.credits ? `₺${profile.credits.toLocaleString('tr-TR')}` : '₺10,000'}
+                </Text>
               </View>
               <View style={styles.profileArrow}>
                 <Text style={styles.profileArrowText}>›</Text>

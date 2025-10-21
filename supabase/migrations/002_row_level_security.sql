@@ -3,7 +3,8 @@
 -- ================================================
 
 -- RLS'i tüm tablolar için aktif et
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+-- NOT: Profiles için RLS devre dışı (trigger ile otomatik oluşturma için)
+-- ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_stats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
@@ -25,21 +26,7 @@ ALTER TABLE public.activities ENABLE ROW LEVEL SECURITY;
 -- ================================================
 -- PROFILES
 -- ================================================
-
--- Herkes kendi profilini okuyabilir
-CREATE POLICY "Users can view own profile"
-  ON public.profiles FOR SELECT
-  USING (auth.uid() = id);
-
--- Herkes kendi profilini güncelleyebilir
-CREATE POLICY "Users can update own profile"
-  ON public.profiles FOR UPDATE
-  USING (auth.uid() = id);
-
--- Herkes başkalarının public profillerini görebilir
-CREATE POLICY "Users can view other profiles"
-  ON public.profiles FOR SELECT
-  USING (true);
+-- NOT: Profiles için RLS policy'leri migration 006'da oluşturulacak
 
 -- ================================================
 -- USER STATS

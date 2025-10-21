@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   // Profil bilgilerini yükle
-  const loadProfile = async (userId: string) => {
+  const loadProfile = async (userId: string, retries = 3) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -48,6 +48,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
+        // Profil bulunamadıysa ve deneme hakkı varsa tekrar dene
+        if (error.code === 'PGRST116' && retries > 0) {
+          console.log(`Profile not found, retrying... (${retries} attempts left)`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return loadProfile(userId, retries - 1);
+        }
+        
         console.error('Error loading profile:', error);
         return;
       }
@@ -94,35 +101,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Kayıt ol
   const signUp = async (email: string, password: string, username: string) => {
     try {
-      // 1. Kullanıcıyı oluştur
+      console.log('Starting signup process...');
+      
+      // 1. Kullanıcıyı oluştur (username'i metadata'da gönder)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            username: username,
+          },
+        },
       });
 
       if (authError) {
+        console.error('Auth error:', authError);
         return { error: authError };
       }
 
       if (!authData.user) {
+        console.error('No user data returned');
         return { error: new Error('User creation failed') as AuthError };
       }
 
-      // 2. Profil oluştur
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: authData.user.id,
-        username,
-        email,
-        full_name: username,
-        credits: 10000, // Başlangıç kredisi
-        level: 1,
-        experience: 0,
-      });
+      console.log('User created:', authData.user.id);
 
-      if (profileError) {
-        console.error('Error creating profile:', profileError);
-        return { error: profileError as AuthError };
+      // 2. Auth transaction'ın commit olmasını bekle
+      console.log('Waiting for auth transaction to commit...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // 3. Profili oluştur (retry mekanizması ile)
+      console.log('Creating profile...');
+      let profileCreated = false;
+      let attempts = 0;
+      const maxAttempts = 5;
+
+      while (!profileCreated && attempts < maxAttempts) {
+        attempts++;
+        
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authData.user.id,
+            username,
+            email,
+            full_name: username,
+            profile_image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
+            cover_image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
+            bio: 'Yeni Sence kullanıcısı 🎯',
+            credits: 10000,
+            level: 1,
+            experience: 0,
+          });
+
+        if (!profileError) {
+          console.log('Profile created successfully');
+          profileCreated = true;
+        } else if (profileError.code === '23503') {
+          // Foreign key constraint - auth.users henüz hazır değil
+          console.log(`Foreign key constraint, retrying... (${maxAttempts - attempts} attempts left)`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else if (profileError.code === '23505') {
+          // Unique constraint - profil zaten var (trigger oluşturmuş olabilir)
+          console.log('Profile already exists (created by trigger)');
+          profileCreated = true;
+        } else {
+          console.error('Profile creation error:', profileError);
+          // Diğer hatalar için devam et
+          break;
+        }
       }
+
+      // 4. Profili yükle
+      console.log('Loading profile...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await loadProfile(authData.user.id, 5);
 
       return { error: null };
     } catch (error) {

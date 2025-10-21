@@ -1,0 +1,97 @@
+> expo-nativewind-typescript-boilerplate@1.0.0 ios
+> npx expo run:ios
+
+env: load .env.local
+env: export EXPO_PUBLIC_SUPABASE_URL EXPO_PUBL
+env: export EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY
+› Skipping dev server
+› Planning build
+› Preparing Pods/boost-boost_privacy » Resourc
+› Preparing Pods/boost-boost_privacy » ResourceBundle-boost_privacy-boost-Info.plist
+› Preparing Pods/lottie-ios-LottiePrivacyInfo 
+› Preparing Pods/lottie-ios-LottiePrivacyInfo » ResourceBundle-LottiePrivacyInfo-lottie-ios-
+› Preparing Pods/lottie-ios-LottiePrivacyInfo » ResourceBundle-LottiePrivacyInfo-lottie-ios-Info.plist
+› Preparing Pods/glog-glog_privacy » ResourceB
+› Preparing Pods/glog-glog_privacy » ResourceBundle-glog_privacy-glog-Info.plist
+› Preparing Pods/RCT-Folly-RCT-Folly_privacy »
+› Preparing Pods/RCT-Folly-RCT-Folly_privacy » ResourceBundle-RCT-Folly_privacy-RCT-Folly-In
+› Preparing Pods/RCT-Folly-RCT-Folly_privacy » ResourceBundle-RCT-Folly_privacy-RCT-Folly-Info.plist
+› Preparing expo-constants Pods/EXConstants-EX
+› Preparing expo-constants Pods/EXConstants-EXConstants » ResourceBundle-EXConstants-EXConst
+› Preparing expo-constants Pods/EXConstants-EXConstants » ResourceBundle-EXConstants-EXConstants-Info.plist
+› Preparing Pods/EXConstants-ExpoConstants_pri
+› Preparing Pods/EXConstants-ExpoConstants_privacy » ResourceBundle-ExpoConstants_privacy-EX
+› Preparing Pods/EXConstants-ExpoConstants_privacy » ResourceBundle-ExpoConstants_privacy-EXConstants-Info.plist
+› Preparing Pods/React-Core-React-Core_privacy
+› Preparing Pods/React-Core-React-Core_privacy » ResourceBundle-React-Core_privacy-React-Cor
+› Preparing Pods/React-Core-React-Core_privacy » ResourceBundle-React-Core_privacy-React-Core-Info.plist
+› Preparing Pods/React-cxxreact-React-cxxreact
+› Preparing Pods/React-cxxreact-React-cxxreact_privacy » ResourceBundle-React-cxxreact_priva
+› Preparing Pods/React-cxxreact-React-cxxreact_privacy » ResourceBundle-React-cxxreact_privacy-React-cxxreact-Info.plist
+› Executing react-native Pods/React-Fabric » [
+› Executing react-native Pods/React-Fabric » [CP-User] [RN]Check rncore
+› Executing react-native Pods/React-RCTFBReact
+› Executing react-native Pods/React-RCTFBReactNativeSpec » [CP-User] [RN]Check FBReactNative
+› Executing react-native Pods/React-RCTFBReactNativeSpec » [CP-User] [RN]Check FBReactNativeSpec
+› Executing react-native Pods/React-FabricComp
+› Executing react-native Pods/React-FabricComponents » [CP-User] [RN]Check rncore
+› Preparing Pods/lottie-react-native-Lottie_Re
+› Preparing Pods/lottie-react-native-Lottie_React_Native_Privacy » ResourceBundle-Lottie_Rea
+› Preparing Pods/lottie-react-native-Lottie_React_Native_Privacy » ResourceBundle-Lottie_React_Native_Privacy-lottie-react-native-Info.pli
+› Preparing Pods/lottie-react-native-Lottie_React_Native_Privacy » ResourceBundle-Lottie_React_Native_Privacy-lottie-react-native-Info.plist
+› Preparing Pods/RNSVG-RNSVGFilters » Resource
+› Preparing Pods/RNSVG-RNSVGFilters » ResourceBundle-RNSVGFilters-RNSVG-Info.plist
+› Executing expo-constants Pods/EXConstants » 
+› Executing expo-constants Pods/EXConstants » [CP-User] Generate app.config for prebuilt Con
+› Executing expo-constants Pods/EXConstants » [CP-User] Generate app.config for prebuilt Constants.manifest
+› Preparing Pods/RNCAsyncStorage-RNCAsyncStora
+› Preparing Pods/RNCAsyncStorage-RNCAsyncStorage_resources » ResourceBundle-RNCAsyncStorage_
+› Preparing Pods/RNCAsyncStorage-RNCAsyncStorage_resources » ResourceBundle-RNCAsyncStorage_resources-RNCAsyncStorage-Info.plist
+› Preparing Pods/ExpoSystemUI-ExpoSystemUI_pri
+› Preparing Pods/ExpoSystemUI-ExpoSystemUI_privacy » ResourceBundle-ExpoSystemUI_privacy-Exp
+› Preparing Pods/ExpoSystemUI-ExpoSystemUI_privacy » ResourceBundle-ExpoSystemUI_privacy-ExpoSystemUI-Info.plist
+› Preparing Pods/ExpoFileSystem-ExpoFileSystem
+› Preparing Pods/ExpoFileSystem-ExpoFileSystem_privacy » ResourceBundle-ExpoFileSystem_priva
+› Preparing Pods/ExpoFileSystem-ExpoFileSystem_privacy » ResourceBundle-ExpoFileSystem_privacy-ExpoFileSystem-Info.plist
+› Executing exponativewindtypescriptboilerplat
+› Executing exponativewindtypescriptboilerplate » [Expo] Configure project
+› Preparing exponativewindtypescriptboilerplat
+› Preparing exponativewindtypescriptboilerplate » Info.plist
+› Linking   exponativewindtypescriptboilerplat
+› Linking   exponativewindtypescriptboilerplate » exponativewindtypescriptboilerplate.debug.
+› Linking   exponativewindtypescriptboilerplate » exponativewindtypescriptboilerplate.debug.dylib
+⚠️  ld: ignoring duplicate libraries: '-lc++'
+› Linking   exponativewindtypescriptboilerplat
+› Linking   exponativewindtypescriptboilerplate » exponativewindtypescriptboilerplate
+› Executing exponativewindtypescriptboilerplat
+› Executing exponativewindtypescriptboilerplate » Bundle React Native code and images
+› Executing exponativewindtypescriptboilerplat
+› Executing exponativewindtypescriptboilerplate » [CP] Copy Pods Resources
+› Generating debug exponativewindtypescriptboi
+› Generating debug exponativewindtypescriptboilerplate » exponativewindtypescriptboilerplate
+› Generating debug exponativewindtypescriptboilerplate » exponativewindtypescriptboilerplate.app.dSYM
+› Generating debug exponativewindtypescriptboi
+› Generating debug exponativewindtypescriptboilerplate » exponativewindtypescriptboilerplate
+› Generating debug exponativewindtypescriptboilerplate » exponativewindtypescriptboilerplate.app.dSYM
+› Signing   exponativewindtypescriptboilerplat
+› Signing   exponativewindtypescriptboilerplate » exponativewindtypescriptboilerplate.debug.
+› Signing   exponativewindtypescriptboilerplate » exponativewindtypescriptboilerplate.debug.dylib
+› Signing   exponativewindtypescriptboilerplat
+› Signing   exponativewindtypescriptboilerplate » __preview.dylib
+› Signing   exponativewindtypescriptboilerplat
+› Signing   exponativewindtypescriptboilerplate » exponativewindtypescriptboilerplate.app
+› Build Succeeded
+
+› 0 error(s), and 1 warning(s)
+
+Waiting on http://localhost:8081
+› Installing /Users/ilginyolgezen/Library/Deve
+› Installing /Users/ilginyolgezen/Library/Developer/Xcode/DerivedData/exponativewindtypescri
+› Installing /Users/ilginyolgezen/Library/Developer/Xcode/DerivedData/exponativewindtypescriptboilerplate-fpgawvhezbyuksdvjmydbbtugard/Bui
+› Installing /Users/ilginyolgezen/Library/Developer/Xcode/DerivedData/exponativewindtypescriptboilerplate-fpgawvhezbyuksdvjmydbbtugard/Build/Products/Debug-iphonesimulator/exponativewi
+› Installing /Users/ilginyolgezen/Library/Developer/Xcode/DerivedData/exponativewindtypescriptboilerplate-fpgawvhezbyuksdvjmydbbtugard/Build/Products/Debug-iphonesimulator/exponativewindtypescriptboilerplate.app
+› Installing on iPhone 16 Plus
+› Opening on iPhone 16 Plus (com.teczer.expo-n
+› Opening on iPhone 16 Plus (com.teczer.expo-nativewind-typescript-boilerplate)
+› Opening exp+expo-nativewind-typescript-boile
+› Opening exp+expo-nativewind-typescript-boilerplate://expo-development-client/?url=http%3A%
