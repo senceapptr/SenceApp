@@ -4,12 +4,15 @@ import { ActiveCoupon } from '../types';
 import { CouponCard } from './CouponCard';
 
 interface ActiveCouponsSectionProps {
-  coupons: ActiveCoupon[];
+  coupons?: ActiveCoupon[];
   isDarkMode: boolean;
   theme: any;
 }
 
 export function ActiveCouponsSection({ coupons, isDarkMode, theme }: ActiveCouponsSectionProps) {
+  // Güvenlik kontrolü - coupons undefined veya null ise boş array kullan
+  const safeCoupons = coupons || [];
+  
   return (
     <View style={[styles.section, { backgroundColor: isDarkMode ? theme.surface : '#FFFFFF' }]}>
       <View style={styles.header}>
@@ -20,11 +23,17 @@ export function ActiveCouponsSection({ coupons, isDarkMode, theme }: ActiveCoupo
       </View>
       
       <FlatList
-        data={coupons}
-        renderItem={({ item }) => (
-          <CouponCard coupon={item} isDarkMode={isDarkMode} theme={theme} />
-        )}
-        keyExtractor={(item) => item.id.toString()}
+        data={safeCoupons}
+        renderItem={({ item }) => {
+          // Güvenlik kontrolü - item undefined ise null döndür
+          if (!item) {
+            return null;
+          }
+          return (
+            <CouponCard coupon={item} isDarkMode={isDarkMode} theme={theme} />
+          );
+        }}
+        keyExtractor={(item, index) => item?.id?.toString() || index.toString()}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.list}

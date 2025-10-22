@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Animated, ActivityIndicator, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { League } from '../types';
-import { mockLeaderboardData } from '../utils';
+import { useAuth } from '../../../contexts/AuthContext';
+import { leaguesService } from '@/services';
+import { League, LeaderboardUser } from '../types';
 
 interface LeaderboardModalProps {
   visible: boolean;
@@ -11,14 +12,53 @@ interface LeaderboardModalProps {
 }
 
 export function LeaderboardModal({ visible, league, onClose }: LeaderboardModalProps) {
+  const { user } = useAuth();
   const [scrollY, setScrollY] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
   const [scrollViewHeight, setScrollViewHeight] = useState(0);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
+  const [loading, setLoading] = useState(false);
   
   // Animation for gold rank glow effect
   const glowAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   
+  // Backend'den leaderboard verilerini yükle
+  const loadLeaderboardData = async () => {
+    if (!league || !user) return;
+
+    try {
+      setLoading(true);
+      const result = await leaguesService.getLeagueMembers(league.id);
+      
+      if (result.data) {
+        // Backend'den gelen veriyi frontend formatına çevir
+        const mappedLeaderboard: LeaderboardUser[] = result.data.map((member: any, index: number) => ({
+          rank: index + 1,
+          username: member.profiles?.username || 'Anonim',
+          points: member.points || 0,
+          streak: 0, // TODO: Backend'den al
+          correctPredictions: member.correct_predictions || 0,
+          totalPredictions: member.total_predictions || 0,
+          avatar: member.profiles?.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+          isCurrentUser: member.user_id === user.id,
+        }));
+        setLeaderboardData(mappedLeaderboard);
+      }
+    } catch (err) {
+      console.error('Leaderboard load error:', err);
+      Alert.alert('Hata', 'Sıralama verileri yüklenirken bir hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (visible && league) {
+      loadLeaderboardData();
+    }
+  }, [visible, league]);
+
   useEffect(() => {
     // Glow animation
     Animated.loop(
@@ -55,7 +95,7 @@ export function LeaderboardModal({ visible, league, onClose }: LeaderboardModalP
   
   if (!league) return null;
 
-  const currentUser = mockLeaderboardData.find(user => user.isCurrentUser);
+  const currentUser = leaderboardData.find(user => user.isCurrentUser);
   
   // Calculate if current user should be sticky
   const currentUserIndex = currentUser ? currentUser.rank - 1 : -1;
@@ -106,7 +146,13 @@ export function LeaderboardModal({ visible, league, onClose }: LeaderboardModalP
             onLayout={(event) => setScrollViewHeight(event.nativeEvent.layout.height)}
             scrollEventThrottle={16}
           >
-            {mockLeaderboardData.map((user) => {
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#432870" />
+                <Text style={styles.loadingText}>Sıralama yükleniyor...</Text>
+              </View>
+            ) : (
+              leaderboardData.map((user) => {
               const isGoldRank = user.rank === 1;
               const animatedOpacity = glowAnim.interpolate({
                 inputRange: [0, 1],
@@ -136,34 +182,36 @@ export function LeaderboardModal({ visible, league, onClose }: LeaderboardModalP
                   key={user.rank}
                   style={itemStyle}
                 >
-                <View
-                  style={[
-                    styles.rank,
-                    user.rank === 1 && styles.rankGold,
-                    user.rank === 2 && styles.rankSilver,
-                    user.rank === 3 && styles.rankBronze,
-                  ]}
-                >
-                  <Text style={styles.rankText}>#{user.rank}</Text>
-                </View>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>👤</Text>
-                </View>
-                <View style={styles.userInfo}>
-                  <Text style={styles.username} numberOfLines={1} ellipsizeMode="tail">
-                    {user.username}
-                    {user.isCurrentUser && <Text style={styles.currentLabel}> (Sen)</Text>}
-                  </Text>
-                  <Text style={styles.userStats} numberOfLines={1}>
-                    {user.correctPredictions}/{user.totalPredictions} doğru
-                  </Text>
-                </View>
-                <View style={styles.points}>
-                  <Text style={styles.pointsValue}>{user.points}</Text>
-                  <Text style={styles.pointsLabel}>puan</Text>
-                </View>
-              </ItemComponent>
-            )})}
+                  <View
+                    style={[
+                      styles.rank,
+                      user.rank === 1 && styles.rankGold,
+                      user.rank === 2 && styles.rankSilver,
+                      user.rank === 3 && styles.rankBronze,
+                    ]}
+                  >
+                    <Text style={styles.rankText}>#{user.rank}</Text>
+                  </View>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>👤</Text>
+                  </View>
+                  <View style={styles.userInfo}>
+                    <Text style={styles.username} numberOfLines={1} ellipsizeMode="tail">
+                      {user.username}
+                      {user.isCurrentUser && <Text style={styles.currentLabel}> (Sen)</Text>}
+                    </Text>
+                    <Text style={styles.userStats} numberOfLines={1}>
+                      {user.correctPredictions}/{user.totalPredictions} doğru
+                    </Text>
+                  </View>
+                  <View style={styles.points}>
+                    <Text style={styles.pointsValue}>{user.points}</Text>
+                    <Text style={styles.pointsLabel}>puan</Text>
+                  </View>
+                </ItemComponent>
+              );
+            })
+            )}
           </ScrollView>
 
           {/* Fixed User Rank - Always show at bottom */}
@@ -551,6 +599,18 @@ const styles = StyleSheet.create({
   fixedPointsLabel: {
     fontSize: 10,
     color: '#6B7280',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#432870',
   },
 });
 

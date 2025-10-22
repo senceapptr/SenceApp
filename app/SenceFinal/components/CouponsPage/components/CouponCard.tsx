@@ -80,7 +80,7 @@ export function CouponCard({ coupon, onPress }: CouponCardProps) {
         <View style={styles.footer}>
           <View style={styles.footerLeft}>
             <Text style={styles.footerLabel}>Potansiyel Kazanç</Text>
-            <Text style={styles.footerValue}>₺{coupon.potentialEarnings.toLocaleString()}</Text>
+            <Text style={styles.footerValue}>{coupon.potentialEarnings.toLocaleString()} kredi</Text>
           </View>
           <View style={styles.footerRight}>
             <Text style={styles.footerLabel}>Toplam Oran</Text>

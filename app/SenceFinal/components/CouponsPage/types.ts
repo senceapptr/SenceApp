@@ -1,5 +1,6 @@
 export interface CouponPrediction {
   id: number;
+  questionId: number; // Soru ID'si
   question: string;
   choice: 'yes' | 'no';
   odds: number;

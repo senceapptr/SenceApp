@@ -1,5 +1,5 @@
 export interface League {
-  id: number;
+  id: string;
   name: string;
   description: string;
   category: string;
@@ -39,7 +39,7 @@ export interface LeaderboardUser {
 }
 
 export interface Question {
-  id: number;
+  id: string;
   text: string;
   category: string;
   categoryEmoji: string;

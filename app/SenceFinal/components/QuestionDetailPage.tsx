@@ -11,11 +11,16 @@ import {
   Animated,
   Share,
   Platform,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit';
+import { useAuth } from '../contexts/AuthContext';
+import { questionsService, predictionsService, commentsService } from '@/services';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -55,11 +60,115 @@ interface TopInvestor {
 }
 
 export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: QuestionDetailPageProps) {
+  const { user, profile } = useAuth();
+  const insets = useSafeAreaInsets();
+  
+  // State tanımlamaları
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'comments' | 'stats'>('details');
   const [commentText, setCommentText] = useState('');
-  const [timeLeft, setTimeLeft] = useState({ days: 15, hours: 8, minutes: 42 });
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0 });
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [questionDetails, setQuestionDetails] = useState<any>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [relatedQuestions, setRelatedQuestions] = useState<RelatedQuestion[]>([]);
+  const [topInvestors, setTopInvestors] = useState<TopInvestor[]>([]);
+  const [userPrediction, setUserPrediction] = useState<any>(null);
+  
   const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Backend'den soru detaylarını yükle
+  const loadQuestionDetails = async () => {
+    if (!question?.id) return;
+
+    try {
+      setLoading(true);
+
+      // Paralel olarak tüm verileri yükle
+      const [detailsResult, commentsResult, relatedResult, investorsResult, predictionResult] = await Promise.all([
+        questionsService.getQuestionById(question.id.toString()),
+        commentsService.getQuestionComments(question.id.toString()),
+        questionsService.getRelatedQuestions(question.id.toString()),
+        questionsService.getTopInvestors(question.id.toString()),
+        user ? predictionsService.getUserPredictionForQuestion(user.id, question.id.toString()) : { data: null, error: null },
+      ]);
+
+      // Soru detayları
+      if (detailsResult.data) {
+        const q = detailsResult.data;
+        setQuestionDetails(q);
+        
+        // Countdown hesapla
+        const endDate = new Date(q.end_date);
+        const now = new Date();
+        const diff = endDate.getTime() - now.getTime();
+        
+        if (diff > 0) {
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          setTimeLeft({ days, hours, minutes });
+        }
+      }
+
+      // Yorumlar
+      if (commentsResult.data) {
+        const mappedComments: Comment[] = commentsResult.data.map((c: any) => ({
+          id: parseInt(c.id) || 0,
+          username: c.profiles?.username || 'Anonim',
+          avatar: c.profiles?.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
+          text: c.content,
+          timestamp: new Date(c.created_at),
+          likes: c.likes_count || 0,
+        }));
+        setComments(mappedComments);
+      }
+
+      // İlgili sorular
+      if (relatedResult.data) {
+        const mappedRelated: RelatedQuestion[] = relatedResult.data.map((q: any) => ({
+          id: parseInt(q.id) || 0,
+          title: q.title,
+          category: q.categories?.name || 'Genel',
+          image: q.image_url || 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=150&h=150&fit=crop',
+          daysLeft: Math.ceil((new Date(q.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
+          odds: q.yes_odds || 1.5,
+          rating: 4.5, // TODO: Rating sistemi eklenince
+          votes: q.total_votes || 0,
+          isFavorite: false, // TODO: Favori sistemi eklenince
+        }));
+        setRelatedQuestions(mappedRelated);
+      }
+
+      // Top yatırımcılar
+      if (investorsResult.data) {
+        const mappedInvestors: TopInvestor[] = investorsResult.data.map((i: any) => ({
+          username: i.profiles?.username || 'Anonim',
+          avatar: i.profiles?.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+          amount: i.amount || 0,
+          vote: i.vote === 'yes' ? 'yes' : 'no',
+        }));
+        setTopInvestors(mappedInvestors);
+      }
+
+      // Kullanıcının tahmini
+      if (predictionResult.data) {
+        setUserPrediction(predictionResult.data);
+      }
+
+    } catch (err) {
+      console.error('Question details load error:', err);
+      Alert.alert('Hata', 'Soru detayları yüklenirken bir hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sayfa yüklendiğinde veriyi çek
+  useEffect(() => {
+    loadQuestionDetails();
+  }, [question?.id, user]);
 
   // Countdown timer effect
   useEffect(() => {
@@ -98,124 +207,82 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
     ).start();
   }, []);
 
-  // Main question data
-  const mainQuestion = {
-    title: "Apple yeni iPhone 16'yı bu yıl piyasaya sürecek mi?",
-    category: "Teknoloji",
-    categoryIcon: "💻",
-    image: "https://images.unsplash.com/photo-1574477942438-5db6de70fd34?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0ZWNobm9sb2d5JTIwbW9kZXJuJTIwY2l0eXxlbnwxfHx8fDE3NjAxNzQyODR8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    description: "Apple'ın her yıl geleneksel olarak Eylül ayında gerçekleştirdiği etkinlikte yeni iPhone modellerini tanıtması bekleniyor. iPhone 16 serisinin gelişmiş yapay zeka özellikleri ve yeni tasarım elementleriyle geleceği konuşuluyor.",
-    fullDescription: "Apple'ın her yıl geleneksel olarak Eylül ayında gerçekleştirdiği etkinlikte yeni iPhone modellerini tanıtması bekleniyor. iPhone 16 serisinin gelişmiş yapay zeka özellikleri ve yeni tasarım elementleriyle geleceği konuşuluyor. Analistler, yeni modelin özellikle kamera teknolojisi ve işlemci gücü açısından önemli yenilikler getireceğini tahmin ediyor. Ayrıca USB-C geçişinin standart hale geleceği ve batarya ömrünün artırılacağı bekleniyor.",
-    rating: 4.8,
-    totalVotes: 1247,
-    yesPercentage: 78,
-    noPercentage: 22,
-    yesOdds: 1.28,
-    noOdds: 3.64,
-    publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-    endDate: "15 gün",
-    daysLeft: 15,
-    creator: {
-      username: "tech_insider",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face"
-    },
-    totalPool: 125000,
-    yesInvestment: 97500,
-    noInvestment: 27500
+  // Kategori ikonu fonksiyonu
+  const getCategoryIcon = (category: string): string => {
+    const icons: { [key: string]: string } = {
+      'Teknoloji': '💻',
+      'Spor': '⚽',
+      'Finans': '💰',
+      'Politika': '🏛️',
+      'Magazin': '📰',
+      'Müzik': '🎵',
+      'Sinema': '🎬',
+      'Sosyal Medya': '📱',
+      'Genel': '📊'
+    };
+    return icons[category] || '📊';
   };
 
-  // Comments data
-  const [comments, setComments] = useState<Comment[]>([
-  {
-    id: 1,
-      username: "crypto_king",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face",
-      text: "Apple her sene Eylül'de tanıtıyor, kesin çıkacak!",
-      timestamp: new Date(Date.now() - 3600000),
-      likes: 24
-  },
-  {
-    id: 2,
-      username: "trend_hunter",
-      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=32&h=32&fit=crop&crop=face",
-      text: "USB-C geçişi çok önemli bir adım olacak",
-      timestamp: new Date(Date.now() - 7200000),
-      likes: 18
-  },
-  {
-    id: 3,
-      username: "market_wizard",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face",
-      text: "Fiyatlar yine uçuk olacak gibi görünüyor 😅",
-      timestamp: new Date(Date.now() - 10800000),
-      likes: 12
-    }
-  ]);
+  // Main question data - Backend'den gelen verilerle merge et
+  const mainQuestion = questionDetails ? {
+    title: questionDetails.title,
+    category: questionDetails.categories?.name || 'Genel',
+    categoryIcon: getCategoryIcon(questionDetails.categories?.name || 'Genel'),
+    image: questionDetails.image_url || 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0ZWNobm9sb2d5JTIwbW9kZXJuJTIwY2l0eXxlbnwxfHx8fDE3NjAxNzQyODR8MA&ixlib=rb-4.1.0&q=80&w=1080',
+    description: questionDetails.description || '',
+    fullDescription: questionDetails.description || '',
+    rating: 4.8, // TODO: Rating sistemi eklenince
+    totalVotes: questionDetails.total_votes || 0,
+    yesPercentage: questionDetails.yes_percentage || 50,
+    noPercentage: questionDetails.no_percentage || 50,
+    yesOdds: questionDetails.yes_odds || 1.5,
+    noOdds: questionDetails.no_odds || 1.5,
+    publishedAt: new Date(questionDetails.created_at),
+    endDate: questionDetails.end_date,
+    daysLeft: timeLeft.days,
+    creator: {
+      username: questionDetails.profiles?.username || 'Anonim',
+      avatar: questionDetails.profiles?.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face'
+    },
+    totalPool: questionDetails.total_pool || 0,
+    yesInvestment: questionDetails.yes_investment || 0,
+    noInvestment: questionDetails.no_investment || 0
+  } : null;
 
-  // Top investors
-  const topInvestors: TopInvestor[] = [
-    {
-      username: "whale_master",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face",
-      amount: 15000,
-      vote: 'yes'
-    },
-    {
-      username: "tech_bull",
-      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=40&h=40&fit=crop&crop=face",
-      amount: 12500,
-      vote: 'yes'
-    },
-    {
-      username: "skeptic_bear",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face",
-      amount: 8000,
-      vote: 'no'
-    },
-    {
-      username: "apple_fan",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
-      amount: 7500,
-      vote: 'yes'
-    }
-  ];
+  // Refresh fonksiyonu
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadQuestionDetails();
+    setRefreshing(false);
+  };
 
-  // Related questions
-  const [relatedQuestions, setRelatedQuestions] = useState<RelatedQuestion[]>([
-    {
-      id: 1,
-      title: "Samsung Galaxy S24 Serisi",
-      category: "Teknoloji",
-      image: "https://images.unsplash.com/photo-1643559247329-7254c71646f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3VudGFpbiUyMGxhbmRzY2FwZSUyMHN1bnNldHxlbnwxfHx8fDE3NjAxODE4NjV8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      daysLeft: 8,
-      odds: 650,
-      rating: 4.6,
-      votes: 58,
-      isFavorite: false
-    },
-    {
-      id: 2,
-      title: "Tesla Model Y Satışları",
-      category: "Teknoloji",
-      image: "https://images.unsplash.com/photo-1650289246926-ca8eaa0c3325?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzcG9ydHMlMjBzdGFkaXVtJTIwYWN0aW9ufGVufDF8fHx8MTc2MDE3NjY2NXww&ixlib=rb-4.1.0&q=80&w=1080",
-      daysLeft: 12,
-      odds: 890,
-      rating: 4.8,
-      votes: 92,
-      isFavorite: false
-    },
-    {
-      id: 3,
-      title: "Meta Quest 3 VR Kulaklık",
-      category: "Teknoloji",
-      image: "https://images.unsplash.com/photo-1574477942438-5db6de70fd34?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0ZWNobm9sb2d5JTIwbW9kZXJuJTIwY2l0eXxlbnwxfHx8fDE3NjAxNzQyODR8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      daysLeft: 5,
-      odds: 450,
-      rating: 4.5,
-      votes: 45,
-      isFavorite: true
+  // Tahmin yapma fonksiyonu
+  const handleVote = async (vote: 'yes' | 'no') => {
+    if (!user || !mainQuestion) {
+      Alert.alert('Hata', 'Tahmin yapmak için giriş yapmalısınız');
+      return;
     }
-  ]);
+
+    try {
+      const result = await predictionsService.createPrediction({
+        question_id: question.id.toString(),
+        vote,
+        amount: 1000, // TODO: Kullanıcıdan miktar al
+        odds: vote === 'yes' ? mainQuestion.yesOdds : mainQuestion.noOdds,
+        potential_win: vote === 'yes' ? mainQuestion.yesOdds * 1000 : mainQuestion.noOdds * 1000,
+      });
+
+      if (result.data) {
+        setUserPrediction(result.data);
+        Alert.alert('Başarılı', 'Tahmininiz kaydedildi!');
+        // Verileri yenile
+        loadQuestionDetails();
+      }
+    } catch (err) {
+      console.error('Vote error:', err);
+      Alert.alert('Hata', 'Tahmin yapılırken bir hata oluştu');
+    }
+  };
 
   // Odds change chart data
   const oddsChartData = {
@@ -266,22 +333,37 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
     return `${Math.floor(diffInDays / 30)} ay önce`;
   };
 
-  const handleSendComment = () => {
-    if (commentText.trim()) {
-      const newComment: Comment = {
-        id: comments.length + 1,
-        username: "mustafa_92",
-        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face",
-        text: commentText,
-        timestamp: new Date(),
-        likes: 0
-      };
-      setComments([newComment, ...comments]);
-      setCommentText('');
+  const handleSendComment = async () => {
+    if (!commentText.trim() || !user || !question?.id) return;
+
+    try {
+      const result = await commentsService.createComment({
+        user_id: user.id,
+        question_id: question.id.toString(),
+        content: commentText.trim(),
+      });
+
+      if (result.data) {
+        const newComment: Comment = {
+          id: parseInt(result.data.id) || 0,
+          username: user.user_metadata?.username || 'Anonim',
+          avatar: user.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
+          text: commentText.trim(),
+          timestamp: new Date(),
+          likes: 0
+        };
+        setComments([newComment, ...comments]);
+        setCommentText('');
+      }
+    } catch (err) {
+      console.error('Comment error:', err);
+      Alert.alert('Hata', 'Yorum gönderilirken bir hata oluştu');
     }
   };
 
   const handleShare = async () => {
+    if (!mainQuestion) return;
+    
     try {
       await Share.share({
         message: `${mainQuestion.title}\n\n${mainQuestion.description}`,
@@ -296,21 +378,23 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
   const noProgressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(yesProgressAnim, {
-        toValue: mainQuestion.yesPercentage,
-        duration: 1000,
-        delay: 300,
-        useNativeDriver: false,
-      }),
-      Animated.timing(noProgressAnim, {
-        toValue: mainQuestion.noPercentage,
-        duration: 1000,
-        delay: 300,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }, []);
+    if (mainQuestion) {
+      Animated.parallel([
+        Animated.timing(yesProgressAnim, {
+          toValue: mainQuestion.yesPercentage,
+          duration: 1000,
+          delay: 300,
+          useNativeDriver: false,
+        }),
+        Animated.timing(noProgressAnim, {
+          toValue: mainQuestion.noPercentage,
+          duration: 1000,
+          delay: 300,
+          useNativeDriver: false,
+        }),
+      ]).start();
+    }
+  }, [mainQuestion]);
 
   const renderDetailsTab = () => (
     <View style={styles.detailsTabContainer}>
@@ -395,7 +479,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
       <View style={styles.voteButtonsContainer}>
             <TouchableOpacity 
           style={styles.voteButtonYes}
-          onPress={() => onVote?.(question.id, 'yes', question.yesOdds, question.title)}
+          onPress={() => handleVote('yes')}
               activeOpacity={0.8}
             >
           <LinearGradient
@@ -411,7 +495,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
             
               <TouchableOpacity 
           style={styles.voteButtonNo}
-          onPress={() => onVote?.(question.id, 'no', question.noOdds, question.title)}
+          onPress={() => handleVote('no')}
                 activeOpacity={0.8}
               >
           <LinearGradient
@@ -493,7 +577,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
         <View style={styles.commentInputCard}>
           <View style={styles.commentInputRow}>
             <Image
-              source={{ uri: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face" }}
+              source={{ uri: user?.user_metadata?.avatar_url || profile?.profile_image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face" }}
               style={styles.commentUserAvatar}
             />
                   <TextInput
@@ -725,10 +809,29 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
     </View>
   );
 
+  // Loading durumu
+  if (loading && !mainQuestion) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#432870" />
+        <Text style={styles.loadingText}>Soru yükleniyor...</Text>
+      </View>
+    );
+  }
+
+  // Soru bulunamadı
+  if (!mainQuestion) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Text style={styles.errorText}>Soru bulunamadı</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Navigation Buttons - RENDER FIRST (highest priority) */}
-      <SafeAreaView style={styles.headerNav}>
+      <View style={[styles.headerNav, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
           style={styles.navButton}
           onPress={onBack}
@@ -758,7 +861,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
             />
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
 
       {/* Scrollable Content */}
       <ScrollView
@@ -770,6 +873,14 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
           { useNativeDriver: false }
         )}
         scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#432870', '#5A3A8B']}
+            tintColor="#432870"
+          />
+        }
       >
 
         {/* Content Container */}
@@ -940,6 +1051,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F2F3F5',
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#432870',
+  },
+  errorText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF3B30',
+    textAlign: 'center',
+    paddingHorizontal: 32,
   },
   scrollView: {
     flex: 1,

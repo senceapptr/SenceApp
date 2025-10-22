@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Text } from 'react-native';
 import { StatusBar } from 'react-native';
 import { MarketPageProps } from './types';
 import { useMarket } from './hooks';
@@ -16,6 +16,7 @@ export function MarketPage({ onBack, onMenuToggle, userCredits }: MarketPageProp
     categories,
     filteredProducts,
     categoryName,
+    loading,
     setSelectedCategory,
     handleProductPress,
     handleCloseModal,
@@ -34,15 +35,22 @@ export function MarketPage({ onBack, onMenuToggle, userCredits }: MarketPageProp
         onSelectCategory={setSelectedCategory}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <ProductsList
-          products={filteredProducts}
-          userCredits={userCredits}
-          selectedCategory={selectedCategory}
-          categoryName={categoryName}
-          onProductPress={handleProductPress}
-        />
-      </ScrollView>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#432870" />
+          <Text style={styles.loadingText}>Market yükleniyor...</Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ProductsList
+            products={filteredProducts}
+            userCredits={userCredits}
+            selectedCategory={selectedCategory}
+            categoryName={categoryName}
+            onProductPress={handleProductPress}
+          />
+        </ScrollView>
+      )}
 
       <PurchaseModal
         visible={showPurchaseModal}
@@ -62,6 +70,18 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#432870',
   },
 });
 

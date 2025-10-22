@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useAuth } from '../../../contexts/AuthContext';
+import { leaguesService } from '@/services';
 import { User } from '../types';
 import { CreateCard } from './CreateCard';
 import { InfoCards } from './InfoCards';

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -54,7 +54,7 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
     }))
   ).current;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isOpen) {
       setIsAnimating(true);
       // Reset menu item animations

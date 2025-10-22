@@ -270,5 +270,97 @@ export const questionsService = {
 
     return channel;
   },
+
+  /**
+   * ID'ye göre soru detayını getir
+   */
+  async getQuestionById(questionId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .select(`
+          *,
+          categories (
+            id,
+            name,
+            slug,
+            icon,
+            color
+          ),
+          profiles (
+            id,
+            username,
+            full_name,
+            profile_image
+          )
+        `)
+        .eq('id', questionId)
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('getQuestionById error:', error);
+      return { data: null, error: error as Error };
+    }
+  },
+
+  /**
+   * İlgili soruları getir
+   */
+  async getRelatedQuestions(questionId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .select(`
+          id,
+          title,
+          image_url,
+          end_date,
+          yes_odds,
+          no_odds,
+          total_votes,
+          categories (
+            name
+          )
+        `)
+        .eq('status', 'active')
+        .neq('id', questionId)
+        .limit(5);
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('getRelatedQuestions error:', error);
+      return { data: null, error: error as Error };
+    }
+  },
+
+  /**
+   * Soruya en çok yatırım yapanları getir
+   */
+  async getTopInvestors(questionId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('predictions')
+        .select(`
+          amount,
+          vote,
+          profiles (
+            username,
+            profile_image
+          )
+        `)
+        .eq('question_id', questionId)
+        .order('amount', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('getTopInvestors error:', error);
+      return { data: null, error: error as Error };
+    }
+  }
 };
 

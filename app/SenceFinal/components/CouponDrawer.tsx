@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PanGestureHandler, State, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { couponsService } from '@/services';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -27,6 +28,7 @@ interface CouponDrawerProps {
   onCouponSuccess?: () => void;
   isFree?: boolean;
   userCredits?: number;
+  onCouponCreated?: () => void; // Yeni kupon oluşturulduğunda çağrılacak callback
 }
 
 export function CouponDrawer({ 
@@ -37,7 +39,8 @@ export function CouponDrawer({
   onClearAll,
   onCouponSuccess,
   isFree = false,
-  userCredits = 0
+  userCredits = 0,
+  onCouponCreated
 }: CouponDrawerProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [betAmount, setBetAmount] = useState(10);
@@ -63,7 +66,7 @@ export function CouponDrawer({
     return [1, 2, 6, 9, 11].includes(questionId);
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isOpen) {
       // Reset animations to initial state
       slideAnim.setValue(SCREEN_HEIGHT);
@@ -118,18 +121,58 @@ export function CouponDrawer({
     
     setIsSubmitting(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsSubmitting(false);
-    onClearAll();
-    onClose();
-    
-    // Trigger confetti animation
-    if (onCouponSuccess) {
-      setTimeout(() => {
-        onCouponSuccess();
-      }, 300); // Small delay to let drawer close smoothly
+    try {
+      // Backend'e kupon gönder
+      const couponData = {
+        selections: selections.map(selection => ({
+          question_id: selection.questionId.toString(),
+          vote: selection.vote,
+          odds: selection.odds,
+          is_boosted: selection.boosted || false
+        })),
+        stake_amount: betAmount
+      };
+
+      const result = await couponsService.createCoupon(couponData);
+      
+      if (result.error) {
+        throw result.error;
+      }
+
+      // Başarılı kupon oluşturma
+      setIsSubmitting(false);
+      onClearAll();
+      onClose();
+      
+      // Kuponlarım sayfasını yenile
+      if (onCouponCreated) {
+        onCouponCreated();
+      }
+      
+      // Trigger confetti animation
+      if (onCouponSuccess) {
+        setTimeout(() => {
+          onCouponSuccess();
+        }, 300); // Small delay to let drawer close smoothly
+      }
+
+      // Başarı mesajı
+      Alert.alert(
+        'Kupon Oluşturuldu! 🎉',
+        `Kuponunuz başarıyla oluşturuldu. Potansiyel kazancınız: ${Math.round(totalOdds * betAmount)} kredi`,
+        [{ text: 'Tamam', style: 'default' }]
+      );
+      
+    } catch (error) {
+      setIsSubmitting(false);
+      
+      console.error('Coupon creation error:', error);
+      
+      Alert.alert(
+        'Hata',
+        'Kupon oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.',
+        [{ text: 'Tamam', style: 'default' }]
+      );
     }
   };
 

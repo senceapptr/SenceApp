@@ -9,8 +9,8 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface FeaturedCardProps {
   question: FeaturedQuestion;
-  onQuestionPress: (id: number) => void;
-  onVote: (questionId: number, vote: 'yes' | 'no', odds: number, questionTitle?: string) => void;
+  onQuestionPress: (id: string) => void;
+  onVote: (questionId: string, vote: 'yes' | 'no', odds: number, questionTitle?: string) => void;
 }
 
 const FeaturedVoteButton = ({

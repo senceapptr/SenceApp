@@ -10,8 +10,11 @@ import {
   SafeAreaView,
   Dimensions,
   Platform,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '../../../../contexts/AuthContext';
+import { leaguesService } from '@/services';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -25,12 +28,14 @@ interface CreateLeagueWizardProps {
 }
 
 export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLeagueWizardProps) {
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCapacityPicker, setShowCapacityPicker] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const [leagueConfig, setLeagueConfig] = useState({
     name: '',
@@ -83,11 +88,36 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
     }
   };
 
-  const createLeague = () => {
-    setShowSuccessAnimation(true);
-    setTimeout(() => {
-      onSuccess();
-    }, 2500);
+  const createLeague = async () => {
+    if (!user) {
+      Alert.alert('Hata', 'Lig oluşturmak için giriş yapmalısınız');
+      return;
+    }
+
+    try {
+      setCreating(true);
+      
+      const result = await leaguesService.createLeague({
+        name: leagueConfig.name,
+        description: leagueConfig.description,
+        type: leagueConfig.isPrivate ? 'private' : 'public',
+        max_members: leagueConfig.maxParticipants,
+        entry_fee: leagueConfig.joinCost,
+        end_date: leagueConfig.endDate.toISOString(),
+      });
+
+      if (result.data) {
+        setShowSuccessAnimation(true);
+        setTimeout(() => {
+          onSuccess();
+        }, 2500);
+      }
+    } catch (err) {
+      console.error('Create league error:', err);
+      Alert.alert('Hata', 'Lig oluşturulurken bir hata oluştu');
+    } finally {
+      setCreating(false);
+    }
   };
 
   const canProceedStep1 = leagueConfig.name.length >= 3 && leagueConfig.description.length >= 10;

@@ -7,8 +7,8 @@ import { formatVotes } from '../utils';
 
 interface TrendQuestionCardProps {
   question: TrendQuestion;
-  onQuestionPress: (id: number) => void;
-  onVote: (questionId: number, vote: 'yes' | 'no', odds: number) => void;
+  onQuestionPress: (id: string) => void;
+  onVote: (questionId: string, vote: 'yes' | 'no', odds: number) => void;
 }
 
 

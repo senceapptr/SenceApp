@@ -31,3 +31,33 @@ export const supabaseStorage: SupportedStorage = {
   },
 };
 
+/**
+ * Tüm Supabase auth verilerini temizle
+ */
+export const clearSupabaseAuth = async () => {
+  try {
+    // Tüm AsyncStorage anahtarlarını al
+    const keys = await AsyncStorage.getAllKeys();
+    
+    // Supabase ile ilgili anahtarları filtrele
+    const supabaseKeys = keys.filter(key => 
+      key.includes('supabase') || 
+      key.includes('sb-') || 
+      key.includes('auth')
+    );
+    
+    // Supabase anahtarlarını sil
+    if (supabaseKeys.length > 0) {
+      await AsyncStorage.multiRemove(supabaseKeys);
+      console.log('Cleared Supabase auth keys:', supabaseKeys);
+    }
+    
+    // Alternatif olarak tüm storage'ı temizle
+    await AsyncStorage.clear();
+    console.log('All AsyncStorage cleared');
+    
+  } catch (error) {
+    console.error('Error clearing Supabase auth:', error);
+  }
+};
+

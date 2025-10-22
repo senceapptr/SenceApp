@@ -24,8 +24,8 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 interface DiscoverPageProps {
   onBack: () => void;
   onMenuToggle: () => void;
-  handleQuestionDetail: (question: any) => void;
-  handleVote: (questionId: number, vote: 'yes' | 'no', odds: number) => void;
+  handleQuestionDetail: (questionId: string) => void;
+  handleVote: (questionId: string, vote: 'yes' | 'no', odds: number) => void;
 }
 
 type FilterType = 'all' | 'trending' | 'high-odds' | 'ending-soon' | null;

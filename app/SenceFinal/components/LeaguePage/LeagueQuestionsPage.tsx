@@ -10,31 +10,24 @@ import {
   Dimensions,
   Easing,
   FlatList,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { League } from './types';
+import { useAuth } from '../../contexts/AuthContext';
+import { questionsService } from '@/services';
+import { League, Question } from './types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-interface Question {
-  id: number;
-  title: string;
-  category: string;
-  votes: number;
-  timeLeft: string;
-  yesOdds: number;
-  noOdds: number;
-  yesPercentage: number;
-  image: string;
-}
 
 interface LeagueQuestionsPageProps {
   league: League;
   onClose: () => void;
-  handleQuestionDetail: (question: any) => void;
-  handleVote: (questionId: number, vote: 'yes' | 'no', odds: number) => void;
+  handleQuestionDetail: (questionId: string) => void;
+  handleVote: (questionId: string, vote: 'yes' | 'no', odds: number) => void;
 }
 
 export function LeagueQuestionsPage({
@@ -43,44 +36,49 @@ export function LeagueQuestionsPage({
   handleQuestionDetail,
   handleVote
 }: LeagueQuestionsPageProps) {
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string>('Tümü');
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock questions data
-  const mockQuestions: Question[] = [
-    {
-      id: 1,
-      title: `${league.name} liginde örnek soru 1`,
-      category: league.name,
-      votes: 12500,
-      timeLeft: '2g 14s',
-      yesOdds: 2.4,
-      noOdds: 1.6,
-      yesPercentage: 62,
-      image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&h=600&fit=crop'
-    },
-    {
-      id: 2,
-      title: `${league.name} liginde örnek soru 2`,
-      category: league.name,
-      votes: 8900,
-      timeLeft: '1g 8s',
-      yesOdds: 1.8,
-      noOdds: 2.2,
-      yesPercentage: 45,
-      image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&h=600&fit=crop'
-    },
-    {
-      id: 3,
-      title: `${league.name} liginde örnek soru 3`,
-      category: league.name,
-      votes: 15600,
-      timeLeft: '3g 22s',
-      yesOdds: 3.2,
-      noOdds: 1.4,
-      yesPercentage: 78,
-      image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=600&fit=crop'
-    },
-  ];
+  // Backend'den lig sorularını yükle
+  const loadLeagueQuestions = async () => {
+    if (!league?.id) return;
+
+    try {
+      setLoading(true);
+      // TODO: Lig spesifik sorular için yeni bir servis fonksiyonu gerekebilir
+      // Şimdilik genel soruları çekiyoruz
+      const result = await questionsService.getTrendingQuestions();
+      
+      if (result.data) {
+        // Backend'den gelen veriyi frontend formatına çevir
+        const mappedQuestions: Question[] = result.data.map((q: any) => ({
+          id: q.id.toString(),
+          text: q.title,
+          category: q.categories?.name || league.name,
+          categoryEmoji: '🏆',
+          endDate: q.end_date || '2024-12-31',
+          yesOdds: q.yes_odds || 2.0,
+          noOdds: q.no_odds || 2.0,
+          totalVotes: q.total_votes || 0,
+          yesPercentage: q.yes_percentage || 50,
+          noPercentage: q.no_percentage || 50,
+        }));
+        setQuestions(mappedQuestions);
+      }
+    } catch (err) {
+      console.error('League questions load error:', err);
+      Alert.alert('Hata', 'Lig soruları yüklenirken bir hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sayfa yüklendiğinde veriyi çek
+  useEffect(() => {
+    loadLeagueQuestions();
+  }, [league]);
 
   // Animation values for question cards
   const cardAnimationsRef = useRef<{[key: number]: {
@@ -92,7 +90,7 @@ export function LeagueQuestionsPage({
   }}>({});
 
   // Ensure animations exist for all questions
-  mockQuestions.forEach((question, index) => {
+  questions.forEach((question, index) => {
     if (!cardAnimationsRef.current[index]) {
       cardAnimationsRef.current[index] = {
         yesBarWidth: new Animated.Value(0),
@@ -106,7 +104,7 @@ export function LeagueQuestionsPage({
 
   useEffect(() => {
     // Animate progress bars
-    mockQuestions.forEach((question, index) => {
+    questions.forEach((question, index) => {
       const animation = cardAnimationsRef.current[index];
       if (animation) {
         Animated.sequence([
@@ -125,13 +123,13 @@ export function LeagueQuestionsPage({
         ]).start();
       }
     });
-  }, []);
+  }, [questions]);
 
   const categories = ['Tümü', ...league.categories];
   
   const filteredQuestions = selectedCategory === 'Tümü' 
-    ? mockQuestions 
-    : mockQuestions.filter(q => q.category === selectedCategory);
+    ? questions 
+    : questions.filter(q => q.category === selectedCategory);
 
   const formatVotes = (votes: number) => {
     if (votes >= 1000) {
@@ -196,19 +194,25 @@ export function LeagueQuestionsPage({
       </LinearGradient>
 
       {/* Questions List */}
-      <ScrollView 
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.questionsHeader}>
-          <Text style={styles.questionsTitle}>
-            Lig Soruları ({filteredQuestions.length})
-          </Text>
-          <Text style={styles.questionsSubtitle}>
-            {selectedCategory === 'Tümü' ? 'Bu ligeye özel sorular' : `${selectedCategory} kategorisi`}
-          </Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#432870" />
+          <Text style={styles.loadingText}>Lig soruları yükleniyor...</Text>
         </View>
+      ) : (
+        <ScrollView 
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.questionsHeader}>
+            <Text style={styles.questionsTitle}>
+              Lig Soruları ({filteredQuestions.length})
+            </Text>
+            <Text style={styles.questionsSubtitle}>
+              {selectedCategory === 'Tümü' ? 'Bu ligeye özel sorular' : `${selectedCategory} kategorisi`}
+            </Text>
+          </View>
 
         {filteredQuestions.map((question, index) => {
               const noPercentage = 100 - question.yesPercentage;
@@ -283,7 +287,7 @@ export function LeagueQuestionsPage({
               return (
               <TouchableOpacity
                 key={question.id}
-                onPress={() => handleQuestionDetail(question)}
+                onPress={() => handleQuestionDetail(question.id)}
                 onPressIn={handleCardPressIn}
                 onPressOut={handleCardPressOut}
                 activeOpacity={0.95}
@@ -298,7 +302,7 @@ export function LeagueQuestionsPage({
                   ]}
                 >
                   <Image 
-                    source={{ uri: question.image }}
+                    source={{ uri: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&h=600&fit=crop' }}
                     style={styles.questionImage}
                   />
                   <LinearGradient
@@ -313,17 +317,17 @@ export function LeagueQuestionsPage({
                     <View style={styles.statsRow}>
                       <View style={styles.statItem}>
                         <Ionicons name="people" size={14} color="rgba(255,255,255,0.9)" />
-                        <Text style={styles.statText}>{formatVotes(question.votes)}</Text>
+                        <Text style={styles.statText}>{formatVotes(question.totalVotes)}</Text>
                       </View>
                       <View style={styles.statItem}>
                         <Ionicons name="time" size={14} color="rgba(255,255,255,0.9)" />
-                        <Text style={styles.statText}>{question.timeLeft}</Text>
+                        <Text style={styles.statText}>2g 14s</Text>
                       </View>
                     </View>
 
                     {/* Question Title */}
                     <View style={styles.titleContainer}>
-                      <Text style={styles.title}>{question.title}</Text>
+                      <Text style={styles.title}>{question.text}</Text>
                     </View>
 
                     {/* Combined Percentage Bar */}
@@ -419,7 +423,8 @@ export function LeagueQuestionsPage({
               </TouchableOpacity>
             );
           })}
-      </ScrollView>
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -656,6 +661,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     opacity: 0.9,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#432870',
   },
 });
 

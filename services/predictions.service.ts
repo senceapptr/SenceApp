@@ -18,6 +18,7 @@ export interface CreatePredictionData {
   vote: 'yes' | 'no';
   odds: number;
   amount: number;
+  potential_win?: number;
 }
 
 /**
@@ -166,5 +167,25 @@ export const predictionsService = {
       return { data: null, error: error as Error };
     }
   },
+
+  /**
+   * Kullanıcının belirli bir soru için tahminini getir
+   */
+  async getUserPredictionForQuestion(userId: string, questionId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('predictions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('question_id', questionId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows found
+      return { data: data || null, error: null };
+    } catch (error) {
+      console.error('getUserPredictionForQuestion error:', error);
+      return { data: null, error: error as Error };
+    }
+  }
 };
 

@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, StatusBar, Animated, Dimensions, Modal } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ThemeTransition } from './components/ThemeTransition';
 import { HomePage } from './components/HomePage';
@@ -29,13 +29,14 @@ import { CouponDrawer } from './components/CouponDrawer';
 import { ConfettiAnimation } from './components/ConfettiAnimation';
 import { BottomTabs } from './components/BottomTabs';
 import { SlideOutMenu } from './components/SlideOutMenu';
+import { LoginPage } from './components/LoginPage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type PageType = 'home' | 'discover' | 'coupons' | 'leagues' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign' | 'editProfile' | 'privacySettings' | 'helpCenter' | 'support' | 'faq' | 'feedback' | 'about';
 
 interface Question {
-  id: number;
+  id: string;
   title: string;
   description: string;
   category: string;
@@ -53,7 +54,7 @@ interface Question {
 
 interface CouponSelection {
   id: number;
-  questionId: number;
+  questionId: string;
   title: string;
   vote: 'yes' | 'no';
   odds: number;
@@ -69,10 +70,11 @@ interface UserProfile {
   coverImage: string;
 }
 
-export default function App() {
+// Ana uygulama içeriği - sadece giriş yapmış kullanıcılar için
+function AppContent() {
+  const { user, profile } = useAuth();
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [userCredits] = useState(1250000); // Mock user credits
   
   // Question Detail and Coupon states
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
@@ -80,40 +82,111 @@ export default function App() {
   const [isCouponDrawerOpen, setIsCouponDrawerOpen] = useState(false);
   const [couponSelections, setCouponSelections] = useState<CouponSelection[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [couponsRefreshTrigger, setCouponsRefreshTrigger] = useState(0);
 
-  // User Profile state
-  const [userProfile, setUserProfile] = useState<UserProfile>({
-    username: 'mehmet_k',
-    fullName: 'Mehmet Kaya',
-    bio: 'Tahmin tutkunuyum! 🎯',
-    email: 'mehmet@example.com',
-    profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
-    coverImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop'
-  });
+  // User Profile state - gerçek auth verilerinden oluştur
+  const userProfile: UserProfile = {
+    username: profile?.username || user?.email?.split('@')[0] || 'kullanici',
+    fullName: profile?.full_name || user?.email?.split('@')[0] || 'Kullanıcı',
+    bio: profile?.bio || 'Henüz bio eklenmedi',
+    email: user?.email || '',
+    profileImage: profile?.profile_image || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
+    coverImage: profile?.cover_image || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop'
+  };
+
+  // User credits - gerçek profil verisinden al
+  const userCredits = profile?.credits || 10000;
+
+  // Zaman hesaplama fonksiyonu
+  const calculateTimeLeft = (endDate: string): string => {
+    const end = new Date(endDate);
+    const now = new Date();
+    const diff = end.getTime() - now.getTime();
+
+    if (diff <= 0) return 'Sona erdi';
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    if (days > 0) return `${days} gün ${hours} saat`;
+    return `${hours} saat`;
+  };
 
   // Question Detail slide animation
   const questionDetailSlideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
 
-  const handleQuestionDetail = (questionId: number) => {
-    // Mock question data - in real app this would come from API
-    const mockQuestion: Question = {
-      id: questionId,
-      title: "Tesla 2024 yılı sonuna kadar $300'ı aşacak mı?",
-      description: "Tesla hisse senedi fiyatının 2024 yılı sonuna kadar $300 seviyesini aşıp aşmayacağı konusunda tahminini paylaş. Şirketin yeni model lansmanları, üretim kapasitesi artışı ve otonomus sürüş teknolojisi gelişmeleri göz önünde bulundurularak değerlendirme yapılacak.",
-      category: "Teknoloji & Finans",
-      image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop",
-      yesOdds: 2.4,
-      noOdds: 1.6,
-      totalVotes: 2847,
-      timeLeft: "3 gün 12 saat",
-      publishDate: "15 Aralık 2024",
-      endDate: "2024-12-31T23:59:59",
-      yesPercentage: 42,
-      noPercentage: 58,
-      totalAmount: 45670
-    };
+  const handleQuestionDetail = async (questionId: number | string) => {
+    try {
+      // ID'yi string'e çevir (UUID formatında olmalı)
+      const questionIdString = questionId.toString();
+      
+      // Backend'den soru detayını çek
+      const { questionsService } = await import('@/services');
+      const result = await (questionsService as any).getQuestionById(questionIdString);
+      
+      if (result.data) {
+        // Backend'den gelen veriyi Question formatına dönüştür
+        const question: Question = {
+          id: result.data.id || questionIdString,
+          title: result.data.title || 'Soru',
+          description: result.data.description || '',
+          category: result.data.categories?.name || 'Genel',
+          image: result.data.image_url || 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop',
+          yesOdds: result.data.yes_odds || 2.0,
+          noOdds: result.data.no_odds || 2.0,
+          totalVotes: result.data.total_votes || 0,
+          timeLeft: calculateTimeLeft(result.data.end_date),
+          publishDate: new Date(result.data.created_at).toLocaleDateString('tr-TR'),
+          endDate: result.data.end_date,
+          yesPercentage: result.data.yes_percentage || 50,
+          noPercentage: result.data.no_percentage || 50,
+          totalAmount: result.data.total_amount || 0
+        };
+        
+        setSelectedQuestion(question);
+      } else {
+        // Backend'den veri gelmezse mock data kullan
+        const mockQuestion: Question = {
+          id: questionIdString,
+          title: "Soru Bulunamadı",
+          description: "Bu soru için detay bilgisi bulunamadı.",
+          category: "Genel",
+          image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop",
+          yesOdds: 2.0,
+          noOdds: 2.0,
+          totalVotes: 0,
+          timeLeft: "Bilinmiyor",
+          publishDate: "Bilinmiyor",
+          endDate: "2024-12-31T23:59:59",
+          yesPercentage: 50,
+          noPercentage: 50,
+          totalAmount: 0
+        };
+        setSelectedQuestion(mockQuestion);
+      }
+    } catch (error) {
+      console.error('Question detail load error:', error);
+      
+      // Hata durumunda mock data kullan
+      const mockQuestion: Question = {
+        id: questionId.toString(),
+        title: "Soru Yüklenemedi",
+        description: "Soru detayları yüklenirken bir hata oluştu.",
+        category: "Genel",
+        image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop",
+        yesOdds: 2.0,
+        noOdds: 2.0,
+        totalVotes: 0,
+        timeLeft: "Bilinmiyor",
+        publishDate: "Bilinmiyor",
+        endDate: "2024-12-31T23:59:59",
+        yesPercentage: 50,
+        noPercentage: 50,
+        totalAmount: 0
+      };
+      setSelectedQuestion(mockQuestion);
+    }
     
-    setSelectedQuestion(mockQuestion);
     setIsQuestionDetailOpen(true);
     
     // Animate slide in
@@ -139,7 +212,7 @@ export default function App() {
     });
   };
 
-  const handleVote = (questionId: number, vote: 'yes' | 'no', odds: number, questionTitle?: string) => {
+  const handleVote = (questionId: string, vote: 'yes' | 'no', odds: number, questionTitle?: string) => {
     // Check if question is already in coupon
     const existingSelectionIndex = couponSelections.findIndex(
       selection => selection.questionId === questionId
@@ -217,7 +290,9 @@ export default function App() {
   };
 
   const handleUpdateProfile = (updatedProfile: Partial<UserProfile>) => {
-    setUserProfile(prev => ({ ...prev, ...updatedProfile }));
+    // Bu fonksiyon artık gerekli değil çünkü profile verisi AuthContext'ten geliyor
+    // Profile güncellemeleri AuthContext'teki updateProfile fonksiyonu ile yapılmalı
+    console.log('Profile update requested:', updatedProfile);
   };
 
   const renderCurrentPage = () => {
@@ -246,6 +321,7 @@ export default function App() {
           <CouponsPage 
             onMenuToggle={handleMenuToggle}
             onQuestionDetail={handleQuestionDetail}
+            refreshTrigger={couponsRefreshTrigger}
           />
         );
       case 'leagues':
@@ -374,72 +450,83 @@ export default function App() {
   };
 
   return (
+    <View style={styles.container}>
+      <StatusBar 
+        barStyle="light-content" 
+        backgroundColor="transparent" 
+        translucent 
+        hidden={false}
+      />
+      <ThemeTransition>
+        <SlideOutMenu isOpen={isMenuOpen} onClose={handleMenuClose} onNavigate={handleNavigateToPage}>
+          <View style={styles.pageWrapper}>
+            {renderCurrentPage()}
+            {/* Only show bottom tabs on main pages */}
+            {(['home', 'discover', 'coupons', 'leagues'] as PageType[]).includes(currentPage) && (
+              <BottomTabs currentPage={currentPage} onPageChange={handlePageChange} />
+            )}
+          </View>
+        </SlideOutMenu>
+
+        {/* Coupon Drawer */}
+        <CouponDrawer
+          isOpen={isCouponDrawerOpen}
+          onClose={() => setIsCouponDrawerOpen(false)}
+          selections={couponSelections}
+          onRemoveSelection={handleRemoveSelection}
+          onClearAll={handleClearAll}
+          onCouponSuccess={handleCouponSuccess}
+          userCredits={userCredits}
+          onCouponCreated={() => {
+            // Kupon oluşturulduğunda kuponlarım sayfasını yenile
+            setCouponsRefreshTrigger(prev => prev + 1);
+          }}
+        />
+
+        {/* Confetti Animation */}
+        <ConfettiAnimation
+          isVisible={showConfetti}
+          onComplete={() => setShowConfetti(false)}
+        />
+
+        {/* Question Detail Modal with Slide Animation */}
+        <Modal
+          visible={isQuestionDetailOpen}
+          animationType="none"
+          transparent={true}
+          onRequestClose={handleCloseQuestionDetail}
+        >
+          <Animated.View
+            style={[
+              styles.questionDetailContainer,
+              {
+                transform: [{ translateX: questionDetailSlideAnim }],
+              },
+            ]}
+          >
+            {selectedQuestion && (
+              <QuestionDetailPage
+                onBack={handleCloseQuestionDetail}
+                onMenuToggle={handleMenuToggle}
+                question={selectedQuestion}
+                onVote={handleVote}
+              />
+            )}
+          </Animated.View>
+        </Modal>
+      </ThemeTransition>
+    </View>
+  );
+}
+
+// Ana App component - authentication kontrolü yapar
+export default function App() {
+  return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
           <ThemeProvider>
-          <StatusBar 
-            barStyle="light-content" 
-            backgroundColor="transparent" 
-            translucent 
-            hidden={false}
-          />
-          <ThemeTransition>
-          <View style={styles.container}>
-            <SlideOutMenu isOpen={isMenuOpen} onClose={handleMenuClose} onNavigate={handleNavigateToPage}>
-              <View style={styles.pageWrapper}>
-                {renderCurrentPage()}
-                {/* Only show bottom tabs on main pages */}
-                {(['home', 'discover', 'coupons', 'leagues'] as PageType[]).includes(currentPage) && (
-                  <BottomTabs currentPage={currentPage} onPageChange={handlePageChange} />
-                )}
-              </View>
-            </SlideOutMenu>
-
-          {/* Coupon Drawer */}
-          <CouponDrawer
-            isOpen={isCouponDrawerOpen}
-            onClose={() => setIsCouponDrawerOpen(false)}
-            selections={couponSelections}
-            onRemoveSelection={handleRemoveSelection}
-            onClearAll={handleClearAll}
-            onCouponSuccess={handleCouponSuccess}
-            userCredits={userCredits}
-          />
-
-          {/* Confetti Animation */}
-          <ConfettiAnimation
-            isVisible={showConfetti}
-            onComplete={() => setShowConfetti(false)}
-          />
-
-          {/* Question Detail Modal with Slide Animation */}
-          <Modal
-            visible={isQuestionDetailOpen}
-            animationType="none"
-            transparent={true}
-            onRequestClose={handleCloseQuestionDetail}
-          >
-            <Animated.View
-              style={[
-                styles.questionDetailContainer,
-                {
-                  transform: [{ translateX: questionDetailSlideAnim }],
-                },
-              ]}
-            >
-              {selectedQuestion && (
-                <QuestionDetailPage
-                  onBack={handleCloseQuestionDetail}
-                  onMenuToggle={handleMenuToggle}
-                  question={selectedQuestion}
-                  onVote={handleVote}
-                />
-              )}
-            </Animated.View>
-          </Modal>
-          </View>
-        </ThemeTransition>
+            <AppWithAuth />
           </ThemeProvider>
         </AuthProvider>
       </SafeAreaProvider>
@@ -447,10 +534,45 @@ export default function App() {
   );
 }
 
+// Authentication kontrolü yapan component
+function AppWithAuth() {
+  const { user, loading } = useAuth();
+
+  // Loading durumu
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <Text style={styles.loadingText}>Yükleniyor...</Text>
+      </View>
+    );
+  }
+
+  // Giriş yapılmamışsa login sayfasını göster
+  if (!user) {
+    return <LoginPage />;
+  }
+
+  // Giriş yapılmışsa ana uygulamayı göster
+  return <AppContent />;
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#432870',
   },
   pageWrapper: {
     flex: 1,

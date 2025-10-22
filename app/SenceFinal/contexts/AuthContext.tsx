@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { Session, User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
@@ -26,6 +26,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, username: string) => Promise<{ error: AuthError | null }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
+  forceLogout: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
 }
@@ -66,16 +67,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Auth state değişikliklerini dinle
-  useEffect(() => {
+  useLayoutEffect(() => {
     // Mevcut session'ı kontrol et
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadProfile(session.user.id);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          loadProfile(session.user.id);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     // Auth state değişikliklerini dinle
     const {
@@ -85,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        await loadProfile(session.user.id);
+        loadProfile(session.user.id);
       } else {
         setProfile(null);
       }
@@ -152,7 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             credits: 10000,
             level: 1,
             experience: 0,
-          });
+          } as any);
 
         if (!profileError) {
           console.log('Profile created successfully');
@@ -211,6 +221,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Zorla çıkış yap - tüm session verilerini temizle
+  const forceLogout = async () => {
+    try {
+      // Supabase auth'dan çıkış yap
+      await supabase.auth.signOut();
+      
+      // Local state'i temizle
+      setUser(null);
+      setProfile(null);
+      setSession(null);
+      
+      // AsyncStorage'dan tüm Supabase verilerini temizle
+      const { clearSupabaseAuth } = await import('@/lib/supabase-storage');
+      await clearSupabaseAuth();
+      
+      console.log('Force logout completed - all auth data cleared');
+    } catch (error) {
+      console.error('Force logout error:', error);
+    }
+  };
+
   // Profili güncelle
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) {
@@ -218,8 +249,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const { error } = await supabase
-        .from('profiles')
+      const { error } = await (supabase
+        .from('profiles') as any)
         .update(updates)
         .eq('id', user.id);
 
@@ -252,6 +283,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signIn,
     signOut,
+    forceLogout,
     updateProfile,
     refreshProfile,
   };

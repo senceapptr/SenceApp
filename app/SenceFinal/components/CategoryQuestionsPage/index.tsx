@@ -42,8 +42,8 @@ interface Question {
 interface CategoryQuestionsPageProps {
   category: Category;
   onBack: () => void;
-  handleQuestionDetail: (question: any) => void;
-  handleVote: (questionId: number, vote: 'yes' | 'no', odds: number) => void;
+  handleQuestionDetail: (questionId: string) => void;
+  handleVote: (questionId: string, vote: 'yes' | 'no', odds: number) => void;
   onMenuToggle?: () => void;
 }
 
@@ -376,7 +376,7 @@ export function CategoryQuestionsPage({
           return (
           <TouchableOpacity
             key={question.id}
-            onPress={() => handleQuestionDetail(question)}
+            onPress={() => handleQuestionDetail(question.id)}
             onPressIn={handleCardPressIn}
             onPressOut={handleCardPressOut}
             activeOpacity={0.95}

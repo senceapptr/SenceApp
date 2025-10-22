@@ -65,7 +65,7 @@ export function CouponDetailModal({ visible, coupon, onClose, onClaimReward, onQ
           <View style={styles.stats}>
             <View style={styles.stat}>
               <Text style={styles.statLabel}>Yatırım</Text>
-              <Text style={styles.statValue}>{coupon.investmentAmount}</Text>
+              <Text style={styles.statValue}>{coupon.investmentAmount?.toLocaleString()} kredi</Text>
             </View>
             <View style={styles.stat}>
               <Text style={styles.statLabel}>Toplam Oran</Text>
@@ -73,7 +73,7 @@ export function CouponDetailModal({ visible, coupon, onClose, onClaimReward, onQ
             </View>
             <View style={styles.stat}>
               <Text style={styles.statLabel}>Potansiyel</Text>
-              <Text style={styles.statValue}>₺{coupon.potentialEarnings.toLocaleString()}</Text>
+              <Text style={styles.statValue}>{coupon.potentialEarnings.toLocaleString()} kredi</Text>
             </View>
           </View>
           </LinearGradient>
@@ -103,7 +103,7 @@ export function CouponDetailModal({ visible, coupon, onClose, onClaimReward, onQ
                   prediction.result === 'lost' ? styles.predictionLost :
                   styles.predictionPending
                 ]}
-                onPress={() => onQuestionDetail?.(prediction.id)}
+                onPress={() => onQuestionDetail?.(prediction.questionId)}
                 activeOpacity={0.7}
               >
                 <View style={styles.predictionHeader}>

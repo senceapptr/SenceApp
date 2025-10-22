@@ -17,8 +17,8 @@ import type { FeaturedQuestion, TrendQuestion } from './types';
 
 interface HomePageProps {
   onBack: () => void;
-  handleQuestionDetail: (questionId: number) => void;
-  handleVote: (questionId: number, vote: 'yes' | 'no', odds: number, questionTitle?: string) => void;
+  handleQuestionDetail: (questionId: string) => void;
+  handleVote: (questionId: string, vote: 'yes' | 'no', odds: number, questionTitle?: string) => void;
   onMenuToggle: () => void;
   onTasksNavigate?: () => void;
 }
@@ -36,7 +36,7 @@ export function HomePage({
   // State tanımlamaları
   const [featuredQuestions, setFeaturedQuestions] = useState<FeaturedQuestion[]>([]);
   const [trendQuestions, setTrendQuestions] = useState<TrendQuestion[]>([]);
-  const [activeCoupons, setActiveCoupons] = useState<any[]>([]);
+  const [activeCoupons, setActiveCoupons] = useState<any[]>(mockActiveCoupons); // Başlangıçta mock data
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isDailyChallengeOpen, setIsDailyChallengeOpen] = useState(false);
@@ -59,7 +59,7 @@ export function HomePage({
       // Featured questions
       if (featuredResult.data) {
         const mappedFeatured: FeaturedQuestion[] = featuredResult.data.map((q: any) => ({
-          id: parseInt(q.id) || 0,
+          id: q.id, // UUID olarak bırak
           title: q.title,
           image: q.image_url || 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=600&fit=crop',
           votes: q.total_votes || 0,
@@ -75,7 +75,7 @@ export function HomePage({
       // Trend questions
       if (trendingResult.data) {
         const mappedTrend: TrendQuestion[] = trendingResult.data.map((q: any) => ({
-          id: parseInt(q.id) || 0,
+          id: q.id, // UUID olarak bırak
           title: q.title,
           category: q.categories?.name || 'Genel',
           image: q.image_url || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=600&h=400&fit=crop',
@@ -89,8 +89,21 @@ export function HomePage({
       }
 
       // Active coupons
-      if (couponsResult.data) {
-        setActiveCoupons(couponsResult.data);
+      if (couponsResult.data && Array.isArray(couponsResult.data) && couponsResult.data.length > 0) {
+        // Backend'den gelen veriyi ActiveCoupon formatına dönüştür
+        const mappedCoupons = couponsResult.data.map((coupon: any) => ({
+          id: coupon.id,
+          name: coupon.coupon_code || 'Kupon',
+          questionCount: coupon.selections_count || 0,
+          totalOdds: coupon.total_odds || 1,
+          potentialWinnings: coupon.potential_win || 0,
+          endsIn: calculateTimeLeft(coupon.created_at) || 'Bilinmiyor',
+          colors: ['#432870', '#5A3A8B'] as [string, string]
+        }));
+        setActiveCoupons(mappedCoupons);
+      } else {
+        // Fallback to mock data if backend data is not available
+        setActiveCoupons(mockActiveCoupons);
       }
 
     } catch (err) {
@@ -253,7 +266,7 @@ export function HomePage({
 
         {/* Active Coupons - Backend'den (fallback mock data) */}
         <ActiveCouponsSection
-          coupons={activeCoupons.length > 0 ? activeCoupons : mockActiveCoupons}
+          coupons={activeCoupons}
           isDarkMode={isDarkMode}
           theme={theme}
         />

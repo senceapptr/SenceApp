@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useLayoutEffect } from 'react';
 import { Animated, View, StyleSheet } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -11,7 +11,7 @@ export function ThemeTransition({ children }: ThemeTransitionProps) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     // Smooth transition when theme changes
     Animated.sequence([
       Animated.parallel([

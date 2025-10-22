@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, Text, StyleSheet } from 'react-native';
+import { View, ScrollView, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'react-native';
 import { SettingsPageProps } from './types';
 import { useSettings } from './hooks';
@@ -30,6 +30,7 @@ export function SettingsPage({
     handleNavigate,
     handleSocialLink,
     handleLogout,
+    handleForceLogout,
     handleDeleteAccount,
   } = useSettings({
     onPrivacySettings,
@@ -81,6 +82,20 @@ export function SettingsPage({
                 onPress={handleLogout}
                 isDarkMode={isDarkMode}
               />
+              <TouchableOpacity 
+                style={[styles.forceLogoutButton, { 
+                  backgroundColor: isDarkMode ? 'rgba(255, 193, 7, 0.15)' : '#FEF3C7',
+                  borderColor: isDarkMode ? 'rgba(255, 193, 7, 0.3)' : '#FCD34D'
+                }]} 
+                onPress={handleForceLogout}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.forceLogoutText, { 
+                  color: isDarkMode ? '#F59E0B' : '#D97706' 
+                }]}>
+                  🔄 Zorla Çıkış (Tüm Verileri Temizle)
+                </Text>
+              </TouchableOpacity>
               <DangerButton
                 onPress={handleDeleteAccount}
                 isDarkMode={isDarkMode}
@@ -120,6 +135,20 @@ const styles = StyleSheet.create({
   },
   dangerItems: {
     gap: 12,
+  },
+  forceLogoutButton: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  forceLogoutText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#D97706',
+    textAlign: 'center',
   },
   versionSection: {
     alignItems: 'center',

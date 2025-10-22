@@ -7,8 +7,8 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface FeaturedCarouselProps {
   questions: FeaturedQuestion[];
-  onQuestionPress: (id: number) => void;
-  onVote: (questionId: number, vote: 'yes' | 'no', odds: number, questionTitle?: string) => void;
+  onQuestionPress: (id: string) => void;
+  onVote: (questionId: string, vote: 'yes' | 'no', odds: number, questionTitle?: string) => void;
 }
 
 export function FeaturedCarousel({ questions, onQuestionPress, onVote }: FeaturedCarouselProps) {

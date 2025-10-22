@@ -4,17 +4,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ActiveCoupon } from '../types';
 
 interface CouponCardProps {
-  coupon: ActiveCoupon;
+  coupon?: ActiveCoupon;
   isDarkMode: boolean;
   theme: any;
 }
 
 export function CouponCard({ coupon, isDarkMode, theme }: CouponCardProps) {
+  // Güvenlik kontrolü - coupon undefined ise null döndür
+  if (!coupon) {
+    return null;
+  }
+
   return (
     <LinearGradient
       colors={isDarkMode 
         ? [theme.surfaceCard, theme.surfaceElevated, theme.surface]
-        : coupon.colors
+        : coupon.colors || ['#432870', '#5A3A8B']
       }
       style={[styles.card, {
         borderWidth: isDarkMode ? 1 : 0,
@@ -25,7 +30,7 @@ export function CouponCard({ coupon, isDarkMode, theme }: CouponCardProps) {
       end={{ x: 1, y: 1 }}
     >
       <Text style={[styles.name, { color: isDarkMode ? theme.textPrimary : '#FFFFFF' }]}>
-        {coupon.name}
+        {coupon.name || 'Kupon'}
       </Text>
       
       <View style={styles.stats}>
@@ -34,7 +39,7 @@ export function CouponCard({ coupon, isDarkMode, theme }: CouponCardProps) {
             Soru Sayısı
           </Text>
           <Text style={[styles.statValue, { color: isDarkMode ? theme.textPrimary : '#FFFFFF' }]}>
-            {coupon.questionCount} adet
+            {coupon.questionCount || 0} adet
           </Text>
         </View>
         <View style={styles.statRow}>
@@ -42,7 +47,7 @@ export function CouponCard({ coupon, isDarkMode, theme }: CouponCardProps) {
             Toplam Oran
           </Text>
           <Text style={[styles.statValue, { color: isDarkMode ? theme.textPrimary : '#FFFFFF' }]}>
-            {coupon.totalOdds}x
+            {coupon.totalOdds || 0}x
           </Text>
         </View>
         <View style={styles.statRow}>
@@ -50,7 +55,7 @@ export function CouponCard({ coupon, isDarkMode, theme }: CouponCardProps) {
             Potansiyel Kazanç
           </Text>
           <Text style={[styles.statValue, { color: theme.accent }]}>
-            {coupon.potentialWinnings} 💎
+            {coupon.potentialWinnings || 0} 💎
           </Text>
         </View>
         <View style={styles.statRow}>
@@ -58,7 +63,7 @@ export function CouponCard({ coupon, isDarkMode, theme }: CouponCardProps) {
             Bitiş
           </Text>
           <Text style={[styles.statValue, { color: theme.warning }]}>
-            {coupon.endsIn}
+            {coupon.endsIn || 'Bilinmiyor'}
           </Text>
         </View>
       </View>

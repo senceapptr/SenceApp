@@ -7,8 +7,8 @@ interface TrendQuestionsSectionProps {
   questions: TrendQuestion[];
   isDarkMode: boolean;
   theme: any;
-  onQuestionPress: (id: number) => void;
-  onVote: (questionId: number, vote: 'yes' | 'no', odds: number) => void;
+  onQuestionPress: (id: string) => void;
+  onVote: (questionId: string, vote: 'yes' | 'no', odds: number) => void;
 }
 
 export function TrendQuestionsSection({ 

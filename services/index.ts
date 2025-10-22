@@ -12,4 +12,6 @@ export * from './profile.service';
 export * from './tasks.service';
 export * from './notifications.service';
 export * from './market.service';
+export * from './comments.service';
+export * from './league-chat.service';
 

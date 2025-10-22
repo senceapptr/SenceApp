@@ -14,7 +14,7 @@ export function useSettings(props: {
 }) {
   const router = useRouter();
   const { theme, isDarkMode, toggleTheme, themeMode } = useTheme();
-  const { signOut } = useAuth();
+  const { signOut, forceLogout } = useAuth();
   const [settings, setSettings] = useState<SettingsState>({
     notifications: true,
     pushNotifications: true,
@@ -124,6 +124,31 @@ export function useSettings(props: {
     );
   };
 
+  const handleForceLogout = () => {
+    Alert.alert(
+      '🔄 Zorla Çıkış',
+      'Tüm oturum verilerinizi temizleyip çıkış yapmak istediğinizden emin misiniz?\n\nBu işlem tüm yerel verilerinizi silecektir.',
+      [
+        {
+          text: 'Vazgeç',
+          style: 'cancel'
+        },
+        {
+          text: 'Temizle ve Çık',
+          style: 'destructive',
+          onPress: async () => {
+            await forceLogout();
+            Alert.alert(
+              '✅ Temizlendi',
+              'Tüm oturum verileri temizlendi. Uygulama yeniden başlatılacak.',
+              [{ text: 'Tamam' }]
+            );
+          }
+        }
+      ]
+    );
+  };
+
   return {
     // Theme
     theme,
@@ -139,6 +164,7 @@ export function useSettings(props: {
     handleNavigate,
     handleSocialLink,
     handleLogout,
+    handleForceLogout,
     handleDeleteAccount,
   };
 }

@@ -1,5 +1,5 @@
 export interface FeaturedQuestion {
-  id: number;
+  id: string; // UUID
   title: string;
   image: string;
   votes: number;
@@ -21,7 +21,7 @@ export interface ActiveCoupon {
 }
 
 export interface TrendQuestion {
-  id: number;
+  id: string; // UUID
   title: string;
   category: string;
   image: string;
