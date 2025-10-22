@@ -27,18 +27,12 @@ INSERT INTO public.tasks (title, description, type, requirement_type, requiremen
   ('Günlük Giriş', 'Her gün uygulamaya giriş yap', 'daily', 'login_streak', 1, 500, 25, '📅', 'daily'),
   ('Doğru Tahmin', 'En az 1 doğru tahmin yap', 'daily', 'correct_predictions', 1, 2000, 75, '✅', 'daily');
 
--- Haftalık görevler
+-- Aylık görevler (eski haftalık görevler)
 INSERT INTO public.tasks (title, description, type, requirement_type, requirement_value, reward_credits, reward_experience, icon, reset_period) VALUES
-  ('Haftalık Uzman', '20 tahmin yap', 'weekly', 'prediction_count', 20, 10000, 250, '🏆', 'weekly'),
-  ('Kupon Ustası', '3 kupon oluştur', 'weekly', 'coupon_count', 3, 7500, 200, '🎫', 'weekly'),
-  ('Lig Kahramanı', 'Bir lige katıl', 'weekly', 'custom', 1, 5000, 150, '👥', 'weekly');
-
--- Başarımlar (achievements)
-INSERT INTO public.tasks (title, description, type, requirement_type, requirement_value, reward_credits, reward_experience, icon, reset_period) VALUES
-  ('İlk Adım', 'İlk tahminini yap', 'achievement', 'prediction_count', 1, 500, 100, '🎯', 'never'),
-  ('Tahmin Ustası', '100 tahmin yap', 'achievement', 'prediction_count', 100, 50000, 1000, '🎖️', 'never'),
-  ('Doğruluk Kralı', '50 doğru tahmin yap', 'achievement', 'correct_predictions', 50, 75000, 1500, '👑', 'never'),
-  ('Kupon Koleksiyoncusu', '10 kupon oluştur', 'achievement', 'coupon_count', 10, 25000, 500, '📋', 'never');
+  ('Aylık Uzman', '50 tahmin yap', 'monthly', 'prediction_count', 50, 25000, 500, '🏆', 'monthly'),
+  ('Aylık Kupon Ustası', '10 kupon oluştur', 'monthly', 'coupon_count', 10, 20000, 400, '🎫', 'monthly'),
+  ('Aylık Lig Kahramanı', '5 lige katıl', 'monthly', 'custom', 5, 15000, 300, '👥', 'monthly'),
+  ('Aylık Doğruluk Ustası', '25 doğru tahmin yap', 'monthly', 'correct_predictions', 25, 30000, 600, '🎯', 'monthly');
 
 -- ================================================
 -- MARKET ÖĞELERİ

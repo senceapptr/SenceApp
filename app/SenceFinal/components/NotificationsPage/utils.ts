@@ -3,7 +3,7 @@ import { Notification, NotificationType, NotificationColors } from './types';
 // Mock notifications data
 export const mockNotifications: Notification[] = [
   {
-    id: 1,
+    id: 'mock-1',
     type: 'prediction',
     title: 'Tahmin Sonuçlandı',
     message: '"Galatasaray şampiyonluk yaşayacak mı?" tahminin doğru çıktı!',
@@ -14,7 +14,7 @@ export const mockNotifications: Notification[] = [
     reward: '+250 kredi'
   },
   {
-    id: 2,
+    id: 'mock-2',
     type: 'league',
     title: 'Liga Sıralaması',
     message: 'Spor liginde 3. sıraya yükseldin!',
@@ -24,7 +24,7 @@ export const mockNotifications: Notification[] = [
     color: ['#432870', '#B29EFD']
   },
   {
-    id: 3,
+    id: 'mock-3',
     type: 'friend',
     title: 'Yeni Takipçi',
     message: 'ahmet_bey seni takip etmeye başladı',
@@ -34,7 +34,7 @@ export const mockNotifications: Notification[] = [
     color: ['#3B82F6', '#06B6D4']
   },
   {
-    id: 4,
+    id: 'mock-4',
     type: 'prediction',
     title: 'Tahmin Hatırlatması',
     message: '"Bitcoin 100K doları geçecek mi?" tahmin süresi bitiyor',
@@ -44,7 +44,7 @@ export const mockNotifications: Notification[] = [
     color: ['#F59E0B', '#F97316']
   },
   {
-    id: 5,
+    id: 'mock-5',
     type: 'system',
     title: 'Günlük Bonus',
     message: 'Günlük giriş bonusun hazır! 100 kredi kazandın',
@@ -55,7 +55,7 @@ export const mockNotifications: Notification[] = [
     reward: '+100 kredi'
   },
   {
-    id: 6,
+    id: 'mock-6',
     type: 'league',
     title: 'Lig Tamamlandı',
     message: 'Teknoloji liginde 1. oldun! Ödülün hazır',
@@ -66,7 +66,7 @@ export const mockNotifications: Notification[] = [
     reward: '+500 kredi'
   },
   {
-    id: 7,
+    id: 'mock-7',
     type: 'prediction',
     title: 'Tahmin Kaybı',
     message: '"Tesla hisseleri yükselecek mi?" tahminin yanlış çıktı',
@@ -76,7 +76,7 @@ export const mockNotifications: Notification[] = [
     color: ['#EF4444', '#DC2626']
   },
   {
-    id: 8,
+    id: 'mock-8',
     type: 'system',
     title: 'Hesap Güvenliği',
     message: 'Şifren 30 günden uzun süredir değiştirilmedi',
@@ -97,6 +97,38 @@ export const getNotificationColors = (type: NotificationType): NotificationColor
   };
 
   return colorMap[type] || ['#6B7280', '#4B5563'];
+};
+
+// Get notification icon by type
+export const getNotificationIcon = (type: NotificationType): string => {
+  const iconMap: Record<NotificationType, string> = {
+    prediction: '🎯',
+    league: '🏆',
+    friend: '👥',
+    system: '🔔',
+  };
+
+  return iconMap[type] || '🔔';
+};
+
+// Format time ago
+export const formatTimeAgo = (dateString: string): string => {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) {
+    return `${diffInSeconds} saniye önce`;
+  } else if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes} dk önce`;
+  } else if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `${hours} saat önce`;
+  } else {
+    const days = Math.floor(diffInSeconds / 86400);
+    return `${days} gün önce`;
+  }
 };
 
 // Format notification time (can be expanded later)

@@ -23,12 +23,14 @@ interface AuthContextType {
   profile: Profile | null;
   session: Session | null;
   loading: boolean;
+  unreadNotificationsCount: number;
   signUp: (email: string, password: string, username: string) => Promise<{ error: AuthError | null }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   forceLogout: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
+  refreshUnreadCount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
 
   // Profil bilgilerini yükle
   const loadProfile = async (userId: string, retries = 3) => {
@@ -66,6 +69,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Okunmamış bildirim sayısını yükle
+  const loadUnreadCount = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('is_read', false);
+
+      if (error) {
+        console.error('Error loading unread count:', error);
+        return;
+      }
+
+      setUnreadNotificationsCount(data?.length || 0);
+    } catch (error) {
+      console.error('Error in loadUnreadCount:', error);
+    }
+  };
+
   // Auth state değişikliklerini dinle
   useLayoutEffect(() => {
     // Mevcut session'ı kontrol et
@@ -77,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         if (session?.user) {
           loadProfile(session.user.id);
+          loadUnreadCount(session.user.id);
         }
         setLoading(false);
       } catch (error) {
@@ -96,8 +120,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (session?.user) {
         loadProfile(session.user.id);
+        loadUnreadCount(session.user.id);
       } else {
         setProfile(null);
+        setUnreadNotificationsCount(0);
       }
       
       setLoading(false);
@@ -275,17 +301,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Okunmamış bildirim sayısını yenile
+  const refreshUnreadCount = async () => {
+    if (user) {
+      await loadUnreadCount(user.id);
+    }
+  };
+
   const value = {
     user,
     profile,
     session,
     loading,
+    unreadNotificationsCount,
     signUp,
     signIn,
     signOut,
     forceLogout,
     updateProfile,
     refreshProfile,
+    refreshUnreadCount,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

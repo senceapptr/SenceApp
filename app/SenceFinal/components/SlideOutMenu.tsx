@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
+import { NotificationBadge } from './ui/NotificationBadge';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -25,7 +26,7 @@ interface SlideOutMenuProps {
 }
 
 export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOutMenuProps) {
-  const { user, profile } = useAuth();
+  const { user, profile, unreadNotificationsCount } = useAuth();
   const slideAnim = useRef(new Animated.Value(0)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [isAnimating, setIsAnimating] = useState(false);
@@ -341,12 +342,21 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
                       onClose();
                     }
                   }}>
-                  <Text style={[
-                    styles.menuText,
-                    item.highlight && styles.menuTextHighlight
-                  ]}>
-                    {item.title}
-                  </Text>
+                  <View style={styles.menuItemContent}>
+                    <Text style={[
+                      styles.menuText,
+                      item.highlight && styles.menuTextHighlight
+                    ]}>
+                      {item.title}
+                    </Text>
+                    {item.page === 'notifications' && unreadNotificationsCount > 0 && (
+                      <NotificationBadge 
+                        count={unreadNotificationsCount} 
+                        size="small"
+                        style={styles.notificationBadge}
+                      />
+                    )}
+                  </View>
                   <Text style={styles.menuArrow}>›</Text>
                 </TouchableOpacity>
               </Animated.View>
@@ -543,11 +553,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
   },
+  menuItemContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   menuText: {
     fontSize: 17,
     color: '#FFFFFF',
     fontWeight: '600',
     flex: 1,
+  },
+  notificationBadge: {
+    marginLeft: 8,
   },
   menuTextHighlight: {
     fontWeight: '700',

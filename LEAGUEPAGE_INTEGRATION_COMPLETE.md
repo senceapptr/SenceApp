@@ -201,3 +201,6 @@ LeaguePage artık tamamen backend'e bağlı! Mock data kaldırıldı, gerçek ve
 - **Leaderboard verilerini backend ile bağla** (TODO)
 - **Lig sorularını backend ile bağla** (TODO)
 - **Lig chat sistemini backend ile bağla** (TODO)
+
+
+

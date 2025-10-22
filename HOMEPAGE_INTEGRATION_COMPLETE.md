@@ -287,3 +287,6 @@ HomePage artık tamamen backend'e bağlı!
 
 Test et ve sıradaki component'e geç! 🚀
 
+
+
+

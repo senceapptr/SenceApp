@@ -205,3 +205,6 @@ Leaderboard artık tamamen backend'e bağlı! Mock data kaldırıldı, gerçek v
 - **Lig sorularını backend ile bağla** (TODO)
 - **Lig chat sistemini backend ile bağla** (TODO)
 - **Streak verilerini backend'den al** (TODO)
+
+
+

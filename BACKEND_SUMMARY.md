@@ -354,3 +354,6 @@ Backend altyapınız **%100 hazır**!
 
 **Kolay gelsin! 🚀**
 
+
+
+

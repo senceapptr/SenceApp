@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Modal, StyleSheet } from 'react-native';
+import { View, Modal, StyleSheet, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'react-native';
 import { NotificationsPageProps } from './types';
 import { useNotifications } from './hooks';
@@ -19,6 +19,9 @@ export function NotificationsPage({
     deleteNotification,
     clearAll,
     unreadCount,
+    loading,
+    createTestNotifications,
+    createMockTestNotifications,
   } = useNotifications();
 
   // Modal version
@@ -38,12 +41,38 @@ export function NotificationsPage({
               onClose={onClose}
             />
             
-            <NotificationsList
-              notifications={notifications}
-              onMarkAsRead={markAsRead}
-              onDelete={deleteNotification}
-              variant="modal"
-            />
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#432870" />
+                <Text style={styles.loadingText}>Bildirimler yükleniyor...</Text>
+              </View>
+            ) : (
+              <>
+                {/* Test Butonları */}
+                <View style={styles.testButtonsContainer}>
+                  <TouchableOpacity 
+                    style={styles.testButton}
+                    onPress={createTestNotifications}
+                  >
+                    <Text style={styles.testButtonText}>Backend Test</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.testButton, styles.mockTestButton]}
+                    onPress={createMockTestNotifications}
+                  >
+                    <Text style={styles.testButtonText}>Mock Test</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                <NotificationsList
+                  notifications={notifications}
+                  onMarkAsRead={markAsRead}
+                  onDelete={deleteNotification}
+                  variant="modal"
+                />
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -61,12 +90,38 @@ export function NotificationsPage({
         onMenuToggle={onMenuToggle}
       />
       
-      <NotificationsList
-        notifications={notifications}
-        onMarkAsRead={markAsRead}
-        onDelete={deleteNotification}
-        variant="page"
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#432870" />
+          <Text style={styles.loadingText}>Bildirimler yükleniyor...</Text>
+        </View>
+      ) : (
+        <>
+          {/* Test Butonları */}
+          <View style={styles.testButtonsContainer}>
+            <TouchableOpacity 
+              style={styles.testButton}
+              onPress={createTestNotifications}
+            >
+              <Text style={styles.testButtonText}>Backend Test</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.testButton, styles.mockTestButton]}
+              onPress={createMockTestNotifications}
+            >
+              <Text style={styles.testButtonText}>Mock Test</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <NotificationsList
+            notifications={notifications}
+            onMarkAsRead={markAsRead}
+            onDelete={deleteNotification}
+            variant="page"
+          />
+        </>
+      )}
     </View>
   );
 }
@@ -90,6 +145,39 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     maxHeight: '90%',
     overflow: 'hidden',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#432870',
+  },
+  testButtonsContainer: {
+    flexDirection: 'row',
+    padding: 16,
+    gap: 12,
+  },
+  testButton: {
+    backgroundColor: '#432870',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    flex: 1,
+  },
+  mockTestButton: {
+    backgroundColor: '#10B981',
+  },
+  testButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

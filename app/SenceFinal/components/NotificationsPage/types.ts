@@ -10,7 +10,7 @@ export type NotificationType = 'prediction' | 'league' | 'friend' | 'system';
 export type NotificationColors = readonly [string, string];
 
 export interface Notification {
-  id: number;
+  id: string; // UUID string olarak değiştirildi
   type: NotificationType;
   title: string;
   message: string;
@@ -23,14 +23,14 @@ export interface Notification {
 
 export interface NotificationCardProps {
   notification: Notification;
-  onPress: (id: number) => void;
-  onDelete: (id: number) => void;
+  onPress: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
 export interface NotificationsListProps {
   notifications: Notification[];
-  onMarkAsRead: (id: number) => void;
-  onDelete: (id: number) => void;
+  onMarkAsRead: (id: string) => void;
+  onDelete: (id: string) => void;
   variant?: 'page' | 'modal';
 }
 

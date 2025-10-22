@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, StatusBar, ScrollView } from 'react-native';
+import { View, StyleSheet, StatusBar, ScrollView, ActivityIndicator, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PageHeader } from './components/PageHeader';
 import { Tabs } from './components/Tabs';
@@ -38,22 +38,29 @@ export function TasksPage({ onBack, onMenuToggle }: TasksPageProps) {
         <Tabs activeTab={state.activeTab} onChangeTab={state.setActiveTab} />
       </SafeAreaView>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {state.activeTab === 'monthly' && (
-          <CalendarCard
-            monthNames={state.monthNames}
-            dayNames={state.dayNames}
-            currentMonth={state.currentMonth}
-            currentYear={state.currentYear}
-            today={state.today}
-            daysInMonth={state.daysInMonth}
-            firstDayOfMonth={state.firstDayOfMonth}
-            loginDays={state.loginDays}
-          />
-        )}
+      {state.loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#432870" />
+          <Text style={styles.loadingText}>Görevler yükleniyor...</Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          {state.activeTab === 'monthly' && (
+            <CalendarCard
+              monthNames={state.monthNames}
+              dayNames={state.dayNames}
+              currentMonth={state.currentMonth}
+              currentYear={state.currentYear}
+              today={state.today}
+              daysInMonth={state.daysInMonth}
+              firstDayOfMonth={state.firstDayOfMonth}
+              loginDays={state.loginDays}
+            />
+          )}
 
-        <TasksList tasks={currentTasks} />
-      </ScrollView>
+          <TasksList tasks={currentTasks} />
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -68,6 +75,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#432870',
   },
 });
 

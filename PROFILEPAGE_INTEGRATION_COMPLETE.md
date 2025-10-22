@@ -346,3 +346,6 @@ ProfilePage artık tamamen backend'e bağlı!
 
 Kullanıcı profili, tahminleri ve istatistikleri backend'den geliyor! 🚀
 
+
+
+

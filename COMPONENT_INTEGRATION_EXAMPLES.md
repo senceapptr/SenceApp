@@ -945,3 +945,6 @@ npx expo start
 
 Başarılar! 🎉
 
+
+
+

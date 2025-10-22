@@ -1,5 +1,7 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity, Animated, SafeAreaView, View } from 'react-native';
+import { useAuth } from '../../../contexts/AuthContext';
+import { NotificationBadge } from '../../ui/NotificationBadge';
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -9,6 +11,8 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuToggle, headerTranslateY, isDarkMode, theme }: HeaderProps) {
+  const { unreadNotificationsCount } = useAuth();
+  
   return (
     <Animated.View style={[
       styles.container,
@@ -32,6 +36,13 @@ export function Header({ onMenuToggle, headerTranslateY, isDarkMode, theme }: He
               <View style={[styles.hamburgerLine, { backgroundColor: isDarkMode ? theme.textPrimary : '#1F2937' }]} />
               <View style={[styles.hamburgerLine, { backgroundColor: isDarkMode ? theme.textPrimary : '#1F2937' }]} />
             </View>
+            {unreadNotificationsCount > 0 && (
+              <NotificationBadge 
+                count={unreadNotificationsCount} 
+                size="small"
+                style={styles.notificationBadge}
+              />
+            )}
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -82,6 +93,11 @@ const styles = StyleSheet.create({
     height: 2.5,
     backgroundColor: '#1F2937',
     borderRadius: 1.25,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
   },
 });
 

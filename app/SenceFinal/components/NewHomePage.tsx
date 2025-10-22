@@ -387,7 +387,7 @@ export function NewHomePage({ onBack, handleQuestionDetail, handleVote, onMenuTo
       <View style={styles.actionButtons}>
         <FeaturedVoteButton
           label="EVET"
-          odds={item.yesOdds}
+          odds={item.yesds}
           color="#34C759"
           onPress={() => handleVote(item.id, 'yes', item.yesOdds, item.title)}
         />

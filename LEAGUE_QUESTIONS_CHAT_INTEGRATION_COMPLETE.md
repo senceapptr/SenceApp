@@ -236,3 +236,6 @@ Lig soruları ve chat sistemi artık backend'e hazır! Mock data kaldırıldı, 
 - **Chat mesajları için tam backend servisi** (TODO)
 - **Lig spesifik sorular için backend servisi** (TODO)
 - **Real-time chat güncellemeleri** (TODO)
+
+
+

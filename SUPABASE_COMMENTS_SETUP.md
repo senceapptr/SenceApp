@@ -135,3 +135,6 @@ SELECT * FROM comments;
 ## 🎯 Sonuç:
 
 Bu işlem tamamlandıktan sonra QuestionDetailPage'deki yorum sistemi çalışacak!
+
+
+

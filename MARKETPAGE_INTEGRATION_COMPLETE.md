@@ -236,3 +236,6 @@ MarketPage artık tamamen backend'e bağlı! Mock data kaldırıldı, gerçek ve
 - **Market kategorileri için backend servisi** (TODO)
 - **Kullanıcı satın alım geçmişi** (TODO)
 - **Öne çıkan ürünler** (TODO)
+
+
+
