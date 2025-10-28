@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Alert, Linking } from 'react-native';
 import { SettingsState } from './types';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'expo-router';
+import { profileService } from '@/services/profile.service';
 
 export function useSettings(props: {
   onPrivacySettings?: () => void;
@@ -14,7 +15,7 @@ export function useSettings(props: {
 }) {
   const router = useRouter();
   const { theme, isDarkMode, toggleTheme, themeMode } = useTheme();
-  const { signOut, forceLogout } = useAuth();
+  const { user, signOut, forceLogout } = useAuth();
   const [settings, setSettings] = useState<SettingsState>({
     notifications: true,
     pushNotifications: true,
@@ -101,6 +102,11 @@ export function useSettings(props: {
   };
 
   const handleDeleteAccount = () => {
+    if (!user) {
+      Alert.alert('Hata', 'Kullanıcı girişi bulunamadı.');
+      return;
+    }
+
     Alert.alert(
       '⚠️ Hesabı Sil',
       'Hesabınızı silmek üzeresiniz. Bu işlem geri alınamaz ve tüm verileriniz kalıcı olarak silinecektir.\n\nEmin misiniz?',
@@ -112,12 +118,24 @@ export function useSettings(props: {
         {
           text: 'Sil',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert(
-              '✅ Hesap Silindi',
-              'Hesabınız başarıyla silindi. Sence\'i kullandığınız için teşekkürler.',
-              [{ text: 'Tamam' }]
-            );
+          onPress: async () => {
+            try {
+              const { error } = await profileService.deleteAccount(user.id);
+              
+              if (error) {
+                Alert.alert('Hata', 'Hesap silinirken bir hata oluştu.');
+                return;
+              }
+
+              Alert.alert(
+                '✅ Hesap Silindi',
+                'Hesabınız başarıyla silindi. Sence\'i kullandığınız için teşekkürler.',
+                [{ text: 'Tamam', onPress: () => router.replace('/auth/login') }]
+              );
+            } catch (error) {
+              console.error('Delete account error:', error);
+              Alert.alert('Hata', 'Hesap silinirken bir hata oluştu.');
+            }
           }
         }
       ]

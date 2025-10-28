@@ -10,7 +10,7 @@ import { WriteTab } from './components/WriteTab';
 import { StatusTab } from './components/StatusTab';
 
 export function WriteQuestionPage({ onBack, onMenuToggle }: WriteQuestionPageProps) {
-  const { activeTab, setActiveTab, submittedQuestions } = useWriteQuestionState();
+  const { activeTab, setActiveTab, submittedQuestions, loading, refreshQuestions } = useWriteQuestionState();
   
   const {
     question,
@@ -19,11 +19,13 @@ export function WriteQuestionPage({ onBack, onMenuToggle }: WriteQuestionPagePro
     setDescription,
     endDate,
     setEndDate,
+    categoryIds,
+    setCategoryIds,
     formData,
     resetForm,
   } = useQuestionForm();
 
-  const { handleSubmit, isSubmitting, showSuccess } = useFormHandlers(formData, resetForm);
+  const { handleSubmit, isSubmitting, showSuccess, categories } = useFormHandlers(formData, resetForm, refreshQuestions);
 
   return (
     <KeyboardAvoidingView 
@@ -46,14 +48,16 @@ export function WriteQuestionPage({ onBack, onMenuToggle }: WriteQuestionPagePro
         {activeTab === 'write' ? (
           <WriteTab
             formData={formData}
+            categories={categories}
             onQuestionChange={setQuestion}
             onDescriptionChange={setDescription}
             onEndDateChange={setEndDate}
+            onCategoryChange={setCategoryIds}
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
           />
         ) : (
-          <StatusTab questions={submittedQuestions} />
+          <StatusTab questions={submittedQuestions} loading={loading} />
         )}
       </ScrollView>
     </KeyboardAvoidingView>

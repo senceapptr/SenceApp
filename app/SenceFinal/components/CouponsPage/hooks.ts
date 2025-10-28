@@ -5,8 +5,20 @@ export const useHeaderAnimation = () => {
   const headerTranslateY = useRef(new Animated.Value(0)).current;
   const lastScrollY = useRef(0);
   const hideTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialized = useRef(false);
+
+  useEffect(() => {
+    // Component mount olduktan 300ms sonra animasyonları aktif et
+    const timer = setTimeout(() => {
+      isInitialized.current = true;
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleScroll = (event: any) => {
+    if (!isInitialized.current) return;
+    
     const currentScrollY = event.nativeEvent.contentOffset.y;
     const scrollDiff = currentScrollY - lastScrollY.current;
     
@@ -51,6 +63,7 @@ export const useHeaderAnimation = () => {
 
   return { headerTranslateY, handleScroll };
 };
+
 
 
 

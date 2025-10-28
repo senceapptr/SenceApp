@@ -67,30 +67,52 @@ export const mockFeaturedQuestions: FeaturedQuestion[] = [
 export const mockActiveCoupons: ActiveCoupon[] = [
   {
     id: 1,
-    name: "Süper Combo",
+    name: "Kupon #100",
     questionCount: 5,
     totalOdds: 12.8,
     potentialWinnings: 2560,
     endsIn: "2g 14s",
-    colors: ["#432870", "#5A3A8B"]
+    colors: ["#432870", "#5A3A8B"],
+    predictions: [
+      { id: 1, questionId: 1, question: "Bitcoin bu yıl 100.000 doları aşacak mı?", choice: 'yes', odds: 2.4, category: 'Kripto', result: 'pending' },
+      { id: 2, questionId: 2, question: "ChatGPT-5 2024'te çıkacak mı?", choice: 'yes', odds: 1.8, category: 'Teknoloji', result: 'pending' },
+      { id: 3, questionId: 3, question: "Türkiye Milli Takımı Avrupa Şampiyonası'nda finale kalacak mı?", choice: 'no', odds: 3.2, category: 'Spor', result: 'pending' }
+    ],
+    username: '@mustafa_92',
+    investmentAmount: 500,
+    status: 'live'
   },
   {
     id: 2,
-    name: "Tech Special",
+    name: "Kupon #101",
     questionCount: 3,
     totalOdds: 6.4,
     potentialWinnings: 1280,
     endsIn: "5s 8d",
-    colors: ["#134E4A", "#0F766E"]
+    colors: ["#134E4A", "#0F766E"],
+    predictions: [
+      { id: 4, questionId: 4, question: "Apple Vision Pro Türkiye'ye bu yıl gelecek mi?", choice: 'yes', odds: 1.9, category: 'Teknoloji', result: 'won' },
+      { id: 5, questionId: 5, question: "Netflix abonelik fiyatları %50 artacak mı?", choice: 'yes', odds: 2.2, category: 'Teknoloji', result: 'won' }
+    ],
+    username: '@mustafa_92',
+    investmentAmount: 500,
+    status: 'won'
   },
   {
     id: 3,
-    name: "Risk Master",
+    name: "Kupon #102",
     questionCount: 8,
     totalOdds: 24.6,
     potentialWinnings: 4920,
     endsIn: "1g 12s",
-    colors: ["#DC2626", "#B91C1C"]
+    colors: ["#DC2626", "#B91C1C"],
+    predictions: [
+      { id: 6, questionId: 6, question: "Tesla Model Y fiyatı düşecek mi?", choice: 'no', odds: 1.5, category: 'Finans', result: 'lost' },
+      { id: 7, questionId: 7, question: "Instagram Reels özelliği kaldırılacak mı?", choice: 'yes', odds: 4.2, category: 'Sosyal-Medya', result: 'lost' }
+    ],
+    username: '@mustafa_92',
+    investmentAmount: 500,
+    status: 'lost'
   }
 ];
 
@@ -140,6 +162,7 @@ export const mockTrendQuestions: TrendQuestion[] = [
     yesPercentage: 55
   }
 ];
+
 
 
 

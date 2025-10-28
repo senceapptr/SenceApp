@@ -9,26 +9,30 @@ import { validateQuestionForm } from '../../utils';
 
 interface WriteTabProps {
   formData: QuestionFormData;
+  categories: any[];
   onQuestionChange: (text: string) => void;
   onDescriptionChange: (text: string) => void;
   onEndDateChange: (text: string) => void;
+  onCategoryChange: (categoryIds: string[]) => void;
   onSubmit: () => void;
   isSubmitting: boolean;
 }
 
 export const WriteTab: React.FC<WriteTabProps> = ({
   formData,
+  categories,
   onQuestionChange,
   onDescriptionChange,
   onEndDateChange,
+  onCategoryChange,
   onSubmit,
   isSubmitting,
 }) => {
-  const isFormValid = validateQuestionForm(
-    formData.question,
-    formData.description,
-    formData.endDate
-  );
+        const isFormValid = validateQuestionForm(
+          formData.question,
+          formData.description,
+          formData.endDate
+        ) && formData.categoryIds.length > 0;
 
   return (
     <View style={styles.writeTabContent}>
@@ -36,9 +40,12 @@ export const WriteTab: React.FC<WriteTabProps> = ({
         question={formData.question}
         description={formData.description}
         endDate={formData.endDate}
+        categoryIds={formData.categoryIds}
+        categories={categories}
         onQuestionChange={onQuestionChange}
         onDescriptionChange={onDescriptionChange}
         onEndDateChange={onEndDateChange}
+        onCategoryChange={onCategoryChange}
       />
       
       <OptionsInfo />

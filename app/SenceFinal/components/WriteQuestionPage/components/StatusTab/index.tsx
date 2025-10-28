@@ -1,20 +1,26 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { SubmittedQuestion } from '../../types';
 import { QuestionStatusCard } from './QuestionStatusCard';
 import { EmptyState } from './EmptyState';
 
 interface StatusTabProps {
   questions: SubmittedQuestion[];
+  loading?: boolean;
 }
 
-export const StatusTab: React.FC<StatusTabProps> = ({ questions }) => {
+export const StatusTab: React.FC<StatusTabProps> = ({ questions, loading = false }) => {
   return (
     <View style={styles.statusTabContent}>
       <View style={styles.statusCard}>
         <Text style={styles.statusTitle}>Gönderdiğin Sorular</Text>
         
-        {questions.length === 0 ? (
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#432870" />
+            <Text style={styles.loadingText}>Sorular yükleniyor...</Text>
+          </View>
+        ) : questions.length === 0 ? (
           <EmptyState />
         ) : (
           <View style={styles.questionsList}>
@@ -52,6 +58,17 @@ const styles = StyleSheet.create({
   },
   questionsList: {
     gap: 16,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
   },
 });
 

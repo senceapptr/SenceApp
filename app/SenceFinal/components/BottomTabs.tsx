@@ -59,6 +59,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
+    zIndex: 1000,
   },
   safeArea: {
     backgroundColor: 'transparent',

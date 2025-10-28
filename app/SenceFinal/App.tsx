@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, StatusBar, Animated, Dimensions, Modal } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -25,15 +25,18 @@ import { FAQPage } from './components/FAQPage';
 import { FeedbackPage } from './components/FeedbackPage';
 import { AboutPage } from './components/AboutPage';
 import { NewDiscoverPage } from './components/NewDiscoverPage';
+import { CategoryQuestionsPage } from './components/CategoryQuestionsPage';
 import { CouponDrawer } from './components/CouponDrawer';
 import { ConfettiAnimation } from './components/ConfettiAnimation';
 import { BottomTabs } from './components/BottomTabs';
 import { SlideOutMenu } from './components/SlideOutMenu';
 import { LoginPage } from './components/LoginPage';
+import { AdminPanel } from './components/AdminPanel';
+import { QuestionDetailSkeleton } from './components/QuestionDetailSkeleton';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type PageType = 'home' | 'discover' | 'coupons' | 'leagues' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign' | 'editProfile' | 'privacySettings' | 'helpCenter' | 'support' | 'faq' | 'feedback' | 'about';
+type PageType = 'home' | 'discover' | 'coupons' | 'leagues' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign' | 'editProfile' | 'privacySettings' | 'helpCenter' | 'support' | 'faq' | 'feedback' | 'about' | 'adminPanel' | 'allQuestions';
 
 interface Question {
   id: string;
@@ -70,6 +73,62 @@ interface UserProfile {
   coverImage: string;
 }
 
+// AllQuestionsModal - CategoryQuestionsPage'i slide animasyonu ile açar
+function AllQuestionsModal({ 
+  onBack, 
+  handleQuestionDetail, 
+  handleVote 
+}: { 
+  onBack: () => void;
+  handleQuestionDetail: (questionId: string, sourceCategory?: any) => void;
+  handleVote: (questionId: string, vote: 'yes' | 'no', odds: number) => void;
+}) {
+  const slideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
+
+  useEffect(() => {
+    // Slide in animation
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      tension: 50,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const handleBackWithAnimation = () => {
+    // Slide out animation
+    Animated.spring(slideAnim, {
+      toValue: SCREEN_WIDTH,
+      tension: 50,
+      friction: 10,
+      useNativeDriver: true,
+    }).start(() => {
+      onBack();
+    });
+  };
+
+  return (
+    <Animated.View
+      style={{
+        flex: 1,
+        transform: [{ translateX: slideAnim }],
+      }}
+    >
+      <CategoryQuestionsPage
+        category={{
+          id: 'all',
+          label: 'Tüm Sorular',
+          icon: '🌟',
+          color: '#7C3AED',
+        }}
+        onBack={handleBackWithAnimation}
+        handleQuestionDetail={handleQuestionDetail}
+        handleVote={handleVote}
+      />
+    </Animated.View>
+  );
+}
+
 // Ana uygulama içeriği - sadece giriş yapmış kullanıcılar için
 function AppContent() {
   const { user, profile } = useAuth();
@@ -78,7 +137,10 @@ function AppContent() {
   
   // Question Detail and Coupon states
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  const [sourceCategory, setSourceCategory] = useState<any>(null);
   const [isQuestionDetailOpen, setIsQuestionDetailOpen] = useState(false);
+  const [isQuestionDetailLoading, setIsQuestionDetailLoading] = useState(false);
+  // Animasyon state'i kaldırıldı - kullanıcı deneyimi için kritik
   const [isCouponDrawerOpen, setIsCouponDrawerOpen] = useState(false);
   const [couponSelections, setCouponSelections] = useState<CouponSelection[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -114,14 +176,51 @@ function AppContent() {
 
   // Question Detail slide animation
   const questionDetailSlideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
+  
+  // Animasyon state'i kaldırıldı - kullanıcı deneyimi için kritik
 
-  const handleQuestionDetail = async (questionId: number | string) => {
+  const handleQuestionDetail = async (questionId: number | string, sourceCategory?: any) => {
+    // ID'yi string'e çevir (UUID formatında olmalı)
+    const questionIdString = questionId.toString();
+    
+    // Source category'yi set et
+    setSourceCategory(sourceCategory);
+    
+    // HEMEN AÇ - kategori sayfası gibi anında açılsın
+    setIsQuestionDetailOpen(true);
+    setIsQuestionDetailLoading(false);
+    
+    // Mock question ile anında göster
+    const mockQuestion: Question = {
+      id: questionIdString,
+      title: "Soru Yükleniyor...",
+      description: "Soru detayları yükleniyor...",
+      category: "Genel",
+      image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop",
+      yesOdds: 2.0,
+      noOdds: 2.0,
+      totalVotes: 0,
+      timeLeft: "Yükleniyor...",
+      publishDate: "Yükleniyor...",
+      endDate: "2024-12-31T23:59:59",
+      yesPercentage: 50,
+      noPercentage: 50,
+      totalAmount: 0
+    };
+    setSelectedQuestion(mockQuestion);
+    
+    // Sağdan açılış animasyonu - hızlı timing
+    questionDetailSlideAnim.setValue(SCREEN_WIDTH);
+    Animated.timing(questionDetailSlideAnim, {
+      toValue: 0,
+      duration: 250, // Hızlı - 250ms
+      useNativeDriver: true,
+    }).start();
+    
+    // Arka planda veri yükle - cache yok, direkt backend
     try {
-      // ID'yi string'e çevir (UUID formatında olmalı)
-      const questionIdString = questionId.toString();
-      
-      // Backend'den soru detayını çek
-      const { questionsService } = await import('@/services');
+      // Direkt backend'den çek
+      const { questionsService } = await import('@/services/questions.service');
       const result = await (questionsService as any).getQuestionById(questionIdString);
       
       if (result.data) {
@@ -186,29 +285,19 @@ function AppContent() {
       };
       setSelectedQuestion(mockQuestion);
     }
-    
-    setIsQuestionDetailOpen(true);
-    
-    // Animate slide in
-    questionDetailSlideAnim.setValue(SCREEN_WIDTH);
-    Animated.spring(questionDetailSlideAnim, {
-      toValue: 0,
-      tension: 50,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
   };
 
   const handleCloseQuestionDetail = () => {
-    // Animate slide out
-    Animated.spring(questionDetailSlideAnim, {
+    // Basit kapanış animasyonu - sağa kayıp gitsin
+    Animated.timing(questionDetailSlideAnim, {
       toValue: SCREEN_WIDTH,
-      tension: 50,
-      friction: 10,
+      duration: 200, // Çok hızlı - 200ms
       useNativeDriver: true,
     }).start(() => {
+      // Animasyon tamamlandığında modal'ı kapat
       setIsQuestionDetailOpen(false);
       setSelectedQuestion(null);
+      setSourceCategory(null);
     });
   };
 
@@ -281,6 +370,15 @@ function AppContent() {
     setCurrentPage('tasks');
   };
 
+  const handleCouponsNavigate = () => {
+    setCurrentPage('coupons');
+  };
+
+  const handleDiscoverAllNavigate = () => {
+    // Direkt CategoryQuestionsPage'i aç (discover sayfasını atla)
+    setCurrentPage('allQuestions');
+  };
+
   const handleMenuToggle = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -290,8 +388,8 @@ function AppContent() {
   };
 
   const handleUpdateProfile = (updatedProfile: Partial<UserProfile>) => {
-    // Bu fonksiyon artık gerekli değil çünkü profile verisi AuthContext'ten geliyor
-    // Profile güncellemeleri AuthContext'teki updateProfile fonksiyonu ile yapılmalı
+    // Profile güncellemeleri EditProfilePage'de backend'e kaydediliyor
+    // Bu fonksiyon artık sadece UI state'ini güncellemek için kullanılıyor
     console.log('Profile update requested:', updatedProfile);
   };
 
@@ -305,6 +403,8 @@ function AppContent() {
             handleVote={handleVote}
             onMenuToggle={handleMenuToggle}
             onTasksNavigate={handleTasksNavigate}
+            onCouponsNavigate={handleCouponsNavigate}
+            onDiscoverAllNavigate={handleDiscoverAllNavigate}
           />
         );
       case 'discover':
@@ -316,12 +416,21 @@ function AppContent() {
             handleVote={handleVote}
           />
         );
+      case 'allQuestions':
+        return (
+          <AllQuestionsModal
+            onBack={handleBack}
+            handleQuestionDetail={handleQuestionDetail}
+            handleVote={handleVote}
+          />
+        );
       case 'coupons':
         return (
           <CouponsPage 
             onMenuToggle={handleMenuToggle}
             onQuestionDetail={handleQuestionDetail}
             refreshTrigger={couponsRefreshTrigger}
+            onCreateCouponPress={handleDiscoverAllNavigate}
           />
         );
       case 'leagues':
@@ -404,6 +513,12 @@ function AppContent() {
       case 'about':
         return (
           <AboutPage 
+            onBack={handleBack}
+          />
+        );
+      case 'adminPanel':
+        return (
+          <AdminPanel 
             onBack={handleBack}
           />
         );
@@ -495,6 +610,7 @@ function AppContent() {
           animationType="none"
           transparent={true}
           onRequestClose={handleCloseQuestionDetail}
+          statusBarTranslucent={false}
         >
           <Animated.View
             style={[
@@ -504,14 +620,15 @@ function AppContent() {
               },
             ]}
           >
-            {selectedQuestion && (
+            {selectedQuestion ? (
               <QuestionDetailPage
                 onBack={handleCloseQuestionDetail}
                 onMenuToggle={handleMenuToggle}
                 question={selectedQuestion}
                 onVote={handleVote}
+                sourceCategory={sourceCategory}
               />
-            )}
+            ) : null}
           </Animated.View>
         </Modal>
       </ThemeTransition>

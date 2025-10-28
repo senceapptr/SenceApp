@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
-import { marketService } from '@/services';
+import { marketService } from '@/services/market.service';
 import { Product, ProductCategory } from './types';
 import { 
   filterProductsByCategory,

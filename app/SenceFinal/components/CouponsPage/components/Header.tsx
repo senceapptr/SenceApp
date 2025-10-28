@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -16,22 +16,20 @@ export function Header({ onMenuToggle, headerTranslateY }: HeaderProps) {
         },
       ]}
     >
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Kuponlarım</Text>
-          <TouchableOpacity 
-            style={styles.menuButton}
-            onPress={onMenuToggle}
-            activeOpacity={0.8}
-          >
-            <View style={styles.hamburgerIcon}>
-              <View style={styles.hamburgerLine} />
-              <View style={styles.hamburgerLine} />
-              <View style={styles.hamburgerLine} />
-            </View>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <View style={styles.header}>
+        <Text style={styles.title}>Kuponlarım</Text>
+        <TouchableOpacity 
+          style={styles.menuButton}
+          onPress={onMenuToggle}
+          activeOpacity={0.8}
+        >
+          <View style={styles.hamburgerIcon}>
+            <View style={styles.hamburgerLine} />
+            <View style={styles.hamburgerLine} />
+            <View style={styles.hamburgerLine} />
+          </View>
+        </TouchableOpacity>
+      </View>
     </Animated.View>
   );
 }
@@ -49,9 +47,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
-  },
-  safeArea: {
-    backgroundColor: 'transparent',
+    paddingTop: 50,
   },
   header: {
     flexDirection: 'row',
@@ -92,6 +88,7 @@ const styles = StyleSheet.create({
     borderRadius: 1.25,
   },
 });
+
 
 
 

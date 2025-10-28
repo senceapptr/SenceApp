@@ -21,6 +21,7 @@ export interface QuestionFormData {
   question: string;
   description: string;
   endDate: string;
+  categoryIds: string[];
 }
 
 export interface FormHandlers {

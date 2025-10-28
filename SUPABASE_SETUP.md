@@ -64,3 +64,4 @@ npx supabase gen types typescript --project-id "your-project-id" --schema public
 
 
 
+

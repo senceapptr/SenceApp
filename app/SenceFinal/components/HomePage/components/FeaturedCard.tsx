@@ -25,20 +25,20 @@ const FeaturedVoteButton = ({
   const handlePressIn = () => {
     Animated.timing(fillAnim, {
       toValue: 1,
-      duration: 250,
+      duration: 50, // Çok daha hızlı animasyon
       easing: Easing.out(Easing.quad),
       useNativeDriver: false,
     }).start();
   };
 
   const handlePressOut = () => {
+    onPress(); // Önce onPress'i çağır
     Animated.timing(fillAnim, {
       toValue: 0,
-      duration: 250,
+      duration: 50, // Çok daha hızlı animasyon
       easing: Easing.in(Easing.quad),
       useNativeDriver: false,
     }).start();
-    onPress();
   };
 
   const fillWidth = fillAnim.interpolate({
@@ -76,28 +76,35 @@ export function FeaturedCard({ question, onQuestionPress, onVote }: FeaturedCard
     <TouchableOpacity
       style={styles.card}
       onPress={() => onQuestionPress(question.id)}
-      activeOpacity={0.95}
+      activeOpacity={0.98} // Daha az opacity değişimi
     >
-      <Image source={{ uri: question.image }} style={styles.image} />
+      <Image 
+        source={{ uri: question.image }} 
+        style={styles.image}
+        fadeDuration={0}
+        resizeMode="cover"
+      />
       <LinearGradient
         colors={['transparent', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.7)']}
         style={styles.gradient}
       />
       
-      {/* Stats Row */}
-      <View style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <Ionicons name="people" size={20} color="rgba(255,255,255,0.9)" />
-          <Text style={styles.statText}>{formatVotes(question.votes)}</Text>
+      <View style={styles.content}>
+        {/* Stats Row */}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Ionicons name="people" size={20} color="rgba(255,255,255,0.9)" />
+            <Text style={styles.statText}>{formatVotes(question.votes)}</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Ionicons name="time" size={20} color="rgba(255,255,255,0.9)" />
+            <Text style={styles.statText}>{question.timeLeft}</Text>
+          </View>
         </View>
-        <View style={styles.statItem}>
-          <Ionicons name="time" size={20} color="rgba(255,255,255,0.9)" />
-          <Text style={styles.statText}>{question.timeLeft}</Text>
-        </View>
-      </View>
 
-      {/* Question Title */}
-      <Text style={styles.title}>{question.title}</Text>
+        {/* Question Title */}
+        <Text style={styles.title}>{question.title}</Text>
+      </View>
 
       {/* Action Buttons */}
       <View style={styles.actionButtons}>
@@ -136,11 +143,14 @@ const styles = StyleSheet.create({
     right: 0,
     height: '60%',
   },
-  statsRow: {
+  content: {
     position: 'absolute',
-    bottom: 195,
+    bottom: 115,
     left: 24,
     right: 24,
+    gap: 8,
+  },
+  statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
@@ -158,10 +168,6 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   title: {
-    position: 'absolute',
-    bottom: 115,
-    left: 24,
-    right: 24,
     color: '#FFFFFF',
     fontSize: 24,
     fontWeight: '900',

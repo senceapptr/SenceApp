@@ -20,7 +20,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit';
 import { useAuth } from '../contexts/AuthContext';
-import { questionsService, predictionsService, commentsService } from '@/services';
+import { questionsService } from '@/services/questions.service';
+import { predictionsService } from '@/services/predictions.service';
+import { commentsService } from '@/services/comments.service';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -29,6 +31,7 @@ interface QuestionDetailPageProps {
   onMenuToggle: () => void;
   question: any;
   onVote: (questionId: number, vote: 'yes' | 'no', odds: number, questionTitle?: string) => void;
+  sourceCategory?: any; // Hangi kategoriden geldiğini belirtir
 }
 
 interface RelatedQuestion {
@@ -59,7 +62,7 @@ interface TopInvestor {
   vote: 'yes' | 'no';
 }
 
-export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: QuestionDetailPageProps) {
+export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sourceCategory }: QuestionDetailPageProps) {
   const { user, profile } = useAuth();
   const insets = useSafeAreaInsets();
   
@@ -114,8 +117,8 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
 
       // Yorumlar
       if (commentsResult.data) {
-        const mappedComments: Comment[] = commentsResult.data.map((c: any) => ({
-          id: parseInt(c.id) || 0,
+        const mappedComments: Comment[] = commentsResult.data.map((c: any, index: number) => ({
+          id: parseInt(c.id) || index,
           username: c.profiles?.username || 'Anonim',
           avatar: c.profiles?.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
           text: c.content,
@@ -127,8 +130,8 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
 
       // İlgili sorular
       if (relatedResult.data) {
-        const mappedRelated: RelatedQuestion[] = relatedResult.data.map((q: any) => ({
-          id: parseInt(q.id) || 0,
+        const mappedRelated: RelatedQuestion[] = relatedResult.data.map((q: any, index: number) => ({
+          id: parseInt(q.id) || index,
           title: q.title,
           category: q.categories?.name || 'Genel',
           image: q.image_url || 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=150&h=150&fit=crop',
@@ -226,8 +229,8 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
   // Main question data - Backend'den gelen verilerle merge et
   const mainQuestion = questionDetails ? {
     title: questionDetails.title,
-    category: questionDetails.categories?.name || 'Genel',
-    categoryIcon: getCategoryIcon(questionDetails.categories?.name || 'Genel'),
+    category: sourceCategory?.name || questionDetails.categories?.name || 'Genel',
+    categoryIcon: getCategoryIcon(sourceCategory?.name || questionDetails.categories?.name || 'Genel'),
     image: questionDetails.image_url || 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0ZWNobm9sb2d5JTIwbW9kZXJuJTIwY2l0eXxlbnwxfHx8fDE3NjAxNzQyODR8MA&ixlib=rb-4.1.0&q=80&w=1080',
     description: questionDetails.description || '',
     fullDescription: questionDetails.description || '',
@@ -524,8 +527,8 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.relatedScrollContent}
         >
-          {relatedQuestions.map((question) => (
-            <View key={question.id} style={styles.relatedCard}>
+          {relatedQuestions.map((question, index) => (
+            <View key={`related-${question.id}-${index}`} style={styles.relatedCard}>
               <View style={styles.relatedImageContainer}>
           <Image 
             source={{ uri: question.image }}
@@ -614,8 +617,8 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
             {/* Comments List */}
       <View style={styles.commentsListSectionNoPadding}>
         <Text style={styles.commentsListTitle}>Tüm Yorumlar ({comments.length})</Text>
-              {comments.map((comment) => (
-                <View key={comment.id} style={styles.commentCard}>
+              {comments.map((comment, index) => (
+                <View key={`comment-${comment.id}-${index}`} style={styles.commentCard}>
                     <Image 
               source={{ uri: comment.avatar }}
                       style={styles.commentAvatar}
@@ -742,7 +745,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote }: Q
           <Text style={styles.topInvestorsTitle}>En Çok Yatırım Yapanlar</Text>
               </View>
         {topInvestors.map((investor, index) => (
-          <View key={index} style={styles.investorCard}>
+          <View key={`investor-${index}-${investor.username}`} style={styles.investorCard}>
             <View style={[
               styles.investorRank,
               index === 0 && styles.investorRankGold,

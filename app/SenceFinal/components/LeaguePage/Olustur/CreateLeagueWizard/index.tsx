@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,16 @@ import {
   Dimensions,
   Platform,
   Alert,
+  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { leaguesService } from '@/services';
+import { leaguesService } from '@/services/leagues.service';
+import { categoriesService } from '@/services/categories.service';
+import { Step1BasicInfo } from './Step1BasicInfo';
+import { Step2Details } from './Step2Details';
+import { Step3Payment } from './Step3Payment';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -35,12 +41,18 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCapacityPicker, setShowCapacityPicker] = useState(false);
+  const [showCreditPaymentModal, setShowCreditPaymentModal] = useState(false);
+  const [showTicketPaymentModal, setShowTicketPaymentModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [backendCategories, setBackendCategories] = useState<any[]>([]);
+  
+  // Button animations
+  const buttonPulseAnim = useRef(new Animated.Value(1)).current;
 
   const [leagueConfig, setLeagueConfig] = useState({
     name: '',
     description: '',
-    icon: '🏆',
+    icon: 'trophy', // Ionicons id olarak saklayacağız
     maxParticipants: 10,
     endDate: new Date(),
     isPrivate: false,
@@ -120,8 +132,53 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
     }
   };
 
+  // Load categories from backend
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const { data, error } = await categoriesService.getActiveCategories();
+        
+        if (error) {
+          console.error('Load categories error:', error);
+          return;
+        }
+
+        if (data) {
+          setBackendCategories(data);
+        }
+      } catch (error) {
+        console.error('Load categories error:', error);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
   const canProceedStep1 = leagueConfig.name.length >= 3 && leagueConfig.description.length >= 10;
   const canProceedStep2 = leagueConfig.categories.length > 0 && leagueConfig.endDate;
+  const canProceedStep3 = true; // Step 3'te modal açılacak, her zaman true
+
+  // Button pulse animation
+  useEffect(() => {
+    if ((step === 1 && canProceedStep1) || (step === 2 && canProceedStep2) || (step === 3 && canProceedStep3)) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(buttonPulseAnim, {
+            toValue: 1.05,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(buttonPulseAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      buttonPulseAnim.setValue(1);
+    }
+  }, [step, canProceedStep1, canProceedStep2]);
 
   return (
     <Modal
@@ -132,23 +189,60 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
     >
       <SafeAreaView style={styles.container}>
         {/* Header */}
-        <LinearGradient
-          colors={['#432870', '#5A3A8B', '#B29EFD']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.header}
-        >
+        <View style={styles.header}>
           <TouchableOpacity
             style={styles.closeButton}
             onPress={onClose}
             activeOpacity={0.7}
           >
-            <Text style={styles.closeButtonText}>✕</Text>
+            <Ionicons name="close" size={24} color="#FFFFFF" />
           </TouchableOpacity>
 
-          <Text style={styles.headerIcon}>{leagueConfig.icon}</Text>
-          <Text style={styles.headerTitle}>Lig Oluştur</Text>
-          <Text style={styles.headerSubtitle}>Kendi ligini oluştur ve arkadaşlarınla yarış!</Text>
+          <View style={styles.headerContent}>
+            <View style={styles.headerTitleRow}>
+              {/* Seçili icon göster */}
+              {leagueConfig.icon && (
+                <View style={styles.headerIconContainer}>
+                  <Ionicons 
+                    name={
+                      leagueConfig.icon === 'trophy' ? 'trophy' :
+                      leagueConfig.icon === 'flame' ? 'flame' :
+                      leagueConfig.icon === 'flash' ? 'flash' :
+                      leagueConfig.icon === 'rocket' ? 'rocket' :
+                      leagueConfig.icon === 'diamond' ? 'diamond' :
+                      leagueConfig.icon === 'star' ? 'star' :
+                      leagueConfig.icon === 'shield' ? 'shield' :
+                      leagueConfig.icon === 'medal' ? 'medal' :
+                      leagueConfig.icon === 'game' ? 'game-controller' :
+                      leagueConfig.icon === 'football' ? 'football' :
+                      'trophy'
+                    } 
+                    size={28} 
+                    color="#FFFFFF" 
+                  />
+                </View>
+              )}
+              
+              {/* Title değişir - name varsa onu göster */}
+              <View style={styles.headerTextContainer}>
+                {leagueConfig.name ? (
+                  <>
+                    <Text style={styles.headerTitle} numberOfLines={1}>
+                      {leagueConfig.name}
+                    </Text>
+                    <Text style={styles.headerSubtitle} numberOfLines={1}>
+                      {leagueConfig.description || 'Açıklama ekle...'}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.headerTitle}>Lig Oluştur</Text>
+                    <Text style={styles.headerSubtitle}>Kendi ligini oluştur ve arkadaşlarınla yarış!</Text>
+                  </>
+                )}
+              </View>
+            </View>
+          </View>
 
           {/* Progress Steps */}
           <View style={styles.progressSteps}>
@@ -195,64 +289,42 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
               </React.Fragment>
             ))}
           </View>
-        </LinearGradient>
+        </View>
 
         {/* Step Content */}
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Step 1: Basic Information */}
           {step === 1 && (
-            <View style={styles.stepContent}>
-              <View style={styles.formField}>
-                <Text style={styles.formLabel}>Lig İkonu</Text>
-                <View style={styles.iconGrid}>
-                  {iconOptions.map((icon) => (
-                    <TouchableOpacity
-                      key={icon}
-                      style={[
-                        styles.iconButton,
-                        leagueConfig.icon === icon && styles.iconButtonActive,
-                      ]}
-                      onPress={() => setLeagueConfig({ ...leagueConfig, icon })}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.iconText}>{icon}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              <View style={styles.formField}>
-                <Text style={styles.formLabel}>Lig Adı *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={leagueConfig.name}
-                  onChangeText={(text) => setLeagueConfig({ ...leagueConfig, name: text })}
-                  placeholder="Örn: Süper Tahminler Ligi"
-                  placeholderTextColor="rgba(32, 32, 32, 0.5)"
-                  maxLength={50}
-                />
-                <Text style={styles.charCount}>{leagueConfig.name.length}/50</Text>
-              </View>
-
-              <View style={styles.formField}>
-                <Text style={styles.formLabel}>Açıklama *</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  value={leagueConfig.description}
-                  onChangeText={(text) => setLeagueConfig({ ...leagueConfig, description: text })}
-                  placeholder="Liginin amacını ve kurallarını açıkla..."
-                  placeholderTextColor="rgba(32, 32, 32, 0.5)"
-                  multiline
-                  numberOfLines={4}
-                  maxLength={200}
-                />
-                <Text style={styles.charCount}>{leagueConfig.description.length}/200</Text>
-              </View>
-            </View>
+            <Step1BasicInfo
+              leagueConfig={leagueConfig}
+              onConfigChange={setLeagueConfig}
+            />
           )}
 
           {/* Step 2: Details */}
           {step === 2 && (
+            <Step2Details
+              leagueConfig={leagueConfig}
+              onConfigChange={setLeagueConfig}
+              availableCategories={backendCategories.length > 0 ? backendCategories : availableCategories}
+              onShowDatePicker={() => setShowDatePicker(true)}
+              onShowCapacityPicker={() => setShowCapacityPicker(true)}
+            />
+          )}
+
+          {/* Step 3: Payment */}
+          {step === 3 && (
+            <Step3Payment
+              currentUserCredits={currentUser.credits || 10000}
+              currentUserTickets={currentUser.tickets || 0}
+              joinCost={leagueConfig.joinCost}
+              onCreditPayment={() => setShowCreditPaymentModal(true)}
+              onTicketPayment={() => setShowTicketPaymentModal(true)}
+            />
+          )}
+
+          {/* Step 2: OLD - Keep for reference but hidden */}
+          {false && step === 2 && (
             <View style={styles.stepContent}>
               <View style={styles.formField}>
                 <Text style={styles.formLabel}>Kategoriler *</Text>
@@ -466,37 +538,59 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
             )}
             
             {step < 3 && (
-              <TouchableOpacity
-                style={[
-                  styles.continueButton,
-                  ((step === 1 && !canProceedStep1) || (step === 2 && !canProceedStep2)) &&
-                    styles.continueButtonDisabled,
-                ]}
-                onPress={() => setStep(step + 1)}
-                disabled={(step === 1 && !canProceedStep1) || (step === 2 && !canProceedStep2)}
-                activeOpacity={0.8}
+              <Animated.View
+                style={{
+                  flex: 1,
+                  transform: [
+                    { 
+                      scale: ((step === 1 && canProceedStep1) || (step === 2 && canProceedStep2)) 
+                        ? buttonPulseAnim 
+                        : 1 
+                    }
+                  ],
+                }}
               >
-                <LinearGradient
-                  colors={
-                    (step === 1 && canProceedStep1) || (step === 2 && canProceedStep2)
-                      ? ['#432870', '#B29EFD']
-                      : ['#F3F4F6', '#E5E7EB']
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.continueButtonGradient}
+                <TouchableOpacity
+                  style={[
+                    styles.continueButton,
+                    ((step === 1 && !canProceedStep1) || (step === 2 && !canProceedStep2)) &&
+                      styles.continueButtonDisabled,
+                  ]}
+                  onPress={() => setStep(step + 1)}
+                  disabled={(step === 1 && !canProceedStep1) || (step === 2 && !canProceedStep2)}
+                  activeOpacity={0.8}
                 >
-                  <Text
+                  <View
                     style={[
-                      styles.continueButtonText,
-                      ((step === 1 && !canProceedStep1) || (step === 2 && !canProceedStep2)) &&
-                        styles.continueButtonTextDisabled,
+                      styles.continueButtonContent,
+                      {
+                        backgroundColor: (step === 1 && canProceedStep1) || (step === 2 && canProceedStep2)
+                          ? '#432870'
+                          : '#E5E7EB'
+                      }
                     ]}
                   >
-                    Devam Et →
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+                    <Ionicons 
+                      name="arrow-forward-circle" 
+                      size={22} 
+                      color={
+                        (step === 1 && canProceedStep1) || (step === 2 && canProceedStep2)
+                          ? '#FFFFFF'
+                          : '#9CA3AF'
+                      } 
+                    />
+                    <Text
+                      style={[
+                        styles.continueButtonText,
+                        ((step === 1 && !canProceedStep1) || (step === 2 && !canProceedStep2)) &&
+                          styles.continueButtonTextDisabled,
+                      ]}
+                    >
+                      Devam Et
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
             )}
           </View>
         )}
@@ -615,7 +709,7 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
                         <Text style={styles.ticketOptionTitle}>1 Lig Bileti</Text>
                         <Text style={styles.ticketOptionSubtitle}>En çok tercih edilen</Text>
                       </View>
-                      <Text style={styles.ticketOptionPrice}>₺39</Text>
+                      <Text style={styles.ticketOptionPriceOld}>₺39</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.ticketOptionFeatured} activeOpacity={0.8}>
@@ -628,7 +722,7 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
                       </View>
                       <View style={styles.ticketOptionRight}>
                         <Text style={styles.ticketOptionOldPrice}>₺78</Text>
-                        <Text style={styles.ticketOptionPrice}>₺59</Text>
+                        <Text style={styles.ticketOptionPriceOld}>₺59</Text>
                       </View>
                     </TouchableOpacity>
 
@@ -642,7 +736,7 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
                       </View>
                       <View style={styles.ticketOptionRight}>
                         <Text style={styles.ticketOptionOldPrice}>₺195</Text>
-                        <Text style={styles.ticketOptionPrice}>₺119</Text>
+                        <Text style={styles.ticketOptionPriceOld}>₺119</Text>
                       </View>
                     </TouchableOpacity>
                   </View>
@@ -696,11 +790,234 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
                         {count} kişi
                       </Text>
                       <Text style={styles.capacityOptionSubtext}>
-                        {count <= 20 ? 'Küçük lig' : count <= 100 ? 'Orta lig' : 'Büyük lig'}
+                        {count === 5 ? '⚡ Hızlı & Rekabetçi' : 
+                         count === 10 ? '🎯 Klasik Lig' : 
+                         count === 20 ? '🔥 Popüler Format' : 
+                         count === 50 ? '🏆 Büyük Arena' : 
+                         '👑 Mega Turnuva'}
                       </Text>
                     </TouchableOpacity>
                   );
                 })}
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Credit Payment Modal */}
+        <Modal visible={showCreditPaymentModal} transparent animationType="slide">
+          <View style={styles.paymentModalOverlay}>
+            <View style={styles.paymentModalContainer}>
+              <View style={styles.paymentModalHeader}>
+                <Text style={styles.paymentModalHeaderTitle}>Kredi ile Ödeme</Text>
+                <TouchableOpacity
+                  onPress={() => setShowCreditPaymentModal(false)}
+                  style={styles.paymentModalCloseButton}
+                >
+                  <Ionicons name="close" size={24} color="#1F2937" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.paymentModalContent}>
+                {/* Current Credit */}
+                <View style={styles.paymentInfoCard}>
+                  <View style={styles.paymentInfoHeader}>
+                    <Ionicons name="diamond" size={24} color="#10B981" />
+                    <Text style={styles.paymentInfoLabel}>Mevcut Kredi</Text>
+                  </View>
+                  <Text style={styles.paymentInfoValue}>
+                    {(currentUser.credits || 10000).toLocaleString('tr-TR')}
+                  </Text>
+                </View>
+
+                {/* Cost Breakdown */}
+                <View style={styles.paymentBreakdownCard}>
+                  <Text style={styles.paymentBreakdownTitle}>Ödeme Detayları</Text>
+                  
+                  <View style={styles.paymentBreakdownRow}>
+                    <Text style={styles.paymentBreakdownLabel}>Lig Oluşturma</Text>
+                    <Text style={styles.paymentBreakdownValue}>
+                      {leagueConfig.joinCost > 0 ? leagueConfig.joinCost.toLocaleString('tr-TR') : 'Ücretsiz'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.paymentBreakdownDivider} />
+
+                  <View style={styles.paymentBreakdownRow}>
+                    <Text style={styles.paymentBreakdownLabelTotal}>Harcanacak Kredi</Text>
+                    <Text style={styles.paymentBreakdownValueTotal}>
+                      {leagueConfig.joinCost.toLocaleString('tr-TR')}
+                    </Text>
+                  </View>
+
+                  <View style={styles.paymentBreakdownRow}>
+                    <Text style={styles.paymentBreakdownLabel}>Kalan Kredi</Text>
+                    <Text style={[styles.paymentBreakdownValue, { color: '#10B981', fontWeight: '800' }]}>
+                      {((currentUser.credits || 10000) - leagueConfig.joinCost).toLocaleString('tr-TR')}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Action Buttons */}
+                <View style={styles.paymentModalActions}>
+                  <TouchableOpacity
+                    style={styles.paymentCancelButton}
+                    onPress={() => setShowCreditPaymentModal(false)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.paymentCancelButtonText}>İptal</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.paymentConfirmButton}
+                    onPress={createLeague}
+                    disabled={creating || (currentUser.credits || 10000) < leagueConfig.joinCost}
+                    activeOpacity={0.8}
+                  >
+                    <LinearGradient
+                      colors={['#10B981', '#059669']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.paymentConfirmButtonGradient}
+                    >
+                      {creating ? (
+                        <View style={styles.loadingContainer}>
+                          <View style={styles.spinner} />
+                          <Text style={styles.paymentConfirmButtonText}>Oluşturuluyor...</Text>
+                        </View>
+                      ) : (
+                        <>
+                          <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                          <Text style={styles.paymentConfirmButtonText}>Onayla ve Oluştur</Text>
+                        </>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Ticket Payment Modal */}
+        <Modal visible={showTicketPaymentModal} transparent animationType="slide">
+          <View style={styles.paymentModalOverlay}>
+            <View style={styles.paymentModalContainer}>
+              <View style={styles.paymentModalHeader}>
+                <Text style={styles.paymentModalHeaderTitle}>Bilet ile Ödeme</Text>
+                <TouchableOpacity
+                  onPress={() => setShowTicketPaymentModal(false)}
+                  style={styles.paymentModalCloseButton}
+                >
+                  <Ionicons name="close" size={24} color="#1F2937" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.paymentModalContent}>
+                {/* Current Tickets */}
+                <View style={styles.paymentInfoCard}>
+                  <View style={styles.paymentInfoHeader}>
+                    <Ionicons name="ticket" size={24} color="#8B5CF6" />
+                    <Text style={styles.paymentInfoLabel}>Mevcut Bilet</Text>
+                  </View>
+                  <Text style={styles.paymentInfoValue}>
+                    {currentUser.tickets || 0}
+                  </Text>
+                </View>
+
+                {/* Ticket Options - Only if user has no tickets */}
+                {!(currentUser.tickets > 0) && (
+                  <View style={styles.ticketOptionsContainer}>
+                    <Text style={styles.ticketOptionsTitle}>Bilet Satın Al</Text>
+                    <View style={styles.ticketOptionsGrid}>
+                      {[
+                        { count: 1, price: 500, discount: 0 },
+                        { count: 2, price: 900, discount: 10 },
+                        { count: 5, price: 2000, discount: 20 },
+                      ].map((option) => (
+                        <TouchableOpacity
+                          key={option.count}
+                          style={styles.ticketOptionCard}
+                          activeOpacity={0.8}
+                        >
+                          <View style={styles.ticketOptionBadge}>
+                            {option.discount > 0 && (
+                              <View style={styles.ticketDiscountBadge}>
+                                <Text style={styles.ticketDiscountText}>-%{option.discount}</Text>
+                              </View>
+                            )}
+                          </View>
+                          <Ionicons name="ticket" size={32} color="#8B5CF6" />
+                          <Text style={styles.ticketOptionCount}>{option.count} Bilet</Text>
+                          <View style={styles.ticketOptionPriceContainer}>
+                            <Ionicons name="diamond" size={16} color="#10B981" />
+                            <Text style={styles.ticketOptionPrice}>{option.price.toLocaleString('tr-TR')}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* If user has tickets */}
+                {currentUser.tickets > 0 && (
+                  <View style={styles.paymentBreakdownCard}>
+                    <Text style={styles.paymentBreakdownTitle}>Ödeme Detayları</Text>
+                    
+                    <View style={styles.paymentBreakdownRow}>
+                      <Text style={styles.paymentBreakdownLabel}>Lig Oluşturma</Text>
+                      <Text style={styles.paymentBreakdownValue}>1 Bilet</Text>
+                    </View>
+
+                    <View style={styles.paymentBreakdownDivider} />
+
+                    <View style={styles.paymentBreakdownRow}>
+                      <Text style={styles.paymentBreakdownLabel}>Kalan Bilet</Text>
+                      <Text style={[styles.paymentBreakdownValue, { color: '#8B5CF6', fontWeight: '800' }]}>
+                        {(currentUser.tickets || 0) - 1}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Action Buttons */}
+                <View style={styles.paymentModalActions}>
+                  <TouchableOpacity
+                    style={styles.paymentCancelButton}
+                    onPress={() => setShowTicketPaymentModal(false)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.paymentCancelButtonText}>İptal</Text>
+                  </TouchableOpacity>
+
+                  {currentUser.tickets > 0 && (
+                    <TouchableOpacity
+                      style={styles.paymentConfirmButton}
+                      onPress={createLeague}
+                      disabled={creating}
+                      activeOpacity={0.8}
+                    >
+                      <LinearGradient
+                        colors={['#8B5CF6', '#7C3AED']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.paymentConfirmButtonGradient}
+                      >
+                        {creating ? (
+                          <View style={styles.loadingContainer}>
+                            <View style={styles.spinner} />
+                            <Text style={styles.paymentConfirmButtonText}>Oluşturuluyor...</Text>
+                          </View>
+                        ) : (
+                          <>
+                            <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                            <Text style={styles.paymentConfirmButtonText}>Onayla ve Oluştur</Text>
+                          </>
+                        )}
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             </View>
           </View>
@@ -798,39 +1115,52 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   header: {
-    padding: 24,
-    position: 'relative',
+    backgroundColor: '#432870',
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 24,
   },
   closeButton: {
     position: 'absolute',
-    top: 16,
-    right: 16,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    top: 20,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
   },
-  closeButtonText: {
-    fontSize: 20,
-    color: '#FFFFFF',
+  headerContent: {
+    marginBottom: 20,
   },
-  headerIcon: {
-    fontSize: 48,
-    marginBottom: 12,
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTextContainer: {
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '900',
     color: '#FFFFFF',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 24,
+    color: 'rgba(255, 255, 255, 0.85)',
+    lineHeight: 18,
   },
   progressSteps: {
     flexDirection: 'row',
@@ -1115,39 +1445,60 @@ const styles = StyleSheet.create({
   navigationButtons: {
     flexDirection: 'row',
     paddingHorizontal: 24,
+    paddingTop: 20,
     paddingBottom: 24,
     gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    minHeight: 80,
   },
   backButton: {
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 24,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#F3F4F6',
     borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
   },
   backButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#202020',
+    color: '#374151',
   },
   continueButton: {
     flex: 1,
-    borderRadius: 16,
-    overflow: 'hidden',
+    borderRadius: 18,
+    overflow: 'visible',
   },
   continueButtonDisabled: {
     opacity: 0.5,
   },
-  continueButtonGradient: {
-    paddingVertical: 12,
+  continueButtonContent: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    gap: 10,
+    borderRadius: 18,
+    shadowColor: '#432870',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
+    minHeight: 60,
   },
   continueButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '900',
     color: '#FFFFFF',
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
   continueButtonTextDisabled: {
-    color: 'rgba(32, 32, 32, 0.5)',
+    color: '#6B7280',
+    fontWeight: '700',
   },
   modalOverlay: {
     flex: 1,
@@ -1404,7 +1755,7 @@ const styles = StyleSheet.create({
     color: 'rgba(32, 32, 32, 0.5)',
     textDecorationLine: 'line-through',
   },
-  ticketOptionPrice: {
+  ticketOptionPriceOld: {
     fontSize: 20,
     fontWeight: '900',
     color: '#432870',
@@ -1656,6 +2007,228 @@ const styles = StyleSheet.create({
   },
   calendarDayTextSelectedNew: {
     color: '#FFFFFF',
+  },
+  // Payment Modal Styles
+  paymentModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  paymentModalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  paymentModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  paymentModalHeaderTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#1F2937',
+  },
+  paymentModalCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  paymentModalContent: {
+    padding: 24,
+    gap: 20,
+  },
+  paymentInfoCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  paymentInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  paymentInfoLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  paymentInfoValue: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#1F2937',
+    textAlign: 'center',
+  },
+  paymentBreakdownCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    gap: 12,
+  },
+  paymentBreakdownTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  paymentBreakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  paymentBreakdownLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  paymentBreakdownValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  paymentBreakdownLabelTotal: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1F2937',
+  },
+  paymentBreakdownValueTotal: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#EF4444',
+  },
+  paymentBreakdownDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 8,
+  },
+  paymentModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  paymentCancelButton: {
+    flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  paymentCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#6B7280',
+  },
+  paymentConfirmButton: {
+    flex: 2,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  paymentConfirmButtonGradient: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  paymentConfirmButtonText: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  spinner: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    borderTopColor: 'transparent',
+  },
+  // Ticket Options Styles
+  ticketOptionsContainer: {
+    gap: 16,
+  },
+  ticketOptionsTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1F2937',
+  },
+  ticketOptionsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  ticketOptionCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    position: 'relative',
+  },
+  ticketOptionBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
+  ticketDiscountBadge: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  ticketDiscountText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#EF4444',
+  },
+  ticketOptionCount: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1F2937',
+  },
+  ticketOptionPriceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ticketOptionPrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#10B981',
   },
 });
 

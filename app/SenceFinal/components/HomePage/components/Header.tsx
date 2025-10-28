@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, Animated, SafeAreaView, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, Animated, View } from 'react-native';
 import { useAuth } from '../../../contexts/AuthContext';
 import { NotificationBadge } from '../../ui/NotificationBadge';
 
@@ -20,32 +20,30 @@ export function Header({ onMenuToggle, headerTranslateY, isDarkMode, theme }: He
         transform: [{ translateY: headerTranslateY }],
       }
     ]}>
-      <SafeAreaView>
-        <View style={styles.content}>
-          <TouchableOpacity 
-            style={[styles.menuButton, { 
-              backgroundColor: isDarkMode ? theme.surfaceElevated : 'rgba(255,255,255,0.95)',
-              borderColor: isDarkMode ? theme.border : 'rgba(0,0,0,0.05)',
-              shadowColor: isDarkMode ? 'transparent' : '#000'
-            }]}
-            onPress={onMenuToggle}
-            activeOpacity={0.8}
-          >
-            <View style={styles.hamburgerIcon}>
-              <View style={[styles.hamburgerLine, { backgroundColor: isDarkMode ? theme.textPrimary : '#1F2937' }]} />
-              <View style={[styles.hamburgerLine, { backgroundColor: isDarkMode ? theme.textPrimary : '#1F2937' }]} />
-              <View style={[styles.hamburgerLine, { backgroundColor: isDarkMode ? theme.textPrimary : '#1F2937' }]} />
-            </View>
-            {unreadNotificationsCount > 0 && (
-              <NotificationBadge 
-                count={unreadNotificationsCount} 
-                size="small"
-                style={styles.notificationBadge}
-              />
-            )}
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <View style={styles.content}>
+        <TouchableOpacity 
+          style={[styles.menuButton, { 
+            backgroundColor: isDarkMode ? theme.surfaceElevated : 'rgba(255,255,255,0.95)',
+            borderColor: isDarkMode ? theme.border : 'rgba(0,0,0,0.05)',
+            shadowColor: isDarkMode ? 'transparent' : '#000'
+          }]}
+          onPress={onMenuToggle}
+          activeOpacity={0.8}
+        >
+          <View style={styles.hamburgerIcon}>
+            <View style={[styles.hamburgerLine, { backgroundColor: isDarkMode ? theme.textPrimary : '#1F2937' }]} />
+            <View style={[styles.hamburgerLine, { backgroundColor: isDarkMode ? theme.textPrimary : '#1F2937' }]} />
+            <View style={[styles.hamburgerLine, { backgroundColor: isDarkMode ? theme.textPrimary : '#1F2937' }]} />
+          </View>
+          {unreadNotificationsCount > 0 && (
+            <NotificationBadge 
+              count={unreadNotificationsCount} 
+              size="small"
+              style={styles.notificationBadge}
+            />
+          )}
+        </TouchableOpacity>
+      </View>
     </Animated.View>
   );
 }
@@ -58,6 +56,7 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 100,
     backgroundColor: 'transparent',
+    paddingTop: 50,
   },
   content: {
     flexDirection: 'row',
@@ -65,7 +64,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingLeft: 20,
     paddingRight: 24,
-    paddingTop: 16,
+    paddingTop: 8,
     paddingBottom: 8,
   },
   menuButton: {

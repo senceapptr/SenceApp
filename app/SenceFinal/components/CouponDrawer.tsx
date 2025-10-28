@@ -15,7 +15,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PanGestureHandler, State, GestureHandlerRootView } from 'react-native-gesture-handler';
-import { couponsService } from '@/services';
+import { couponsService } from '@/services/coupons.service';
+import { useAuth } from '../contexts/AuthContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -42,6 +43,7 @@ export function CouponDrawer({
   userCredits = 0,
   onCouponCreated
 }: CouponDrawerProps) {
+  const { refreshProfile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [betAmount, setBetAmount] = useState(10);
   const [showLeagueWarning, setShowLeagueWarning] = useState<number | null>(null);
@@ -53,12 +55,36 @@ export function CouponDrawer({
   const contentScale = useRef(new Animated.Value(0.95)).current;
   const panY = useRef(new Animated.Value(0)).current;
   const handleScale = useRef(new Animated.Value(1)).current;
+  const closeButtonScale = useRef(new Animated.Value(1)).current;
+  const headerIconRotate = useRef(new Animated.Value(0)).current;
   
   // Gesture state
   const [isDragging, setIsDragging] = useState(false);
 
   const totalOdds = selections.reduce((acc, selection) => acc * selection.odds, 1);
   const potentialWin = totalOdds * betAmount;
+
+  // Header icon subtle rotation animation
+  useEffect(() => {
+    if (isOpen && selections.length > 0) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(headerIconRotate, {
+            toValue: 1,
+            duration: 2000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(headerIconRotate, {
+            toValue: 0,
+            duration: 2000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [isOpen, selections.length]);
 
   // Mock function to check if question affects league
   const affectsLeague = (questionId: number) => {
@@ -94,19 +120,19 @@ export function CouponDrawer({
       // Reset content animations
       contentScale.setValue(1);
       
-      // Smooth closing animation with spring physics
+      // Çok hızlı kapanış animasyonu - ana sayfa donmasın
       Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: SCREEN_HEIGHT,
           useNativeDriver: true,
-          tension: 80,
-          friction: 6,
+          tension: 200, // Çok daha hızlı
+          friction: 3,  // Çok daha hızlı
           restDisplacementThreshold: 0.01,
           restSpeedThreshold: 0.01,
         }),
         Animated.timing(backdropOpacity, {
           toValue: 0,
-          duration: 250,
+          duration: 100, // Çok daha hızlı
           useNativeDriver: true,
           easing: Easing.in(Easing.cubic),
         }),
@@ -143,6 +169,9 @@ export function CouponDrawer({
       setIsSubmitting(false);
       onClearAll();
       onClose();
+      
+      // Profil verilerini yenile (kredi güncellemesi için)
+      await refreshProfile();
       
       // Kuponlarım sayfasını yenile
       if (onCouponCreated) {
@@ -312,38 +341,44 @@ export function CouponDrawer({
               onHandlerStateChange={onHandlerStateChange}
             >
               <Animated.View>
-                <LinearGradient
-                  colors={['rgba(242,243,245,0.95)', 'rgba(242,243,245,0.98)']}
-                  style={styles.handleContainer}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 1 }}
+                <View
+                  style={[styles.handleContainer, { backgroundColor: '#432870' }]}
                 >
                   <Animated.View 
                     style={[
                       styles.handle,
                       {
-                        transform: [{ scale: handleScale }]
+                        transform: [{ scale: handleScale }],
+                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
                       }
                     ]} 
                   />
-                </LinearGradient>
+                </View>
               </Animated.View>
             </PanGestureHandler>
 
-          {/* Header */}
+          {/* Header - Modern Purple Design */}
           <View style={styles.header}>
-            <LinearGradient
-              colors={['rgba(242,243,245,0.8)', 'rgba(242,243,245,0.9)']}
-              style={styles.headerGradient}
-            >
+            <View style={styles.headerGradient}>
               <View style={styles.headerContent}>
                 <View style={styles.headerLeft}>
-                  <LinearGradient
-                    colors={['#432870', '#5A3A8B', '#3A1F5C']}
-                    style={styles.headerIcon}
+                  <Animated.View
+                    style={{
+                      transform: [{
+                        rotate: headerIconRotate.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['-3deg', '3deg'],
+                        })
+                      }]
+                    }}
                   >
-                    <View style={styles.headerIconInner} />
-                  </LinearGradient>
+                    <LinearGradient
+                      colors={['rgba(255, 255, 255, 0.3)', 'rgba(255, 255, 255, 0.2)']}
+                      style={styles.headerIcon}
+                    >
+                      <Ionicons name="ticket" size={20} color="#FFFFFF" />
+                    </LinearGradient>
+                  </Animated.View>
                   <View style={styles.headerText}>
                     <Text style={styles.headerTitle}>Kuponum</Text>
                     <View style={styles.headerSubtitle}>
@@ -364,13 +399,35 @@ export function CouponDrawer({
                 
                 <TouchableOpacity
                   onPress={onClose}
-                  style={styles.closeButton}
-                  activeOpacity={0.7}
+                  onPressIn={() => {
+                    Animated.spring(closeButtonScale, {
+                      toValue: 0.9,
+                      useNativeDriver: true,
+                      tension: 300,
+                      friction: 10,
+                    }).start();
+                  }}
+                  onPressOut={() => {
+                    Animated.spring(closeButtonScale, {
+                      toValue: 1,
+                      useNativeDriver: true,
+                      tension: 300,
+                      friction: 10,
+                    }).start();
+                  }}
+                  activeOpacity={1}
                 >
-                  <Ionicons name="close" size={20} color="#432870" />
+                  <Animated.View 
+                    style={[
+                      styles.closeButton,
+                      { transform: [{ scale: closeButtonScale }] }
+                    ]}
+                  >
+                    <Ionicons name="close" size={24} color="#FFFFFF" />
+                  </Animated.View>
                 </TouchableOpacity>
               </View>
-            </LinearGradient>
+            </View>
           </View>
 
           {selections.length === 0 ? (
@@ -392,10 +449,7 @@ export function CouponDrawer({
               >
                 {selections.map((selection) => (
                   <View key={selection.id} style={styles.selectionCard}>
-                    <LinearGradient
-                      colors={['#FFFFFF', '#F8F9FA', '#F2F3F5']}
-                      style={styles.selectionGradient}
-                    >
+                    <View style={styles.selectionGradient}>
                       <View style={styles.selectionContent}>
                         <View style={styles.selectionMain}>
                           <Text style={styles.selectionTitle} numberOfLines={2}>
@@ -450,21 +504,15 @@ export function CouponDrawer({
                           <Ionicons name="trash-outline" size={16} color="#EF4444" />
                         </TouchableOpacity>
                       </View>
-                    </LinearGradient>
+                    </View>
                   </View>
                 ))}
               </ScrollView>
 
               {/* Summary - Fixed at Bottom */}
               <View style={styles.summaryContainer}>
-                <LinearGradient
-                  colors={['#FFFFFF', '#FAFBFC', '#F2F3F5']}
-                  style={styles.summaryGradient}
-                >
-                  <LinearGradient
-                    colors={['#FFFFFF', '#FAFBFC', '#F8F9FA']}
-                    style={styles.summaryCard}
-                  >
+                <View style={styles.summaryGradient}>
+                  <View style={styles.summaryCard}>
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>Toplam Oran</Text>
                       <Text style={styles.summaryOdds}>
@@ -484,7 +532,7 @@ export function CouponDrawer({
                         <Text style={styles.betButtonText}>
                           {betAmount} kredi
                         </Text>
-                        <Ionicons name="pencil" size={16} color="#B29EFD" />
+                        <Ionicons name="pencil" size={16} color="#432870" />
                       </TouchableOpacity>
                     </View>
                     <View style={[styles.summaryRow, styles.summaryRowTotal]}>
@@ -493,7 +541,7 @@ export function CouponDrawer({
                         {Math.round(potentialWin)} kredi
                       </Text>
                     </View>
-                  </LinearGradient>
+                  </View>
 
                   {/* Action Buttons */}
                   <View style={styles.actionButtons}>
@@ -513,32 +561,28 @@ export function CouponDrawer({
                     <TouchableOpacity
                       onPress={handleSubmit}
                       disabled={isSubmitting || selections.length === 0}
-                      style={[styles.submitButton, (isSubmitting || selections.length === 0) && styles.submitButtonDisabled]}
+                      style={[
+                        styles.submitButton, 
+                        (isSubmitting || selections.length === 0) && styles.submitButtonDisabled,
+                        { 
+                          backgroundColor: isSubmitting || selections.length === 0 
+                            ? '#E5E7EB' 
+                            : '#432870' 
+                        }
+                      ]}
                       activeOpacity={0.8}
                     >
-                      <LinearGradient
-                        colors={
-                          isSubmitting || selections.length === 0
-                            ? ['#E5E7EB', '#E5E7EB']
-                            : ['#432870', '#5A3A8B', '#3A1F5C']
-                        }
-                        style={styles.submitButtonGradient}
-                      >
-                        {isSubmitting ? (
-                          <View style={styles.loadingContainer}>
-                            <View style={styles.spinner} />
-                            <Text style={styles.submitButtonTextDisabled}>Oluşturuluyor...</Text>
-                          </View>
-                        ) : (
-                          <View style={styles.submitContainer}>
-                            <Text style={styles.submitButtonText}>Kupon Oluştur</Text>
-                            <Text style={styles.submitButtonEmoji}>🚀</Text>
-                          </View>
-                        )}
-                      </LinearGradient>
+                      {isSubmitting ? (
+                        <View style={styles.loadingContainer}>
+                          <View style={styles.spinner} />
+                          <Text style={styles.submitButtonTextDisabled}>Oluşturuluyor...</Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.submitButtonText}>Kupon Oluştur</Text>
+                      )}
                     </TouchableOpacity>
                   </View>
-                </LinearGradient>
+                </View>
               </View>
             </>
           )}
@@ -685,7 +729,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'white',
+    backgroundColor: '#F5F5F7',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: SCREEN_HEIGHT * 0.85,
@@ -707,16 +751,23 @@ const styles = StyleSheet.create({
     width: 56,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#432870',
     alignSelf: 'center',
     marginTop: 8,
   },
   header: {
     overflow: 'hidden',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
   },
   headerGradient: {
+    backgroundColor: '#432870',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   headerContent: {
     flexDirection: 'row',
@@ -729,25 +780,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  headerIconInner: {
-    width: 20,
-    height: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    shadowColor: '#432870',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   headerText: {
     flex: 1,
@@ -755,7 +798,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#202020',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   headerSubtitle: {
@@ -766,26 +809,28 @@ const styles = StyleSheet.create({
   headerSubtitleText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#432870',
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   headerDot: {
     width: 6,
     height: 6,
-    backgroundColor: '#432870',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 3,
   },
   headerOdds: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#B29EFD',
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 16,
-    backgroundColor: '#F2F3F5',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   emptyState: {
     padding: 32,
@@ -837,8 +882,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   selectionGradient: {
-    borderWidth: 1,
-    borderColor: 'rgba(67,40,112,0.15)',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(67,40,112,0.1)',
     borderRadius: 16,
   },
   selectionContent: {
@@ -916,23 +962,25 @@ const styles = StyleSheet.create({
   },
   summaryContainer: {
     borderTopWidth: 1,
-    borderTopColor: 'rgba(67,40,112,0.15)',
+    borderTopColor: 'rgba(67,40,112,0.1)',
   },
   summaryGradient: {
+    backgroundColor: 'transparent',
     padding: 20,
     paddingTop: 12,
   },
   summaryCard: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 16,
+    padding: 18,
     marginBottom: 16,
-    shadowColor: '#000',
+    borderWidth: 4,
+    borderColor: '#432870',
+    shadowColor: '#432870',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(67,40,112,0.2)',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -943,18 +991,18 @@ const styles = StyleSheet.create({
   summaryRowTotal: {
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F2F3F5',
+    borderTopColor: 'rgba(67, 40, 112, 0.15)',
     marginBottom: 0,
   },
   summaryLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#202020',
+    color: '#6B7280',
   },
   summaryLabelTotal: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#202020',
+    color: '#111827',
   },
   summaryOdds: {
     fontSize: 20,
@@ -986,16 +1034,16 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: 'rgba(67, 40, 112, 0.05)',
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#B29EFD',
+    borderColor: '#432870',
     borderStyle: 'dashed',
   },
   betButtonText: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#B29EFD',
+    color: '#432870',
   },
   actionButtons: {
     flexDirection: 'row',
@@ -1023,20 +1071,18 @@ const styles = StyleSheet.create({
   submitButton: {
     flex: 2,
     borderRadius: 16,
-    overflow: 'hidden',
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonGradient: {
     paddingVertical: 14,
     paddingHorizontal: 28,
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#432870',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 4,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -1056,18 +1102,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#6B7280',
   },
-  submitContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   submitButtonText: {
     fontSize: 16,
     fontWeight: '700',
     color: 'white',
-  },
-  submitButtonEmoji: {
-    fontSize: 18,
   },
   warningOverlay: {
     flex: 1,

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Animated, ActivityIndicator, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../../contexts/AuthContext';
-import { leaguesService } from '@/services';
+import { leaguesService } from '@/services/leagues.service';
 import { League, LeaderboardUser } from '../types';
 
 interface LeaderboardModalProps {

@@ -239,3 +239,4 @@ Lig soruları ve chat sistemi artık backend'e hazır! Mock data kaldırıldı, 
 
 
 
+

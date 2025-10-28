@@ -18,6 +18,21 @@ export interface ActiveCoupon {
   potentialWinnings: number;
   endsIn: string;
   colors: [string, string];
+  // CouponDetailModal için gerekli alanlar
+  predictions?: Array<{
+    id: number;
+    questionId: number;
+    question: string;
+    choice: 'yes' | 'no';
+    odds: number;
+    category: string;
+    result?: 'won' | 'lost' | 'pending';
+  }>;
+  potentialEarnings?: number;
+  status?: 'live' | 'won' | 'lost';
+  createdAt?: Date;
+  username?: string;
+  investmentAmount?: number;
 }
 
 export interface TrendQuestion {

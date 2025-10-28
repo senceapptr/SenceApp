@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Text, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, Alert } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
-import { leaguesService } from '@/services';
+import { leaguesService } from '@/services/leagues.service';
 import { TabType, League } from './types';
 import { mockCurrentUser } from './utils';
 import { useHeaderAnimation } from './hooks';
@@ -12,6 +12,7 @@ import { LiglerimTab } from './Liglerim';
 import { OlusturTab } from './Olustur';
 import { LeagueQuestionsPage } from './LeagueQuestionsPage';
 import { LeaderboardModal } from './shared/LeaderboardModal';
+import { LeaguePageSkeleton } from './LeaguePageSkeleton';
 
 interface LeaguePageProps {
   onBack: () => void;
@@ -33,6 +34,7 @@ export function LeaguePage({
   const [showLeagueQuestions, setShowLeagueQuestions] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(true);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const { headerTranslateY, handleScroll } = useHeaderAnimation();
 
@@ -40,11 +42,13 @@ export function LeaguePage({
   const loadLeaguesData = async () => {
     if (!user) {
       setLoading(false);
+      setShowSkeleton(false);
       return;
     }
 
     try {
       setLoading(true);
+      setShowSkeleton(true);
       
       // Paralel olarak public ligler ve kullanıcının liglerini yükle
       const [publicLeaguesResult, userLeaguesResult] = await Promise.all([
@@ -109,6 +113,7 @@ export function LeaguePage({
       Alert.alert('Hata', 'Ligler yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
+      setShowSkeleton(false);
     }
   };
 
@@ -172,25 +177,10 @@ export function LeaguePage({
     setSelectedLeague(null);
   };
 
-  // Loading durumu
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <Header onMenuToggle={onMenuToggle} headerTranslateY={headerTranslateY}>
-          <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
-        </Header>
-        <View style={styles.loadingContent}>
-          <ActivityIndicator size="large" color="#432870" />
-          <Text style={styles.loadingText}>Ligler yükleniyor...</Text>
-        </View>
-      </View>
-    );
-  }
-
   // Giriş yapılmamış
   if (!user) {
     return (
-      <View style={[styles.container, styles.loadingContainer]}>
+      <View style={styles.container}>
         <Header onMenuToggle={onMenuToggle} headerTranslateY={headerTranslateY}>
           <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
         </Header>
@@ -230,41 +220,48 @@ export function LeaguePage({
         <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
       </Header>
 
-      {/* Tab Content */}
-      <ScrollView 
-        style={styles.content} 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-      >
-        <View style={styles.tabContent}>
-          {activeTab === 'discover' && (
-            <KesfetTab 
-              leagues={leagues}
-              currentUser={currentUser}
-              onJoinLeague={handleJoinLeague}
-              onLeaderboard={handleShowLeaderboard}
-            />
-          )}
-
-          {activeTab === 'my-leagues' && (
-            <LiglerimTab 
-              leagues={userLeagues}
-              currentUser={currentUser}
-              onDiscoverTab={handleDiscoverTab}
-              onShowLeagueQuestions={handleShowLeagueQuestions}
-            />
-          )}
-
-          {activeTab === 'create' && (
-            <OlusturTab 
-              currentUser={currentUser}
-              onSuccess={handleCreateSuccess}
-            />
-          )}
+      {/* Skeleton Loading */}
+      {showSkeleton ? (
+        <View style={styles.skeletonContainer} pointerEvents="none">
+          <LeaguePageSkeleton />
         </View>
-      </ScrollView>
+      ) : (
+        /* Tab Content */
+        <ScrollView 
+          style={styles.content} 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+        >
+          <View style={styles.tabContent}>
+            {activeTab === 'discover' && (
+              <KesfetTab 
+                leagues={leagues}
+                currentUser={currentUser}
+                onJoinLeague={handleJoinLeague}
+                onLeaderboard={handleShowLeaderboard}
+              />
+            )}
+
+            {activeTab === 'my-leagues' && (
+              <LiglerimTab 
+                leagues={userLeagues}
+                currentUser={currentUser}
+                onDiscoverTab={handleDiscoverTab}
+                onShowLeagueQuestions={handleShowLeagueQuestions}
+              />
+            )}
+
+            {activeTab === 'create' && (
+              <OlusturTab 
+                currentUser={currentUser}
+                onSuccess={handleCreateSuccess}
+              />
+            )}
+          </View>
+        </ScrollView>
+      )}
 
       {/* Leaderboard Modal */}
       <LeaderboardModal
@@ -281,6 +278,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F2F3F5',
   },
+  skeletonContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 100,
+  },
   content: {
     flex: 1,
   },
@@ -292,20 +297,10 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 60,
   },
-  loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   loadingContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#432870',
   },
   errorText: {
     fontSize: 16,

@@ -103,7 +103,7 @@ export function AlternativeCouponsPage({ onMenuToggle }: AlternativeCouponsPageP
   // Mock coupon data with statistics
   const mockCoupons: Coupon[] = [
     {
-      id: 1,
+      id: 100,
       predictions: [
         { id: 1, question: "Bitcoin bu yıl 100.000 doları aşacak mı?", choice: 'yes', odds: 2.4, category: 'Kripto', result: 'pending' },
         { id: 2, question: "ChatGPT-5 2024'te çıkacak mı?", choice: 'yes', odds: 1.8, category: 'Teknoloji', result: 'pending' },
@@ -118,7 +118,7 @@ export function AlternativeCouponsPage({ onMenuToggle }: AlternativeCouponsPageP
       investmentAmount: 500
     },
     {
-      id: 2,
+      id: 101,
       predictions: [
         { id: 4, question: "Apple Vision Pro Türkiye'ye bu yıl gelecek mi?", choice: 'yes', odds: 1.9, category: 'Teknoloji', result: 'won' },
         { id: 5, question: "Netflix abonelik fiyatları %50 artacak mı?", choice: 'yes', odds: 2.2, category: 'Teknoloji', result: 'won' }
@@ -132,7 +132,7 @@ export function AlternativeCouponsPage({ onMenuToggle }: AlternativeCouponsPageP
       investmentAmount: 500
     },
     {
-      id: 3,
+      id: 102,
       predictions: [
         { id: 6, question: "Tesla Model Y fiyatı düşecek mi?", choice: 'no', odds: 1.5, category: 'Finans', result: 'lost' },
         { id: 7, question: "Instagram Reels özelliği kaldırılacak mı?", choice: 'yes', odds: 4.2, category: 'Sosyal-Medya', result: 'lost' }

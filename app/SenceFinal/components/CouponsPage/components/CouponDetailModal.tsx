@@ -2,11 +2,12 @@ import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Image, Platform, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Coupon } from '../types';
+import { ActiveCoupon } from '../../HomePage/types';
 import { getModalGradientColors } from '../utils';
 
 interface CouponDetailModalProps {
   visible: boolean;
-  coupon: Coupon | null;
+  coupon: Coupon | ActiveCoupon | null;
   onClose: () => void;
   onClaimReward?: (couponId: number) => void;
   onQuestionDetail?: (questionId: number) => void;
@@ -50,8 +51,8 @@ export function CouponDetailModal({ visible, coupon, onClose, onClaimReward, onQ
                 style={styles.userImage}
               />
               <View>
-                <Text style={styles.title}>Kupon #{coupon.id}</Text>
-                <Text style={styles.username}>{coupon.username}</Text>
+                <Text style={styles.title}>Kupon #{coupon.display_id || coupon.id}</Text>
+                <Text style={styles.username}>{coupon.username || 'Kullanıcı'}</Text>
               </View>
             </View>
             <TouchableOpacity
@@ -65,7 +66,7 @@ export function CouponDetailModal({ visible, coupon, onClose, onClaimReward, onQ
           <View style={styles.stats}>
             <View style={styles.stat}>
               <Text style={styles.statLabel}>Yatırım</Text>
-              <Text style={styles.statValue}>{coupon.investmentAmount?.toLocaleString()} kredi</Text>
+              <Text style={styles.statValue}>{coupon.investmentAmount?.toLocaleString() || '0'} kredi</Text>
             </View>
             <View style={styles.stat}>
               <Text style={styles.statLabel}>Toplam Oran</Text>
@@ -73,7 +74,7 @@ export function CouponDetailModal({ visible, coupon, onClose, onClaimReward, onQ
             </View>
             <View style={styles.stat}>
               <Text style={styles.statLabel}>Potansiyel</Text>
-              <Text style={styles.statValue}>{coupon.potentialEarnings.toLocaleString()} kredi</Text>
+              <Text style={styles.statValue}>{(coupon.potentialEarnings || coupon.potentialWinnings || 0).toLocaleString()} kredi</Text>
             </View>
           </View>
           </LinearGradient>
@@ -88,13 +89,13 @@ export function CouponDetailModal({ visible, coupon, onClose, onClaimReward, onQ
           <View style={styles.contentInner}>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>
-                Tahminler ({coupon.predictions.length})
+                Tahminler ({coupon.predictions?.length || 0})
               </Text>
               <Text style={styles.sectionDate}>09.08.2025</Text>
             </View>
 
             <View style={styles.predictions}>
-            {coupon.predictions.map((prediction) => (
+            {(coupon.predictions || []).map((prediction) => (
               <TouchableOpacity
                 key={prediction.id}
                 style={[

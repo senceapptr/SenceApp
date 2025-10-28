@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator, Text, Alert } from 'react-native';
 import { StatusBar } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
-import { profileService, predictionsService } from '@/services';
+import { profileService } from '@/services/profile.service';
+import { predictionsService } from '@/services/predictions.service';
 import { ProfilePageProps, Prediction, CreditHistoryItem } from './types';
 import { useProfileAnimations, useProfileState } from './hooks';
 import { ANIMATION_CONSTANTS, profileData, creditHistory } from './utils';
@@ -56,7 +57,7 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
       // Paralel olarak tüm verileri yükle
       const [predictionsResult, statsResult] = await Promise.all([
         predictionsService.getUserPredictions(user.id),
-        profileService.getUserStats(user.id),
+        profileService.getProfileStats(user.id),
       ]);
 
       // Predictions

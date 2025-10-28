@@ -83,7 +83,17 @@ export const validateQuestionForm = (
   description: string,
   endDate: string
 ): boolean => {
-  return Boolean(question.trim() && description.trim() && endDate);
+  if (!question.trim() || !endDate) {
+    return false;
+  }
+  
+  // Check if the end date is in the future
+  const today = new Date();
+  const selectedDate = new Date(endDate);
+  const oneWeekFromNow = new Date();
+  oneWeekFromNow.setDate(today.getDate() + 7);
+  
+  return selectedDate >= oneWeekFromNow;
 };
 
 // Guidelines data

@@ -95,3 +95,4 @@ WHERE user_id = 'YOUR_USER_ID_HERE'; -- Buraya gerçek user ID'sini yazın
 
 
 
+

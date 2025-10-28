@@ -8,9 +8,17 @@ export const useHeaderAnimation = () => {
   const lastScrollY = useRef(0);
   const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isScrolling = useRef(false);
+  const isInitialized = useRef(false);
 
   useEffect(() => {
+    // İlk render'dan sonra aktif et
+    const initTimer = setTimeout(() => {
+      isInitialized.current = true;
+    }, 300);
+
     const listenerId = scrollY.addListener(({ value }) => {
+      if (!isInitialized.current) return;
+      
       const currentScrollY = value;
       const scrollDelta = currentScrollY - lastScrollY.current;
       
@@ -50,6 +58,7 @@ export const useHeaderAnimation = () => {
     });
 
     return () => {
+      clearTimeout(initTimer);
       scrollY.removeListener(listenerId);
       if (scrollTimeout.current) {
         clearTimeout(scrollTimeout.current);
@@ -59,6 +68,7 @@ export const useHeaderAnimation = () => {
 
   return { headerTranslateY, scrollY };
 };
+
 
 
 

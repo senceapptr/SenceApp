@@ -138,3 +138,4 @@ RLS policy'leri düzeltildikten sonra:
 
 
 
+

@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
-import { tasksService } from '@/services';
+import { tasksService } from '@/services/tasks.service';
 import { Task, TaskTab } from './types';
 
 export function useTasks() {

@@ -43,6 +43,8 @@ export function TrendQuestionCard({ question, onQuestionPress, onVote }: TrendQu
   const handleCardPressIn = () => {
     Animated.spring(cardScale, {
       toValue: 0.97,
+      tension: 300, // Daha hızlı animasyon
+      friction: 8,  // Daha hızlı animasyon
       useNativeDriver: true,
     }).start();
   };
@@ -50,6 +52,8 @@ export function TrendQuestionCard({ question, onQuestionPress, onVote }: TrendQu
   const handleCardPressOut = () => {
     Animated.spring(cardScale, {
       toValue: 1,
+      tension: 300, // Daha hızlı animasyon
+      friction: 8,  // Daha hızlı animasyon
       useNativeDriver: true,
     }).start();
   };
@@ -57,16 +61,17 @@ export function TrendQuestionCard({ question, onQuestionPress, onVote }: TrendQu
   const handleYesPressIn = () => {
     Animated.timing(yesFillAnim, {
       toValue: 1,
-      duration: 250,
+      duration: 50, // Çok daha hızlı animasyon
       easing: Easing.out(Easing.quad),
       useNativeDriver: false,
     }).start();
   };
 
   const handleYesPressOut = () => {
+    onVote(question.id, 'yes', question.yesOdds); // Önce onVote'u çağır
     Animated.timing(yesFillAnim, {
       toValue: 0,
-      duration: 250,
+      duration: 50, // Çok daha hızlı animasyon
       easing: Easing.in(Easing.quad),
       useNativeDriver: false,
     }).start();
@@ -75,16 +80,17 @@ export function TrendQuestionCard({ question, onQuestionPress, onVote }: TrendQu
   const handleNoPressIn = () => {
     Animated.timing(noFillAnim, {
       toValue: 1,
-      duration: 250,
+      duration: 50, // Çok daha hızlı animasyon
       easing: Easing.out(Easing.quad),
       useNativeDriver: false,
     }).start();
   };
 
   const handleNoPressOut = () => {
+    onVote(question.id, 'no', question.noOdds); // Önce onVote'u çağır
     Animated.timing(noFillAnim, {
       toValue: 0,
-      duration: 250,
+      duration: 50, // Çok daha hızlı animasyon
       easing: Easing.in(Easing.quad),
       useNativeDriver: false,
     }).start();
@@ -105,7 +111,7 @@ export function TrendQuestionCard({ question, onQuestionPress, onVote }: TrendQu
       onPress={() => onQuestionPress(question.id)}
       onPressIn={handleCardPressIn}
       onPressOut={handleCardPressOut}
-      activeOpacity={0.95}
+      activeOpacity={0.98} // Daha az opacity değişimi
       style={styles.cardContainer}
     >
       <Animated.View 

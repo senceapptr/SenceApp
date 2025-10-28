@@ -12,11 +12,15 @@ import {
   TextInput,
   SafeAreaView,
   Easing,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
+import { questionsService } from '../../../../services/questions.service';
+import { categoriesService } from '../../../../services/categories.service';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -28,21 +32,32 @@ interface Category {
 }
 
 interface Question {
-  id: number;
+  id: string;
   title: string;
-  category: string;
+  description?: string;
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    icon: string;
+    color: string;
+  };
   votes: number;
   timeLeft: string;
   yesOdds: number;
   noOdds: number;
   yesPercentage: number;
-  image: string;
+  image?: string;
+  end_date: string;
+  total_amount: number;
+  is_trending: boolean;
+  is_featured: boolean;
 }
 
 interface CategoryQuestionsPageProps {
   category: Category;
   onBack: () => void;
-  handleQuestionDetail: (questionId: string) => void;
+  handleQuestionDetail: (questionId: string, sourceCategory?: any) => void;
   handleVote: (questionId: string, vote: 'yes' | 'no', odds: number) => void;
   onMenuToggle?: () => void;
 }
@@ -60,51 +75,186 @@ export function CategoryQuestionsPage({
   const [sortBy, setSortBy] = useState<SortType>('date');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
   // Header animation values
   const headerTranslateY = useRef(new Animated.Value(0)).current;
   const lastScrollY = useRef(0);
   const hideTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Mock questions data
-  const mockQuestions: Question[] = [
-    {
-      id: 1,
-      title: `${category.label} kategorisinde örnek soru 1`,
-      category: category.label,
-      votes: 12500,
-      timeLeft: '2g 14s',
-      yesOdds: 2.4,
-      noOdds: 1.6,
-      yesPercentage: 62,
-      image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&h=600&fit=crop'
-    },
-    {
-      id: 2,
-      title: `${category.label} kategorisinde örnek soru 2`,
-      category: category.label,
-      votes: 8900,
-      timeLeft: '1g 8s',
-      yesOdds: 1.8,
-      noOdds: 2.2,
-      yesPercentage: 45,
-      image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&h=600&fit=crop'
-    },
-    {
-      id: 3,
-      title: `${category.label} kategorisinde örnek soru 3`,
-      category: category.label,
-      votes: 15600,
-      timeLeft: '3g 22s',
-      yesOdds: 3.2,
-      noOdds: 1.4,
-      yesPercentage: 78,
-      image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=600&fit=crop'
-    },
-  ];
+  // Backend functions
+  const loadQuestions = async (reset: boolean = false) => {
+    try {
+      if (reset) {
+        setOffset(0);
+        setQuestions([]);
+        setHasMore(true);
+      }
+
+      let result;
+      
+      // Determine if this is a filter or category
+      if (category.id === 'all') {
+        result = await questionsService.getAllQuestions({
+          limit: 20,
+          offset: reset ? 0 : offset,
+        });
+      } else if (category.id === 'trending') {
+        result = await questionsService.getAllQuestions({
+          trending: true,
+          limit: 20,
+          offset: reset ? 0 : offset,
+        });
+      } else if (category.id === 'high-odds') {
+        result = await questionsService.getAllQuestions({
+          highOdds: true,
+          limit: 20,
+          offset: reset ? 0 : offset,
+        });
+      } else if (category.id === 'ending-soon') {
+        result = await questionsService.getAllQuestions({
+          endingSoon: true,
+          limit: 20,
+          offset: reset ? 0 : offset,
+        });
+      } else {
+        // Category-based questions
+        result = await questionsService.getQuestionsByCategory(
+          category.id,
+          20,
+          reset ? 0 : offset
+        );
+      }
+
+      if (result.error) {
+        console.error('Load questions error:', result.error);
+        Alert.alert('Hata', 'Sorular yüklenirken bir hata oluştu.');
+        return;
+      }
+
+      const newQuestions = result.data || [];
+      
+              // Transform backend data to frontend format
+              const transformedQuestions: Question[] = newQuestions.map((q: any) => {
+                // Kategoriye göre doğru kategoriyi seç
+                let displayCategory;
+                if (q.category_id === category.id) {
+                  displayCategory = q.categories;
+                } else if (q.secondary_category_id === category.id) {
+                  displayCategory = q.secondary_category;
+                } else if (q.third_category_id === category.id) {
+                  displayCategory = q.third_category;
+                } else {
+                  displayCategory = q.categories; // fallback
+                }
+                
+                return {
+                  id: q.id,
+                  title: q.title,
+                  description: q.description,
+                  category: displayCategory,
+                  votes: q.total_votes || 0,
+                  timeLeft: calculateTimeLeft(q.end_date),
+                  yesOdds: q.yes_odds || 2.0,
+                  noOdds: q.no_odds || 2.0,
+                  yesPercentage: q.yes_percentage || 50,
+                  image: q.image_url,
+                  end_date: q.end_date,
+                  total_amount: q.total_amount || 0,
+                  is_trending: q.is_trending || false,
+                  is_featured: q.is_featured || false,
+                };
+              });
+
+      if (reset) {
+        setQuestions(transformedQuestions);
+      } else {
+        setQuestions(prev => [...prev, ...transformedQuestions]);
+      }
+
+      setOffset(prev => prev + 20);
+      setHasMore(newQuestions.length === 20);
+
+    } catch (error) {
+      console.error('Load questions error:', error);
+      Alert.alert('Hata', 'Sorular yüklenirken bir hata oluştu.');
+    }
+  };
+
+  const searchQuestions = async (query: string) => {
+    try {
+      const result = await questionsService.searchQuestions(query, 20, 0);
+      
+      if (result.error) {
+        console.error('Search questions error:', result.error);
+        return;
+      }
+
+      const newQuestions = result.data || [];
+      
+              // Transform backend data to frontend format
+              const transformedQuestions: Question[] = newQuestions.map((q: any) => {
+                // Kategoriye göre doğru kategoriyi seç
+                let displayCategory;
+                if (q.category_id === category.id) {
+                  displayCategory = q.categories;
+                } else if (q.secondary_category_id === category.id) {
+                  displayCategory = q.secondary_category;
+                } else if (q.third_category_id === category.id) {
+                  displayCategory = q.third_category;
+                } else {
+                  displayCategory = q.categories; // fallback
+                }
+                
+                return {
+                  id: q.id,
+                  title: q.title,
+                  description: q.description,
+                  category: displayCategory,
+                  votes: q.total_votes || 0,
+                  timeLeft: calculateTimeLeft(q.end_date),
+                  yesOdds: q.yes_odds || 2.0,
+                  noOdds: q.no_odds || 2.0,
+                  yesPercentage: q.yes_percentage || 50,
+                  image: q.image_url,
+                  end_date: q.end_date,
+                  total_amount: q.total_amount || 0,
+                  is_trending: q.is_trending || false,
+                  is_featured: q.is_featured || false,
+                };
+              });
+
+      setQuestions(transformedQuestions);
+      setOffset(20);
+      setHasMore(newQuestions.length === 20);
+
+    } catch (error) {
+      console.error('Search questions error:', error);
+    }
+  };
+
+  const calculateTimeLeft = (endDate: string): string => {
+    const now = new Date();
+    const end = new Date(endDate);
+    const diff = end.getTime() - now.getTime();
+    
+    if (diff <= 0) return 'Bitti';
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (days > 0) return `${days}g ${hours}s`;
+    if (hours > 0) return `${hours}s ${minutes}d`;
+    return `${minutes}d`;
+  };
 
   // Filter questions based on search query
-  const filteredQuestions = mockQuestions.filter(question => {
+  const filteredQuestions = questions.filter(question => {
     if (searchQuery === '') return true;
     return question.title.toLowerCase().includes(searchQuery.toLowerCase());
   });
@@ -117,6 +267,21 @@ export function CategoryQuestionsPage({
     yesFillAnim: Animated.Value;
     noFillAnim: Animated.Value;
   }}>({});
+
+  // Load questions on component mount
+  useEffect(() => {
+    setLoading(true);
+    loadQuestions(true).finally(() => setLoading(false));
+  }, [category.id]);
+
+  // Handle search
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      searchQuestions(searchQuery);
+    } else {
+      loadQuestions(true);
+    }
+  }, [searchQuery]);
 
   // Ensure animations exist for all questions
   filteredQuestions.forEach((question, index) => {
@@ -303,7 +468,17 @@ export function CategoryQuestionsPage({
           </TouchableOpacity>
         </View>
 
-        {filteredQuestions.map((question, index) => {
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#432870" />
+            <Text style={styles.loadingText}>Sorular yükleniyor...</Text>
+          </View>
+        ) : filteredQuestions.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Bu kategoride henüz soru bulunmuyor.</Text>
+          </View>
+        ) : (
+          filteredQuestions.map((question, index) => {
           const noPercentage = 100 - question.yesPercentage;
           const animation = cardAnimationsRef.current[index] || {
             yesBarWidth: new Animated.Value(0),
@@ -376,7 +551,7 @@ export function CategoryQuestionsPage({
           return (
           <TouchableOpacity
             key={question.id}
-            onPress={() => handleQuestionDetail(question.id)}
+            onPress={() => handleQuestionDetail(question.id, question.category)}
             onPressIn={handleCardPressIn}
             onPressOut={handleCardPressOut}
             activeOpacity={0.95}
@@ -511,7 +686,8 @@ export function CategoryQuestionsPage({
             </Animated.View>
           </TouchableOpacity>
           );
-        })}
+        })
+        )}
 
         {filteredQuestions.length === 0 && (
           <View style={styles.emptyState}>
@@ -541,7 +717,7 @@ export function CategoryQuestionsPage({
           <View style={styles.sortMenuContainer}>
             <View style={[styles.sortMenu, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <View style={styles.sortMenuHeader}>
-                <Text style={[styles.sortMenuTitle, { color: theme.text }]}>Sıralama Seçenekleri</Text>
+                <Text style={[styles.sortMenuTitle, { color: theme.textPrimary }]}>Sıralama Seçenekleri</Text>
                 <TouchableOpacity
                   onPress={() => setShowSortMenu(false)}
                   style={styles.sortMenuCloseButton}
@@ -569,7 +745,7 @@ export function CategoryQuestionsPage({
                     <View style={styles.sortOptionTextContainer}>
                       <Text style={[
                         styles.sortOptionLabel,
-                        { color: sortBy === option.id ? '#432870' : theme.text }
+                        { color: sortBy === option.id ? '#432870' : theme.textPrimary }
                       ]}>
                         {option.label}
                       </Text>
@@ -961,6 +1137,28 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#432870',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });
 

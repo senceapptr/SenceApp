@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,15 @@ import {
   Image,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
+import { profileService } from '@/services/profile.service';
+import { ImagePicker } from '@/components/ImagePicker';
 
 interface UserProfile {
   username: string;
@@ -25,24 +29,188 @@ interface UserProfile {
 
 interface EditProfilePageProps {
   onBack: () => void;
-  userProfile: UserProfile;
-  onUpdateProfile: (profile: Partial<UserProfile>) => void;
+  userProfile?: UserProfile;
+  onUpdateProfile?: (profile: Partial<UserProfile>) => void;
 }
 
 export function EditProfilePage({ onBack, userProfile, onUpdateProfile }: EditProfilePageProps) {
   const { theme, isDarkMode } = useTheme();
-  const [profileData, setProfileData] = useState<UserProfile>(userProfile);
+  const { user, profile, updateProfile: updateAuthProfile } = useAuth();
+  const [profileData, setProfileData] = useState<UserProfile>(userProfile || {
+    username: profile?.username || user?.email?.split('@')[0] || 'kullanici',
+    fullName: profile?.full_name || user?.email?.split('@')[0] || 'Kullanıcı',
+    bio: profile?.bio || 'Henüz bio eklenmedi',
+    email: user?.email || '',
+    profileImage: profile?.profile_image || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
+    coverImage: profile?.cover_image || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop'
+  });
+  const [loading, setLoading] = useState(false);
+  const [checkingUsername, setCheckingUsername] = useState(false);
 
-  const handleSave = () => {
+  // Fotoğraf değiştirme fonksiyonları
+  const handleProfileImageChange = async (imageUri: string) => {
+    try {
+      setLoading(true);
+      
+      if (!user) {
+        Alert.alert('Hata', 'Kullanıcı girişi bulunamadı.');
+        return;
+      }
+
+      // Profil fotoğrafını yükle
+      const { data: uploadedUrl, error } = await profileService.uploadProfileImage(user.id, imageUri);
+      
+      if (error) {
+        Alert.alert('Hata', error.message);
+        return;
+      }
+
+      if (uploadedUrl) {
+        // Profil fotoğrafını güncelle
+        const { error: updateError } = await profileService.updateProfile(user.id, {
+          profile_image: uploadedUrl
+        });
+
+        if (updateError) {
+          Alert.alert('Hata', 'Profil fotoğrafı güncellenirken bir hata oluştu.');
+          return;
+        }
+
+        // Local state'i güncelle
+        setProfile(prev => ({ ...prev, profile_image: uploadedUrl }));
+        Alert.alert('Başarılı', 'Profil fotoğrafı başarıyla güncellendi.');
+      }
+    } catch (error) {
+      console.error('Profile image change error:', error);
+      Alert.alert('Hata', 'Fotoğraf değiştirilirken bir hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCoverImageChange = async (imageUri: string) => {
+    try {
+      setLoading(true);
+      
+      if (!user) {
+        Alert.alert('Hata', 'Kullanıcı girişi bulunamadı.');
+        return;
+      }
+
+      // Kapak fotoğrafını yükle
+      const { data: uploadedUrl, error } = await profileService.uploadCoverImage(user.id, imageUri);
+      
+      if (error) {
+        Alert.alert('Hata', error.message);
+        return;
+      }
+
+      if (uploadedUrl) {
+        // Kapak fotoğrafını güncelle
+        const { error: updateError } = await profileService.updateProfile(user.id, {
+          cover_image: uploadedUrl
+        });
+
+        if (updateError) {
+          Alert.alert('Hata', 'Kapak fotoğrafı güncellenirken bir hata oluştu.');
+          return;
+        }
+
+        // Local state'i güncelle
+        setProfile(prev => ({ ...prev, cover_image: uploadedUrl }));
+        Alert.alert('Başarılı', 'Kapak fotoğrafı başarıyla güncellendi.');
+      }
+    } catch (error) {
+      console.error('Cover image change error:', error);
+      Alert.alert('Hata', 'Kapak fotoğrafı değiştirilirken bir hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user) {
+      Alert.alert('Hata', 'Kullanıcı girişi bulunamadı.');
+      return;
+    }
+
     if (!profileData.username.trim() || !profileData.email.trim() || !profileData.fullName.trim()) {
       Alert.alert('Hata', 'Kullanıcı adı, isim ve e-posta zorunludur.');
       return;
     }
 
-    onUpdateProfile(profileData);
-    Alert.alert('✅ Başarılı', 'Profil bilgilerin güncellendi!', [
-      { text: 'Tamam', onPress: onBack }
-    ]);
+    setLoading(true);
+
+    try {
+      // Kullanıcı adı değişmişse kontrol et
+      if (profileData.username !== profile?.username) {
+        setCheckingUsername(true);
+        const { available, error: checkError } = await profileService.checkUsernameAvailability(
+          profileData.username,
+          user.id
+        );
+
+        if (checkError) {
+          Alert.alert('Hata', 'Kullanıcı adı kontrol edilirken bir hata oluştu.');
+          setLoading(false);
+          setCheckingUsername(false);
+          return;
+        }
+
+        if (!available) {
+          Alert.alert('Hata', 'Bu kullanıcı adı zaten kullanılıyor.');
+          setLoading(false);
+          setCheckingUsername(false);
+          return;
+        }
+        setCheckingUsername(false);
+      }
+
+      // Profili güncelle
+      const { data, error } = await profileService.updateProfile(user.id, {
+        username: profileData.username.trim(),
+        full_name: profileData.fullName.trim(),
+        bio: profileData.bio.trim(),
+        profile_image: profileData.profileImage,
+        cover_image: profileData.coverImage,
+      });
+
+      if (error) {
+        Alert.alert('Hata', 'Profil güncellenirken bir hata oluştu.');
+        setLoading(false);
+        return;
+      }
+
+      // AuthContext'teki profili de güncelle
+      const { error: authError } = await updateAuthProfile({
+        username: profileData.username.trim(),
+        full_name: profileData.fullName.trim(),
+        bio: profileData.bio.trim(),
+        profile_image: profileData.profileImage,
+        cover_image: profileData.coverImage,
+      });
+
+      if (authError) {
+        console.error('Auth profile update error:', authError);
+        // Hata olsa bile devam et, çünkü database güncellendi
+      }
+
+      // Local state'i güncelle
+      if (onUpdateProfile) {
+        onUpdateProfile(profileData);
+      }
+
+      Alert.alert('✅ Başarılı', 'Profil bilgilerin güncellendi!', [
+        { text: 'Tamam', onPress: onBack }
+      ]);
+
+    } catch (error) {
+      console.error('Save profile error:', error);
+      Alert.alert('Hata', 'Profil güncellenirken bir hata oluştu.');
+    } finally {
+      setLoading(false);
+      setCheckingUsername(false);
+    }
   };
 
   return (
@@ -66,14 +234,19 @@ export function EditProfilePage({ onBack, userProfile, onUpdateProfile }: EditPr
         
         <TouchableOpacity
           onPress={handleSave}
-          style={styles.saveButton}
+          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
           activeOpacity={0.8}
+          disabled={loading}
         >
           <LinearGradient
-            colors={['#432870', '#B29EFD']}
+            colors={loading ? ['#9CA3AF', '#6B7280'] : ['#432870', '#B29EFD']}
             style={styles.saveButtonGradient}
           >
-            <Text style={styles.saveButtonText}>Kaydet</Text>
+            {loading ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <Text style={styles.saveButtonText}>Kaydet</Text>
+            )}
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -85,12 +258,13 @@ export function EditProfilePage({ onBack, userProfile, onUpdateProfile }: EditPr
             source={{ uri: profileData.coverImage }}
             style={styles.coverPhoto}
           />
-          <TouchableOpacity style={styles.editCoverButton} activeOpacity={0.8}>
-            <View style={styles.editCoverButtonInner}>
-              <Ionicons name="camera" size={18} color="white" />
-              <Text style={styles.editCoverText}>Kapak Fotoğrafı</Text>
-            </View>
-          </TouchableOpacity>
+          <ImagePicker
+            onImageSelected={handleCoverImageChange}
+            userId={user?.id || ''}
+            uploadType="cover"
+            title="Kapak Fotoğrafı"
+            style={styles.editCoverButton}
+          />
         </View>
 
         {/* Profile Photo Section */}
@@ -100,14 +274,13 @@ export function EditProfilePage({ onBack, userProfile, onUpdateProfile }: EditPr
               source={{ uri: profileData.profileImage }}
               style={styles.avatar}
             />
-            <TouchableOpacity style={styles.editPhotoButton} activeOpacity={0.8}>
-              <LinearGradient
-                colors={['#432870', '#B29EFD']}
-                style={styles.editPhotoGradient}
-              >
-                <Ionicons name="camera" size={20} color="white" />
-              </LinearGradient>
-            </TouchableOpacity>
+            <ImagePicker
+              onImageSelected={handleProfileImageChange}
+              userId={user?.id || ''}
+              uploadType="profile"
+              title=""
+              style={styles.editPhotoButton}
+            />
           </View>
           <Text style={[styles.photoHint, { color: theme.textMuted }]}>
             Profil fotoğrafını değiştir
@@ -386,6 +559,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     flex: 1,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
 });
 

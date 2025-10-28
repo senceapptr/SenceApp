@@ -36,9 +36,62 @@ export const getStatusBorderColor = (status: 'live' | 'won' | 'lost'): string =>
   }
 };
 
-export const getStatusBadge = (status: 'live' | 'won' | 'lost') => {
+// Kalan süreyi hesapla
+export const calculateTimeRemaining = (endDate: Date): string => {
+  const now = new Date();
+  const diff = endDate.getTime() - now.getTime();
+  
+  if (diff <= 0) {
+    return 'Sona Erdi';
+  }
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  if (days > 0) {
+    return `${days}g ${hours}s`;
+  } else if (hours > 0) {
+    return `${hours}s ${minutes}d`;
+  } else if (minutes > 0) {
+    return `${minutes}d ${seconds}s`;
+  } else {
+    return `${seconds}s`;
+  }
+};
+
+// Kupon içerisindeki en son sonuçlanacak sorunun tarihini bul
+export const getLatestEndDate = (predictions: any[]): Date | null => {
+  if (!predictions || predictions.length === 0) return null;
+  
+  // Gerçek end_date'leri kullan
+  const validEndDates = predictions
+    .map(prediction => prediction.endDate)
+    .filter(endDate => endDate instanceof Date && !isNaN(endDate.getTime()));
+  
+  if (validEndDates.length === 0) {
+    // Eğer hiç end_date yoksa mock data oluştur
+    const now = new Date();
+    const randomDays = Math.floor(Math.random() * 3) + 2; // 2-4 gün
+    return new Date(now.getTime() + (randomDays * 24 * 60 * 60 * 1000));
+  }
+  
+  // En son sonuçlanacak sorunun tarihini bul
+  return new Date(Math.max(...validEndDates.map(date => date.getTime())));
+};
+
+export const getStatusBadge = (status: 'live' | 'won' | 'lost', predictions?: any[]) => {
   switch (status) {
-    case 'live': return { text: '⏰ Bekliyor', color: '#8B5CF6' };
+    case 'live': 
+      if (predictions && predictions.length > 0) {
+        const latestEndDate = getLatestEndDate(predictions);
+        if (latestEndDate) {
+          const timeRemaining = calculateTimeRemaining(latestEndDate);
+          return { text: `⏰ ${timeRemaining}`, color: '#8B5CF6' };
+        }
+      }
+      return { text: '⏰ Bekliyor', color: '#8B5CF6' };
     case 'won': return { text: '🎉 Kazandı', color: '#10B981' };
     case 'lost': return { text: '😞 Kaybetti', color: '#EF4444' };
     default: return { text: '⏰ Bekliyor', color: '#8B5CF6' };

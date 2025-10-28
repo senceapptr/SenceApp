@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
-  SafeAreaView,
   Easing,
   Image,
   Modal,
@@ -18,37 +17,40 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { CategoryQuestionsPage } from '../CategoryQuestionsPage';
 import { AnimatedHeroGradient } from '../AnimatedHeroGradient';
 import { FlameIcon } from './FlameIcon';
+import { categoriesService } from '../../../../services/categories.service';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface DiscoverPageProps {
   onBack: () => void;
   onMenuToggle: () => void;
-  handleQuestionDetail: (questionId: string) => void;
+  handleQuestionDetail: (questionId: string, sourceCategory?: any) => void;
   handleVote: (questionId: string, vote: 'yes' | 'no', odds: number) => void;
+  initialFilter?: FilterType;
 }
 
 type FilterType = 'all' | 'trending' | 'high-odds' | 'ending-soon' | null;
-type CategoryType = 'spor' | 'muzik' | 'finans' | 'magazin' | 'sosyal-medya' | 'politika' | 'teknoloji' | 'dizi-film' | 'global' | null;
+type CategoryType = 'spor' | 'eglence' | 'finans' | 'magazin' | 'sosyal-medya' | 'politika' | 'teknoloji' | 'sinema' | 'global' | null;
 
 // Categories array (defined outside component to avoid re-creation)
 const CATEGORIES = [
   { id: 'spor' as CategoryType, label: 'Spor', image: require('../../../../assets/images/spor_new.png'), color: '#34C759', icon: '⚽' },
-  { id: 'muzik' as CategoryType, label: 'Müzik', image: require('../../../../assets/images/muzik_new.png'), color: '#FF2D55', icon: '🎵' },
-  { id: 'finans' as CategoryType, label: 'Finans', image: require('../../../../assets/images/finans_new.png'), color: '#FF9500', icon: '💰' },
+  { id: 'eglence' as CategoryType, label: 'Müzik', image: require('../../../../assets/images/muzik_new.png'), color: '#FF2D55', icon: '🎵' },
+  { id: 'finans' as CategoryType, label: 'Finans', image: require('../../../../assets/images/finans_new.png'), color: '#10B981', icon: '💰' },
   { id: 'magazin' as CategoryType, label: 'Magazin', image: require('../../../../assets/images/magazin_new.png'), color: '#FF2D55', icon: '📸' },
   { id: 'sosyal-medya' as CategoryType, label: 'Sosyal Medya', image: require('../../../../assets/images/sosyal_medya_new.png'), color: '#007AFF', icon: '📱' },
   { id: 'politika' as CategoryType, label: 'Politika', image: require('../../../../assets/images/politika_new.png'), color: '#5856D6', icon: '🏛️' },
   { id: 'teknoloji' as CategoryType, label: 'Teknoloji', image: require('../../../../assets/images/teknoloji_new.png'), color: '#5AC8FA', icon: '💻' },
-  { id: 'dizi-film' as CategoryType, label: 'Dizi & Film', image: require('../../../../assets/images/sinema_new.png'), color: '#FF3B30', icon: '🎬' },
+  { id: 'sinema' as CategoryType, label: 'Sinema', image: require('../../../../assets/images/sinema_new.png'), color: '#FF3B30', icon: '🎬' },
   { id: 'global' as CategoryType, label: 'Global', image: require('../../../../assets/images/global_new.png'), color: '#4CD964', icon: '🌍' },
 ];
 
-export function NewDiscoverPage({ onBack, onMenuToggle, handleQuestionDetail, handleVote }: DiscoverPageProps) {
+export function NewDiscoverPage({ onBack, onMenuToggle, handleQuestionDetail, handleVote, initialFilter }: DiscoverPageProps) {
   const { theme, isDarkMode } = useTheme();
-  const [selectedFilter, setSelectedFilter] = useState<FilterType>(null);
+  const [selectedFilter, setSelectedFilter] = useState<FilterType>(initialFilter || null);
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [backendCategories, setBackendCategories] = useState<any[]>([]);
 
   // Shine animations for gradient buttons
   const shineAnimAll = useRef(new Animated.Value(0)).current;
@@ -79,7 +81,43 @@ export function NewDiscoverPage({ onBack, onMenuToggle, handleQuestionDetail, ha
         }),
       ])
     ).start();
+
+    // Load categories from backend
+    loadCategories();
+
+    // Eğer initialFilter varsa, sayfa açıldığında otomatik olarak o filtreyi aç
+    if (initialFilter) {
+      setIsAnimating(true);
+      slideAnim.setValue(SCREEN_WIDTH);
+      setTimeout(() => {
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 50,
+          friction: 10,
+          useNativeDriver: true,
+          restSpeedThreshold: 0.01,
+          restDisplacementThreshold: 0.01,
+        }).start(() => {
+          setIsAnimating(false);
+        });
+      }, 100); // Kısa bir delay ile daha smooth açılış
+    }
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const { data, error } = await categoriesService.getActiveCategories();
+      
+      if (error) {
+        console.error('Load categories error:', error);
+        return;
+      }
+
+      setBackendCategories(data || []);
+    } catch (error) {
+      console.error('Load categories error:', error);
+    }
+  };
 
   // Reset animation state when filter/category changes
   useEffect(() => {
@@ -220,22 +258,20 @@ export function NewDiscoverPage({ onBack, onMenuToggle, handleQuestionDetail, ha
       
       {/* Header - CouponsPage Style */}
       <View style={styles.headerContainer}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Keşfet</Text>
-            <TouchableOpacity 
-              style={styles.menuButton}
-              onPress={onMenuToggle}
-              activeOpacity={0.8}
-            >
-              <View style={styles.hamburgerIcon}>
-                <View style={styles.hamburgerLine} />
-                <View style={styles.hamburgerLine} />
-                <View style={styles.hamburgerLine} />
-              </View>
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Keşfet</Text>
+          <TouchableOpacity 
+            style={styles.menuButton}
+            onPress={onMenuToggle}
+            activeOpacity={0.8}
+          >
+            <View style={styles.hamburgerIcon}>
+              <View style={styles.hamburgerLine} />
+              <View style={styles.hamburgerLine} />
+              <View style={styles.hamburgerLine} />
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Content */}
@@ -304,7 +340,7 @@ export function NewDiscoverPage({ onBack, onMenuToggle, handleQuestionDetail, ha
 
         {/* Categories Grid - 3x3 */}
         <View style={styles.categoriesGrid}>
-          {CATEGORIES.map((category, index) => (
+          {backendCategories.map((category, index) => (
             <Animated.View
               key={category.id}
               style={{
@@ -321,16 +357,12 @@ export function NewDiscoverPage({ onBack, onMenuToggle, handleQuestionDetail, ha
                 activeOpacity={1}
                 disabled={isAnimating}
               >
-                {category.image ? (
-                  <Image source={category.image} style={styles.categoryImage} resizeMode="cover" />
-                ) : (
-                  <View style={styles.categoryImageContainer}>
-                    <Text style={styles.categoryIcon}>{category.icon}</Text>
-                  </View>
-                )}
+                <View style={styles.categoryImageContainer}>
+                  <Text style={styles.categoryIcon}>{category.icon}</Text>
+                </View>
                 <View style={styles.categoryLabelContainer}>
                   <Text style={styles.categoryLabel}>
-                    {category.label}
+                    {category.name}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -354,19 +386,19 @@ export function NewDiscoverPage({ onBack, onMenuToggle, handleQuestionDetail, ha
             category={{
               id: selectedFilter 
                 ? (allFilter.id === selectedFilter ? allFilter.id : newFilters.find(f => f.id === selectedFilter)?.id || 'all') as string
-                : (CATEGORIES.find(c => c.id === selectedCategory)?.id || 'spor') as string,
+                : (backendCategories.find(c => c.id === selectedCategory)?.id || 'spor') as string,
               label: selectedFilter
                 ? (allFilter.id === selectedFilter ? allFilter.label : newFilters.find(f => f.id === selectedFilter)?.label || 'Tümü')
-                : (CATEGORIES.find(c => c.id === selectedCategory)?.label || 'Spor'),
+                : (backendCategories.find(c => c.id === selectedCategory)?.name || 'Spor'),
               icon: selectedFilter
                 ? (allFilter.id === selectedFilter ? allFilter.icon : selectedFilter === 'trending' ? '🔥' : selectedFilter === 'high-odds' ? '📈' : '⏰')
-                : (CATEGORIES.find(c => c.id === selectedCategory)?.icon || '⚽'),
+                : (backendCategories.find(c => c.id === selectedCategory)?.icon || '⚽'),
               color: selectedFilter
                 ? '#432870'
-                : (CATEGORIES.find(c => c.id === selectedCategory)?.color || '#34C759')
+                : (backendCategories.find(c => c.id === selectedCategory)?.color || '#34C759')
             }}
             onBack={selectedFilter ? handleFilterClose : handleCategoryClose}
-            handleQuestionDetail={handleQuestionDetail}
+            handleQuestionDetail={(questionId, sourceCategory) => handleQuestionDetail(questionId, sourceCategory)}
             handleVote={handleVote}
             onMenuToggle={onMenuToggle}
           />
@@ -389,9 +421,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
     zIndex: 1000,
-  },
-  safeArea: {
-    backgroundColor: 'transparent',
+    paddingTop: 50,
   },
   header: {
     flexDirection: 'row',

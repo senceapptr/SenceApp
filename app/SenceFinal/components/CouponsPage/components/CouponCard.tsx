@@ -10,7 +10,11 @@ interface CouponCardProps {
 }
 
 export function CouponCard({ coupon, onPress }: CouponCardProps) {
-  const statusBadge = getStatusBadge(coupon.status);
+  console.log('CouponCard - Coupon:', coupon);
+  console.log('CouponCard - Predictions:', coupon.predictions);
+  console.log('CouponCard - Predictions Length:', coupon.predictions?.length || 0);
+  
+  const statusBadge = getStatusBadge(coupon.status, coupon.predictions);
 
   return (
     <TouchableOpacity

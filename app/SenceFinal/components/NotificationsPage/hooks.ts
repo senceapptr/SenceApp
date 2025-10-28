@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
-import { notificationsService } from '@/services';
+import { notificationsService } from '@/services/notifications.service';
 import { Notification } from './types';
 import { mockNotifications, getUnreadCount, formatTimeAgo, getNotificationIcon, getNotificationColors } from './utils';
 

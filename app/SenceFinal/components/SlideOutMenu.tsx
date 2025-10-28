@@ -1,4 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { adminService } from '@/services/admin.service';
+import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   Text,
@@ -30,6 +32,7 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
   const slideAnim = useRef(new Animated.Value(0)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   // Simple swipe detection
   const touchStartX = useRef(0);
@@ -44,6 +47,7 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
     { id: 6, title: 'Görevler', highlight: false, page: 'tasks' as PageType },
     { id: 7, title: 'Market', highlight: false, page: 'market' as PageType },
     { id: 8, title: 'Ayarlar', highlight: false, page: 'settings' as PageType },
+    { id: 9, title: 'Admin Panel', highlight: true, page: 'adminPanel' as PageType, adminOnly: true },
   ];
 
   // Create individual animation values for each menu item
@@ -54,6 +58,17 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
       scale: new Animated.Value(0.8),
     }))
   ).current;
+
+  // Admin kontrolü
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        const { isAdmin: adminStatus } = await adminService.isAdmin(user.id);
+        setIsAdmin(adminStatus);
+      }
+    };
+    checkAdminStatus();
+  }, [user]);
 
   useLayoutEffect(() => {
     if (isOpen) {
@@ -166,6 +181,11 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
       onClose();
     }
   };
+
+  // Admin olmayan kullanıcılar için admin paneli gizle
+  const filteredMenuItems = menuItems.filter(item => 
+    !item.adminOnly || isAdmin
+  );
 
   return (
     <View style={styles.container}>
@@ -302,9 +322,12 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
                 <Text style={styles.userName}>
                   {profile?.full_name || user?.email?.split('@')[0] || 'Kullanıcı'}
                 </Text>
-                <Text style={styles.balanceAmount}>
-                  {profile?.credits ? `₺${profile.credits.toLocaleString('tr-TR')}` : '₺10,000'}
-                </Text>
+                <View style={styles.balanceContainer}>
+                  <Text style={styles.balanceAmount}>
+                    {profile?.credits ? profile.credits.toLocaleString('tr-TR') : '10,000'}
+                  </Text>
+                  <Ionicons name="diamond" size={16} color="#FFD700" style={styles.diamondIcon} />
+                </View>
               </View>
               <View style={styles.profileArrow}>
                 <Text style={styles.profileArrowText}>›</Text>
@@ -314,7 +337,7 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
 
           {/* Menu Items */}
           <View style={styles.menuItems}>
-            {menuItems.map((item, index) => (
+            {filteredMenuItems.map((item, index) => (
               <Animated.View
                 key={item.id}
                 style={[
@@ -500,11 +523,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 4,
   },
+  balanceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
   balanceAmount: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#00FF88',
-    marginTop: 4,
+    marginRight: 4,
+  },
+  diamondIcon: {
+    marginLeft: 2,
   },
   profileArrow: {
     marginLeft: 8,
