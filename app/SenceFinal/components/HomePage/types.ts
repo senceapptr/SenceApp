@@ -11,7 +11,7 @@ export interface FeaturedQuestion {
 }
 
 export interface ActiveCoupon {
-  id: number;
+  id: number | string; // display_id veya id
   name: string;
   questionCount: number;
   totalOdds: number;

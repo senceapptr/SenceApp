@@ -83,6 +83,20 @@ export const questionsService = {
             slug,
             icon,
             color
+          ),
+          secondary_category:categories!questions_secondary_category_id_fkey (
+            id,
+            name,
+            slug,
+            icon,
+            color
+          ),
+          third_category:categories!questions_third_category_id_fkey (
+            id,
+            name,
+            slug,
+            icon,
+            color
           )
         `)
         .eq('status', 'active')
@@ -108,6 +122,20 @@ export const questionsService = {
         .select(`
           *,
           categories!questions_category_id_fkey (
+            id,
+            name,
+            slug,
+            icon,
+            color
+          ),
+          secondary_category:categories!questions_secondary_category_id_fkey (
+            id,
+            name,
+            slug,
+            icon,
+            color
+          ),
+          third_category:categories!questions_third_category_id_fkey (
             id,
             name,
             slug,
@@ -485,7 +513,32 @@ export const questionsService = {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Parse error message for better user experience
+        let userMessage = 'Soru güncellenirken bir hata oluştu';
+        
+        // RLS Policy hatası (yetki yok)
+        if (error.code === '42501') {
+          userMessage = 'Bu soruyu güncelleme yetkiniz yok. Sadece bekleyen sorularınızı güncelleyebilirsiniz.';
+        } 
+        // Status transition hatası
+        else if (error.message?.includes('Only admins can approve questions')) {
+          userMessage = 'Sadece yöneticiler soruları onaylayabilir.';
+        } 
+        else if (error.message?.includes('Only admins can change status')) {
+          userMessage = 'Sadece yöneticiler soru durumunu değiştirebilir.';
+        } 
+        else if (error.message?.includes('Cannot revert closed/resolved questions')) {
+          userMessage = 'Kapatılmış veya sonuçlanmış sorular geri alınamaz.';
+        } 
+        // End date hatası
+        else if (error.message?.includes('End date must be in the future')) {
+          userMessage = 'Bitiş tarihi gelecekte olmalıdır.';
+        }
+        
+        return { data: null, error: new Error(userMessage) };
+      }
+      
       return { data, error: null };
     } catch (error) {
       console.error('updateQuestion error:', error);

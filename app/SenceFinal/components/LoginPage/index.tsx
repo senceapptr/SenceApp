@@ -60,9 +60,12 @@ export function LoginPage() {
       if (error) {
         Alert.alert('Kayıt Hatası', error.message);
       } else {
-        Alert.alert('Başarılı', 'Hesabınız oluşturuldu! Giriş yapabilirsiniz.');
+        // SignUp başarılı - AuthContext'te pendingVerification = true olacak
+        // App.tsx'te useEffect ile otomatik olarak email verification sayfasına yönlendirilecek
+        // Bu yüzden burada sadece formu temizleyelim
         setIsSignUp(false);
         setPassword('');
+        // Alert göstermiyoruz - kullanıcı direkt email verification sayfasına gidecek
       }
     } catch (error) {
       Alert.alert('Hata', 'Kayıt olurken bir hata oluştu');
@@ -152,6 +155,12 @@ export function LoginPage() {
               placeholderTextColor="#9CA3AF"
               secureTextEntry
               autoCapitalize="none"
+              autoCorrect={false}
+              textContentType={Platform.OS === 'ios' ? (isSignUp ? 'newPassword' : 'password') : undefined}
+              autoComplete={Platform.OS === 'android' ? (isSignUp ? 'password-new' : 'password') : undefined}
+              importantForAutofill={Platform.OS === 'android' ? 'yes' : undefined}
+              keyboardType="default"
+              blurOnSubmit={false}
             />
           </View>
 

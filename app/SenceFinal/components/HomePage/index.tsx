@@ -17,6 +17,8 @@ import { couponsService } from '@/services/coupons.service';
 import { CouponDetailModal } from '../CouponsPage/components/CouponDetailModal';
 import { HomePageSkeleton } from './HomePageSkeleton';
 import type { FeaturedQuestion, TrendQuestion, ActiveCoupon } from './types';
+import { mapToFeaturedQuestion, mapToTrendQuestion } from './utils/questionMapper';
+import { mapCouponToActiveCoupon } from './utils/couponMapper';
 
 interface HomePageProps {
   onBack: () => void;
@@ -43,7 +45,7 @@ export function HomePage({
   // State tanımlamaları
   const [featuredQuestions, setFeaturedQuestions] = useState<FeaturedQuestion[]>([]);
   const [trendQuestions, setTrendQuestions] = useState<TrendQuestion[]>([]);
-  const [activeCoupons, setActiveCoupons] = useState<any[]>([]); // Boş array ile başla
+  const [activeCoupons, setActiveCoupons] = useState<ActiveCoupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -74,98 +76,21 @@ export function HomePage({
 
       // Featured questions
       if (featuredResult.data) {
-        const mappedFeatured: FeaturedQuestion[] = featuredResult.data.map((q: any) => {
-          // Primary kategoriyi kullan (category_id)
-          const displayCategory = q.categories;
-          
-          return {
-            id: q.id, // UUID olarak bırak
-            title: q.title,
-            image: q.image_url || 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=600&fit=crop',
-            votes: q.total_votes || 0,
-            timeLeft: calculateTimeLeft(q.end_date),
-            category: displayCategory?.name || 'Genel',
-            yesOdds: q.yes_odds,
-            noOdds: q.no_odds,
-            dominantColor: displayCategory?.color || '#4F46E5',
-          };
-        });
+        const mappedFeatured: FeaturedQuestion[] = featuredResult.data.map(mapToFeaturedQuestion);
         setFeaturedQuestions(mappedFeatured);
       }
 
       // Trend questions
       if (trendingResult.data) {
-        const mappedTrend: TrendQuestion[] = trendingResult.data.map((q: any) => {
-          // Primary kategoriyi kullan (category_id)
-          const displayCategory = q.categories;
-          
-          return {
-            id: q.id, // UUID olarak bırak
-            title: q.title,
-            category: displayCategory?.name || 'Genel',
-            image: q.image_url || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=600&h=400&fit=crop',
-            votes: q.total_votes || 0,
-            timeLeft: calculateTimeLeft(q.end_date),
-            yesOdds: q.yes_odds,
-            noOdds: q.no_odds,
-            yesPercentage: q.yes_percentage || 0,
-          };
-        });
+        const mappedTrend: TrendQuestion[] = trendingResult.data.map(mapToTrendQuestion);
         setTrendQuestions(mappedTrend);
       }
 
       // Active coupons
       if (couponsResult.data && Array.isArray(couponsResult.data) && couponsResult.data.length > 0) {
-        // Backend'den gelen veriyi ActiveCoupon formatına dönüştür
-        const mappedCoupons = couponsResult.data.map((coupon: any) => {
-          // Predictions'ları backend'den gelen coupon_selections'dan oluştur
-          const predictions = (coupon.coupon_selections || []).map((selection: any) => ({
-            id: selection.id || 0,
-            questionId: selection.question_id || 0,
-            question: selection.questions?.title || 'Soru bulunamadı',
-            choice: selection.vote || 'yes',
-            odds: selection.odds || 1,
-            category: selection.questions?.categories?.name || 'Genel',
-            result: selection.status === 'won' ? 'won' : selection.status === 'lost' ? 'lost' : 'pending',
-            endDate: selection.questions?.end_date ? new Date(selection.questions.end_date) : null
-          }));
-
-          // Kupondaki en geç sonuçlanacak sorunun end_date'ini bul
-          const getLatestEndDate = (predictions: any[]): Date | null => {
-            if (!predictions || predictions.length === 0) return null;
-            
-            const validEndDates = predictions
-              .map(prediction => prediction.endDate)
-              .filter(endDate => endDate instanceof Date && !isNaN(endDate.getTime()));
-            
-            if (validEndDates.length === 0) return null;
-            
-            return new Date(Math.max(...validEndDates.map(date => date.getTime())));
-          };
-
-          const latestEndDate = getLatestEndDate(predictions);
-          const endsIn = latestEndDate ? calculateTimeLeft(latestEndDate.toISOString()) : 'Bilinmiyor';
-
-          return {
-            id: coupon.display_id || coupon.id,
-            name: `Kupon #${coupon.display_id || coupon.id}`,
-            questionCount: coupon.selections_count || 0,
-            totalOdds: coupon.total_odds || 1,
-            potentialWinnings: coupon.potential_win || 0,
-            endsIn: endsIn,
-            colors: ['#432870', '#5A3A8B'] as [string, string],
-            // CouponDetailModal için gerekli alanlar
-            predictions: predictions,
-            potentialEarnings: coupon.potential_win || 0,
-            status: coupon.status === 'pending' ? 'live' : coupon.status === 'won' ? 'won' : coupon.status === 'lost' ? 'lost' : 'live',
-            createdAt: new Date(coupon.created_at),
-            username: coupon.username || '@kullanici',
-            investmentAmount: coupon.stake_amount || 0,
-          };
-        });
+        const mappedCoupons = couponsResult.data.map(mapCouponToActiveCoupon);
         setActiveCoupons(mappedCoupons);
       } else {
-        // Backend'den veri yoksa boş array
         setActiveCoupons([]);
       }
 
@@ -174,27 +99,27 @@ export function HomePage({
 
     } catch (err) {
       console.error('Home data load error:', err);
-      Alert.alert('Hata', 'Veriler yüklenirken bir hata oluştu');
+      
+      // Daha spesifik hata mesajları
+      let errorMessage = 'Veriler yüklenirken bir hata oluştu';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('network') || err.message.includes('fetch')) {
+          errorMessage = 'İnternet bağlantınızı kontrol edin';
+        } else if (err.message.includes('permission') || err.message.includes('RLS')) {
+          errorMessage = 'Bu verilere erişim yetkiniz yok';
+        } else {
+          errorMessage = err.message || errorMessage;
+        }
+      }
+      
+      Alert.alert('Hata', errorMessage);
     } finally {
       setLoading(false);
       setShowSkeleton(false);
     }
   };
 
-  // Zaman hesaplama fonksiyonu
-  const calculateTimeLeft = (endDate: string): string => {
-    const end = new Date(endDate);
-    const now = new Date();
-    const diff = end.getTime() - now.getTime();
-
-    if (diff <= 0) return 'Sona erdi';
-
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-    if (days > 0) return `${days} gün ${hours} saat`;
-    return `${hours} saat`;
-  };
 
   // Kupon handler'ları
   const handleCouponPress = (coupon: ActiveCoupon) => {
@@ -381,6 +306,7 @@ export function HomePage({
             theme={theme}
             onQuestionPress={handleQuestionDetail}
             onVote={handleVote}
+            onSeeAllPress={onDiscoverAllNavigate}
           />
         )}
         </ScrollView>

@@ -163,7 +163,7 @@ export const useFormHandlers = (
 
       if (error) {
         console.error('Create question error:', error);
-        Alert.alert('Hata', 'Soru oluşturulurken bir hata oluştu.');
+        Alert.alert('Hata', error.message || 'Soru oluşturulurken bir hata oluştu.');
         setIsSubmitting(false);
         return;
       }

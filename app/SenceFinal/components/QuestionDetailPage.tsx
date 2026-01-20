@@ -23,6 +23,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { questionsService } from '@/services/questions.service';
 import { predictionsService } from '@/services/predictions.service';
 import { commentsService } from '@/services/comments.service';
+import { analyzeImageColors, getGradientByCategory, getPaletteByCategory, ColorPalette } from './utils/imageColorAnalyzer';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -78,6 +79,8 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
   const [relatedQuestions, setRelatedQuestions] = useState<RelatedQuestion[]>([]);
   const [topInvestors, setTopInvestors] = useState<TopInvestor[]>([]);
   const [userPrediction, setUserPrediction] = useState<any>(null);
+  const [countdownGradient, setCountdownGradient] = useState<string[]>(['#8B5CF6', '#7C3AED']);
+  const [countdownShadowColor, setCountdownShadowColor] = useState<string>('#8B5CF6');
   
   const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -101,6 +104,27 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       if (detailsResult.data) {
         const q = detailsResult.data;
         setQuestionDetails(q);
+        
+        // Görsel analizi ve gradient oluştur
+        const categoryName = sourceCategory?.name || q.categories?.name || 'Genel';
+        const imageUrl = q.image_url || '';
+        
+        // Kategoriye göre varsayılan palette
+        const categoryPalette = getPaletteByCategory(categoryName);
+        setCountdownGradient(categoryPalette.gradient);
+        setCountdownShadowColor(categoryPalette.shadowColor);
+        
+        // Görsel analizi ile dinamik renk (async - background'da çalışır)
+        if (imageUrl) {
+          analyzeImageColors(imageUrl).then((palette: ColorPalette) => {
+            if (palette.gradient && palette.gradient.length > 0) {
+              setCountdownGradient(palette.gradient);
+              setCountdownShadowColor(palette.shadowColor);
+            }
+          }).catch(() => {
+            // Hata durumunda kategori gradient'ini kullan
+          });
+        }
         
         // Countdown hesapla
         const endDate = new Date(q.end_date);
@@ -209,6 +233,47 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       ])
     ).start();
   }, []);
+
+  // Animated countdown values for smooth transitions
+  const daysAnim = useRef(new Animated.Value(timeLeft.days)).current;
+  const hoursAnim = useRef(new Animated.Value(timeLeft.hours)).current;
+  const minutesAnim = useRef(new Animated.Value(timeLeft.minutes)).current;
+  const countdownScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Scale animation when values change
+    Animated.sequence([
+      Animated.timing(countdownScale, {
+        toValue: 1.1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(countdownScale, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Update animated values
+    Animated.parallel([
+      Animated.timing(daysAnim, {
+        toValue: timeLeft.days,
+        duration: 500,
+        useNativeDriver: false,
+      }),
+      Animated.timing(hoursAnim, {
+        toValue: timeLeft.hours,
+        duration: 500,
+        useNativeDriver: false,
+      }),
+      Animated.timing(minutesAnim, {
+        toValue: timeLeft.minutes,
+        duration: 500,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [timeLeft]);
 
   // Kategori ikonu fonksiyonu
   const getCategoryIcon = (category: string): string => {
@@ -414,10 +479,20 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         />
         <View style={styles.creatorInfo}>
           <Text style={styles.creatorLabel}>Soruyu Yazan</Text>
-          <Text style={styles.creatorUsername}>@{mainQuestion.creator.username}</Text>
+          <Text style={styles.creatorUsername}>
+            <Text style={styles.creatorUsernameAt}>@</Text>
+            {mainQuestion.creator.username}
+          </Text>
         </View>
-        <TouchableOpacity style={styles.followButton}>
-          <Text style={styles.followButtonText}>Takip Et</Text>
+        <TouchableOpacity style={styles.followButton} activeOpacity={0.8}>
+          <LinearGradient
+            colors={['#432870', '#5A3A8B']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.followButtonGradient}
+          >
+            <Text style={styles.followButtonText}>Takip Et</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -478,40 +553,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         </View>
       </View>
 
-      {/* Vote Buttons */}
-      <View style={styles.voteButtonsContainer}>
-            <TouchableOpacity 
-          style={styles.voteButtonYes}
-          onPress={() => handleVote('yes')}
-              activeOpacity={0.8}
-            >
-          <LinearGradient
-            colors={['#34C759', '#28A745']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.voteButtonGradient}
-          >
-            <Text style={styles.voteButtonLabel}>EVET</Text>
-            <Text style={styles.voteButtonOdds}>{mainQuestion.yesOdds}x</Text>
-          </LinearGradient>
-            </TouchableOpacity>
-            
-              <TouchableOpacity 
-          style={styles.voteButtonNo}
-          onPress={() => handleVote('no')}
-                activeOpacity={0.8}
-              >
-          <LinearGradient
-            colors={['#FF3B30', '#DC3545']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.voteButtonGradient}
-          >
-            <Text style={styles.voteButtonLabel}>HAYIR</Text>
-            <Text style={styles.voteButtonOdds}>{mainQuestion.noOdds}x</Text>
-          </LinearGradient>
-              </TouchableOpacity>
-                </View>
+      {/* Vote Buttons moved to fixed bottom */}
 
       {/* Related Questions */}
       <View style={styles.relatedSection}>
@@ -921,7 +963,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
               ]}
             >
               <LinearGradient
-                colors={['#432870', '#5A3A8B', '#B29EFD']}
+                colors={countdownGradient as any}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.countdownGradient}
@@ -930,22 +972,22 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                   <View style={styles.countdownDot} />
                   <Text style={styles.countdownLabel}>SONUÇLANMAK İÇİN KALAN SÜRE</Text>
                   </View>
-                <View style={styles.countdownTime}>
+                <Animated.View style={[styles.countdownTime, { transform: [{ scale: countdownScale }] }]}>
                   <View style={styles.countdownTimeItem}>
                     <Text style={styles.countdownTimeValue}>{timeLeft.days}</Text>
                     <Text style={styles.countdownTimeLabel}>GÜN</Text>
                 </View>
                   <Text style={styles.countdownTimeSeparator}>:</Text>
                   <View style={styles.countdownTimeItem}>
-                    <Text style={styles.countdownTimeValue}>{timeLeft.hours}</Text>
+                    <Text style={styles.countdownTimeValue}>{String(timeLeft.hours).padStart(2, '0')}</Text>
                     <Text style={styles.countdownTimeLabel}>SAAT</Text>
                   </View>
                   <Text style={styles.countdownTimeSeparator}>:</Text>
                   <View style={styles.countdownTimeItem}>
-                    <Text style={styles.countdownTimeValue}>{timeLeft.minutes}</Text>
+                    <Text style={styles.countdownTimeValue}>{String(timeLeft.minutes).padStart(2, '0')}</Text>
                     <Text style={styles.countdownTimeLabel}>DAKİKA</Text>
                   </View>
-                </View>
+                </Animated.View>
               </LinearGradient>
             </Animated.View>
 
@@ -971,7 +1013,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                 <View style={styles.tabContent}>
                   <Ionicons 
                     name="chatbubble-outline" 
-                    size={16} 
+                    size={14} 
                     color={activeTab === 'comments' ? '#432870' : '#20202066'}
                   />
                   <Text style={[styles.tabText, activeTab === 'comments' && styles.tabTextActive]}>
@@ -999,7 +1041,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                 <View style={styles.tabContent}>
                   <Ionicons 
                     name="bar-chart" 
-                    size={16} 
+                    size={14} 
                     color={activeTab === 'stats' ? '#432870' : '#20202066'}
                   />
                   <Text style={[styles.tabText, activeTab === 'stats' && styles.tabTextActive]}>
@@ -1046,6 +1088,37 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         </View>
       </View>
 
+      {/* Fixed Bottom Vote Buttons - Premium UI */}
+      <View style={[styles.fixedBottomButtons, { paddingBottom: insets.bottom + 12 }]}>
+        <LinearGradient
+          colors={['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 0.95)', '#FFFFFF']}
+          style={styles.fixedBottomGradient}
+        />
+        <View style={styles.fixedBottomContent}>
+          <TouchableOpacity 
+            style={styles.fixedVoteButtonYes}
+            onPress={() => handleVote('yes')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.fixedVoteButtonGradient}>
+              <Text style={styles.fixedVoteButtonLabel}>EVET</Text>
+              <Text style={styles.fixedVoteButtonOdds}>{mainQuestion?.yesOdds || 2}x</Text>
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.fixedVoteButtonNo}
+            onPress={() => handleVote('no')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.fixedVoteButtonGradient}>
+              <Text style={styles.fixedVoteButtonLabel}>HAYIR</Text>
+              <Text style={styles.fixedVoteButtonOdds}>{mainQuestion?.noOdds || 2}x</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+
     </View>
   );
 }
@@ -1078,6 +1151,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 400,
+    paddingBottom: 160, // Space for fixed bottom buttons + safe area
   },
   fixedHeaderBackground: {
     position: 'absolute',
@@ -1256,66 +1330,83 @@ const styles = StyleSheet.create({
   },
   countdownCard: {
     marginTop: 4,
-    marginBottom: 20,
-    borderRadius: 24,
+    marginBottom: 12,
+    borderRadius: 20,
     overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   countdownGradient: {
-    padding: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
   },
   countdownHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
+    marginBottom: 4,
+    gap: 6,
   },
   countdownDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#C9F158',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
   },
   countdownLabel: {
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: '700',
-    color: '#ffffffCC',
-    letterSpacing: 0.5,
+    color: 'rgba(255, 255, 255, 0.85)',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   countdownTime: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
   },
   countdownTimeItem: {
     flex: 1,
     alignItems: 'center',
   },
   countdownTimeValue: {
-    fontSize: 36,
-    fontWeight: '900',
+    fontSize: 28,
+    fontWeight: '800',
     color: '#fff',
-    marginBottom: 4,
+    marginBottom: 1,
   },
   countdownTimeLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#ffffffB3',
+    fontSize: 7,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.7)',
+    letterSpacing: 0.5,
   },
   countdownTimeSeparator: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#ffffff80',
-    marginHorizontal: 8,
+    fontSize: 20,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.5)',
+    marginHorizontal: 2,
   },
   tabs: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 4,
     marginBottom: 4,
+    paddingHorizontal: 4,
   },
   tab: {
     flex: 1,
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingTop: 6,
+    paddingBottom: 12,
+    paddingHorizontal: 4,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     position: 'relative',
@@ -1327,13 +1418,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
   },
   tabEmoji: {
-    fontSize: 16,
+    fontSize: 14,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '900',
     color: '#20202066',
   },
@@ -1412,13 +1503,29 @@ const styles = StyleSheet.create({
   creatorUsername: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#202020',
+    color: '#432870',
+  },
+  creatorUsernameAt: {
+    color: '#432870',
   },
   followButton: {
-    backgroundColor: '#432870',
+    borderRadius: 20,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#432870',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  followButtonGradient: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
   },
   followButtonText: {
     fontSize: 14,
@@ -1543,6 +1650,88 @@ const styles = StyleSheet.create({
         elevation: 8,
       },
     }),
+  },
+  // Fixed Bottom Vote Buttons - Premium UI
+  fixedBottomButtons: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    paddingTop: 40,
+  },
+  fixedBottomGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+  },
+  fixedBottomContent: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    paddingTop: 8,
+  },
+  fixedVoteButtonYes: {
+    flex: 1,
+    backgroundColor: '#10B981',
+    borderRadius: 16,
+    overflow: 'hidden',
+    minHeight: 64,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#10B981',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  fixedVoteButtonNo: {
+    flex: 1,
+    backgroundColor: '#EF4444',
+    borderRadius: 16,
+    overflow: 'hidden',
+    minHeight: 64,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#EF4444',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  fixedVoteButtonGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+  },
+  fixedVoteButtonLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
+  fixedVoteButtonOdds: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginTop: 4,
+    overflow: 'hidden',
   },
   voteButtonGradient: {
     paddingVertical: 20,

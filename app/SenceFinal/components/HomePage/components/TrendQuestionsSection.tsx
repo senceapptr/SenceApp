@@ -9,6 +9,7 @@ interface TrendQuestionsSectionProps {
   theme: any;
   onQuestionPress: (id: string) => void;
   onVote: (questionId: string, vote: 'yes' | 'no', odds: number) => void;
+  onSeeAllPress?: () => void;
 }
 
 export function TrendQuestionsSection({ 
@@ -16,13 +17,14 @@ export function TrendQuestionsSection({
   isDarkMode, 
   theme,
   onQuestionPress,
-  onVote
+  onVote,
+  onSeeAllPress
 }: TrendQuestionsSectionProps) {
   return (
     <View style={[styles.section, { backgroundColor: isDarkMode ? theme.surface : '#FFFFFF' }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.textPrimary }]}>Trend Sorular</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => onSeeAllPress?.()}>
           <Text style={[styles.seeAll, { color: theme.primary }]}>Tümünü görüntüle</Text>
         </TouchableOpacity>
       </View>

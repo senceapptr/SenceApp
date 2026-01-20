@@ -107,7 +107,7 @@ export function EditQuestionModal({ visible, question, onClose, onSave }: EditQu
       const { error } = await adminService.updateQuestion(question.id, updateData);
       
       if (error) {
-        Alert.alert('Hata', 'Soru güncellenirken bir hata oluştu');
+        Alert.alert('Hata', error.message || 'Soru güncellenirken bir hata oluştu');
         return;
       }
 

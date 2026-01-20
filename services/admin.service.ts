@@ -308,7 +308,27 @@ export class AdminService {
         .update(updateData)
         .eq('id', questionId);
 
-      if (error) throw error;
+      if (error) {
+        // Parse error message for better user experience
+        let userMessage = 'Soru güncellenirken bir hata oluştu';
+        
+        // Status transition hatası
+        if (error.message?.includes('Only admins can approve questions')) {
+          userMessage = 'Sadece yöneticiler soruları onaylayabilir.';
+        } 
+        else if (error.message?.includes('Only admins can change status')) {
+          userMessage = 'Sadece yöneticiler soru durumunu değiştirebilir.';
+        } 
+        else if (error.message?.includes('Cannot revert closed/resolved questions')) {
+          userMessage = 'Kapatılmış veya sonuçlanmış sorular geri alınamaz.';
+        } 
+        // End date hatası
+        else if (error.message?.includes('End date must be in the future')) {
+          userMessage = 'Bitiş tarihi gelecekte olmalıdır. (Yöneticiler için özel durumlar hariç)';
+        }
+        
+        return { error: new Error(userMessage) };
+      }
 
       return { error: null };
     } catch (error) {

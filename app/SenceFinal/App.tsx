@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, StatusBar, Animated, Dimensions, Modal } from 'react-native';
+import { View, Text, StyleSheet, StatusBar, Animated, Dimensions, Modal, Alert, ActivityIndicator, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -33,10 +33,13 @@ import { SlideOutMenu } from './components/SlideOutMenu';
 import { LoginPage } from './components/LoginPage';
 import { AdminPanel } from './components/AdminPanel';
 import { QuestionDetailSkeleton } from './components/QuestionDetailSkeleton';
+import { EmailVerificationPage } from './components/EmailVerificationPage';
+import { InputOTP } from '@/components/PremiumSence/ui/input-otp';
+import { verificationService } from '@/services/verification.service';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type PageType = 'home' | 'discover' | 'coupons' | 'leagues' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign' | 'editProfile' | 'privacySettings' | 'helpCenter' | 'support' | 'faq' | 'feedback' | 'about' | 'adminPanel' | 'allQuestions';
+type PageType = 'home' | 'discover' | 'coupons' | 'leagues' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign' | 'editProfile' | 'privacySettings' | 'helpCenter' | 'support' | 'faq' | 'feedback' | 'about' | 'adminPanel' | 'allQuestions' | 'emailVerification';
 
 interface Question {
   id: string;
@@ -131,8 +134,9 @@ function AllQuestionsModal({
 
 // Ana uygulama içeriği - sadece giriş yapmış kullanıcılar için
 function AppContent() {
-  const { user, profile } = useAuth();
+  const { user, profile, pendingVerification, isEmailVerified, markEmailAsVerified, checkEmailVerification } = useAuth();
   const [currentPage, setCurrentPage] = useState<PageType>('home');
+  const [showEmailVerificationBanner, setShowEmailVerificationBanner] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   // Question Detail and Coupon states
@@ -158,6 +162,36 @@ function AppContent() {
 
   // User credits - gerçek profil verisinden al
   const userCredits = profile?.credits || 10000;
+
+  // Email verification kontrolü - SignUp sonrası otomatik yönlendirme
+  useEffect(() => {
+    if (pendingVerification && user) {
+      setCurrentPage('emailVerification');
+    }
+  }, [pendingVerification, user]);
+
+  // Giriş yapan kullanıcının email verification durumunu kontrol et
+  useEffect(() => {
+    if (user && !pendingVerification) {
+      // Profil yüklendikten sonra email verification durumunu kontrol et
+      const checkVerification = async () => {
+        await checkEmailVerification();
+        // Profil yüklendikten sonra kontrol et
+        // isEmailVerified state'i güncellenecek
+      };
+      checkVerification();
+    }
+  }, [user]);
+
+  // Email verification durumu değiştiğinde banner'ı güncelle
+  useEffect(() => {
+    if (isEmailVerified || (profile && profile.is_verified === true)) {
+      setShowEmailVerificationBanner(false);
+    } else if (user && (profile?.is_verified === false || (!isEmailVerified && profile))) {
+      // Profil yüklendi ve verified değilse göster
+      setShowEmailVerificationBanner(true);
+    }
+  }, [isEmailVerified, user, profile]);
 
   // Zaman hesaplama fonksiyonu
   const calculateTimeLeft = (endDate: string): string => {
@@ -464,9 +498,29 @@ function AppContent() {
             onEditProfile={() => setCurrentPage('editProfile')}
             onPrivacySettings={() => setCurrentPage('privacySettings')}
             onHelpCenter={() => setCurrentPage('helpCenter')}
-            onSecurity={() => console.log('Security page - to be implemented')}
+            onSecurity={() => {
+              // Email verification kontrolü
+              if (!isEmailVerified) {
+                setCurrentPage('emailVerification');
+              } else {
+                // İleride SecuritySettingsPage eklenecek
+                console.log('Security page - to be implemented');
+              }
+            }}
             onFeedback={() => setCurrentPage('feedback')}
             onAbout={() => setCurrentPage('about')}
+          />
+        );
+      case 'emailVerification':
+        return (
+          <EmailVerificationPage 
+            onBack={handleBack}
+            onVerified={async () => {
+              await markEmailAsVerified();
+              // Verification başarılı - profil güncellendi
+              // EmailVerificationBanner otomatik kapanacak (isEmailVerified değişecek)
+              setCurrentPage('home');
+            }}
           />
         );
       case 'editProfile':
@@ -575,6 +629,28 @@ function AppContent() {
       <ThemeTransition>
         <SlideOutMenu isOpen={isMenuOpen} onClose={handleMenuClose} onNavigate={handleNavigateToPage}>
           <View style={styles.pageWrapper}>
+            {/* Email Verification Banner - Verified olmayan kullanıcılar için */}
+            {showEmailVerificationBanner && user && (
+              <View style={styles.emailVerificationBanner}>
+                <View style={styles.emailVerificationBannerContent}>
+                  <Text style={styles.emailVerificationBannerText}>
+                    ⚠️ Email adresiniz doğrulanmadı. Lütfen email doğrulama yapın.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.emailVerificationBannerButton}
+                    onPress={() => setCurrentPage('emailVerification')}
+                  >
+                    <Text style={styles.emailVerificationBannerButtonText}>Doğrula</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.emailVerificationBannerClose}
+                    onPress={() => setShowEmailVerificationBanner(false)}
+                  >
+                    <Text style={styles.emailVerificationBannerCloseText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
             {renderCurrentPage()}
             {/* Only show bottom tabs on main pages */}
             {(['home', 'discover', 'coupons', 'leagues'] as PageType[]).includes(currentPage) && (
@@ -653,7 +729,16 @@ export default function App() {
 
 // Authentication kontrolü yapan component
 function AppWithAuth() {
-  const { user, loading } = useAuth();
+  const { user, loading, pendingVerification } = useAuth();
+  const [showEmailVerification, setShowEmailVerification] = React.useState(false);
+
+  // TÜM HOOK'LAR ERKEN RETURN'LERDEN ÖNCE OLMALI!
+  // SignUp sonrası email verification bekleniyor mu? (user null olsa bile)
+  React.useEffect(() => {
+    if (pendingVerification) {
+      setShowEmailVerification(true);
+    }
+  }, [pendingVerification]);
 
   // Loading durumu
   if (loading) {
@@ -665,6 +750,13 @@ function AppWithAuth() {
     );
   }
 
+  // Email verification gösteriliyorsa
+  if (showEmailVerification) {
+    return (
+      <AppContentWrapper />
+    );
+  }
+
   // Giriş yapılmamışsa login sayfasını göster
   if (!user) {
     return <LoginPage />;
@@ -672,6 +764,221 @@ function AppWithAuth() {
 
   // Giriş yapılmışsa ana uygulamayı göster
   return <AppContent />;
+}
+
+// Email verification için wrapper - user null olsa bile AppContent'i gösterebilmek için
+function AppContentWrapper() {
+  const { pendingVerification, pendingVerificationUser, markEmailAsVerified } = useAuth();
+
+  // EmailVerificationPage'i render et
+  if (pendingVerificationUser) {
+    return (
+      <EmailVerificationPageWrapper 
+        userId={pendingVerificationUser.id}
+        userEmail={pendingVerificationUser.email}
+        onVerified={async () => {
+          markEmailAsVerified();
+          // Verification başarılı - kullanıcıyı otomatik login et
+          // Email ve şifre bilgilerini LoginPage'de saklamak gerekebilir
+          // Şimdilik sadece state'i güncelle, session kendiliğinden oluşacak
+        }}
+      />
+    );
+  }
+
+  return null;
+}
+
+// EmailVerificationPage wrapper - user bilgilerini prop olarak alır
+function EmailVerificationPageWrapper({ 
+  userId, 
+  userEmail, 
+  onVerified 
+}: { 
+  userId: string; 
+  userEmail: string; 
+  onVerified: () => void;
+}) {
+  const [otp, setOtp] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [sendingOTP, setSendingOTP] = useState(false);
+
+  // Component mount olduğunda OTP gönder
+  useEffect(() => {
+    handleSendOTP();
+  }, []); // Sadece mount'ta çalışsın
+
+  // Countdown timer
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
+  const handleSendOTP = async () => {
+    setResendLoading(true);
+    setSendingOTP(true);
+    try {
+      const result = await verificationService.sendOTP(userId, userEmail);
+      
+      if (result.success) {
+        setCountdown(60); // 60 saniye bekle
+        if (countdown === 0) {
+          // İlk gönderimde sessiz, tekrar gönderimde bildirim
+          Alert.alert('Başarılı', 'Doğrulama kodu email adresinize gönderildi');
+        }
+      } else {
+        Alert.alert('Hata', result.error || 'Kod gönderilemedi. Lütfen tekrar deneyin.');
+      }
+    } catch (error) {
+      Alert.alert('Hata', 'Bir hata oluştu. Lütfen tekrar deneyin.');
+    } finally {
+      setResendLoading(false);
+      setSendingOTP(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    if (otp.length !== 6) {
+      Alert.alert('Hata', 'Lütfen 6 haneli kodu girin');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await verificationService.verifyOTP(userId, userEmail, otp);
+      
+      if (result.success) {
+        Alert.alert(
+          'Başarılı',
+          'Email adresiniz başarıyla doğrulandı!',
+          [
+            {
+              text: 'Tamam',
+              onPress: () => {
+                onVerified();
+              }
+            }
+          ]
+        );
+      } else {
+        const errorMessage = result.error || 'Kod hatalı veya süresi dolmuş';
+        const remainingAttempts = result.remainingAttempts;
+        
+        let message = errorMessage;
+        if (remainingAttempts !== undefined && remainingAttempts > 0) {
+          message += `\n\nKalan deneme hakkı: ${remainingAttempts}`;
+        } else if (remainingAttempts === 0) {
+          message += '\n\nYeni kod almak için "Kodu Tekrar Gönder" butonuna tıklayın.';
+        }
+        
+        Alert.alert('Hata', message);
+        setOtp(''); // OTP'yi temizle
+      }
+    } catch (error) {
+      Alert.alert('Hata', 'Bir hata oluştu. Lütfen tekrar deneyin.');
+      setOtp('');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <KeyboardAvoidingView 
+      style={{ flex: 1, backgroundColor: '#FFFFFF' }} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="#432870" />
+      
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 60, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Header */}
+        <View style={{ alignItems: 'center', marginBottom: 40 }}>
+          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+            <Text style={{ fontSize: 40 }}>✉️</Text>
+          </View>
+          
+          <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#111827', marginBottom: 12, textAlign: 'center' }}>Email Doğrulama</Text>
+          <Text style={{ fontSize: 16, color: '#6B7280', textAlign: 'center', lineHeight: 24, paddingHorizontal: 20 }}>
+            {userEmail} adresine gönderilen 6 haneli kodu girin
+          </Text>
+        </View>
+
+        {/* OTP Input */}
+        <View style={{ alignItems: 'center', marginBottom: 32 }}>
+          <InputOTP
+            length={6}
+            value={otp}
+            onChange={setOtp}
+            style={{ marginVertical: 20 }}
+          />
+          
+          {sendingOTP && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, gap: 8 }}>
+              <ActivityIndicator size="small" color="#432870" />
+              <Text style={{ fontSize: 14, color: '#6B7280' }}>Kod gönderiliyor...</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Action Button */}
+        <TouchableOpacity
+          style={[{ backgroundColor: '#432870', paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }, (loading || otp.length !== 6) && { backgroundColor: '#9CA3AF' }]}
+          onPress={handleVerify}
+          disabled={loading || otp.length !== 6}
+          activeOpacity={0.8}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '600' }}>Doğrula</Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Resend Section */}
+        <View style={{ alignItems: 'center', marginBottom: 32 }}>
+          <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 8 }}>Kodu almadınız mı?</Text>
+          <TouchableOpacity
+            style={{ paddingVertical: 12, paddingHorizontal: 24 }}
+            onPress={handleSendOTP}
+            disabled={countdown > 0 || resendLoading}
+            activeOpacity={0.7}
+          >
+            {resendLoading ? (
+              <ActivityIndicator size="small" color="#432870" />
+            ) : (
+              <Text style={[countdown > 0 && { color: '#9CA3AF' }]}>
+                {countdown > 0 
+                  ? `Kodu Tekrar Gönder (${formatCountdown(countdown)})`
+                  : 'Kodu Tekrar Gönder'
+                }
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Info */}
+        <View style={{ backgroundColor: '#F9FAFB', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' }}>
+          <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', lineHeight: 20 }}>
+            ⏰ Kod 10 dakika geçerlidir{'\n'}
+            📧 Email'inizi kontrol etmeyi unutmayın (Spam klasörüne bakın)
+          </Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -690,6 +997,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#432870',
+  },
+  emailVerificationBanner: {
+    backgroundColor: '#FEF3C7',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FCD34D',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    zIndex: 1000,
+  },
+  emailVerificationBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  emailVerificationBannerText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#92400E',
+    lineHeight: 18,
+  },
+  emailVerificationBannerButton: {
+    backgroundColor: '#432870',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  emailVerificationBannerButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  emailVerificationBannerClose: {
+    padding: 4,
+  },
+  emailVerificationBannerCloseText: {
+    color: '#92400E',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   pageWrapper: {
     flex: 1,

@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.ns", "deno.unstable"],
+    "strict": false
+  },
+  "imports": {
+    "deno": "https://deno.land/x/deno@v1.36.0/lib/deno.d.ts"
+  }
+}
+
+
