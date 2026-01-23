@@ -156,9 +156,8 @@ export function LoginPage() {
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
-              textContentType={Platform.OS === 'ios' ? (isSignUp ? 'newPassword' : 'password') : undefined}
-              autoComplete={Platform.OS === 'android' ? (isSignUp ? 'password-new' : 'password') : undefined}
-              importantForAutofill={Platform.OS === 'android' ? 'yes' : undefined}
+              textContentType="none"
+              autoComplete="off"
               keyboardType="default"
               blurOnSubmit={false}
             />

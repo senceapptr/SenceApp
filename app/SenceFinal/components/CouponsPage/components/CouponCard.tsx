@@ -32,7 +32,7 @@ export function CouponCard({ coupon, onPress }: CouponCardProps) {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={[styles.statusDot, { backgroundColor: statusBadge.color }]} />
-            <Text style={styles.title}>Kupon #{coupon.id}</Text>
+            <Text style={styles.title}>• Ticket #{coupon.id}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: statusBadge.color }]}>
             <Text style={styles.statusBadgeText}>{statusBadge.text}</Text>
@@ -173,20 +173,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   yesBadge: {
-    backgroundColor: '#D1FAE5',
+    backgroundColor: '#EDE9FE',
   },
   noBadge: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: '#CFFAFE',
   },
   choiceBadgeText: {
     fontSize: 10,
     fontWeight: 'bold',
   },
   yesBadgeText: {
-    color: '#065F46',
+    color: '#7C3AED',
   },
   noBadgeText: {
-    color: '#991B1B',
+    color: '#0891B2',
   },
   categoryText: {
     fontSize: 10,

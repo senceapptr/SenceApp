@@ -29,7 +29,7 @@ interface CouponDrawerProps {
   onCouponSuccess?: () => void;
   isFree?: boolean;
   userCredits?: number;
-  onCouponCreated?: () => void; // Yeni kupon oluşturulduğunda çağrılacak callback
+  onCouponCreated?: () => void; // Yeni ticket oluşturulduğunda çağrılacak callback
 }
 
 export function CouponDrawer({ 
@@ -148,7 +148,7 @@ export function CouponDrawer({
     setIsSubmitting(true);
     
     try {
-      // Backend'e kupon gönder
+      // Backend'e ticket gönder
       const couponData = {
         selections: selections.map(selection => ({
           question_id: selection.questionId.toString(),
@@ -165,7 +165,7 @@ export function CouponDrawer({
         throw result.error;
       }
 
-      // Başarılı kupon oluşturma
+      // Başarılı ticket oluşturma
       setIsSubmitting(false);
       onClearAll();
       onClose();
@@ -173,7 +173,7 @@ export function CouponDrawer({
       // Profil verilerini yenile (kredi güncellemesi için)
       await refreshProfile();
       
-      // Kuponlarım sayfasını yenile
+      // Ticketlarım sayfasını yenile
       if (onCouponCreated) {
         onCouponCreated();
       }
@@ -187,8 +187,8 @@ export function CouponDrawer({
 
       // Başarı mesajı
       Alert.alert(
-        'Kupon Oluşturuldu! 🎉',
-        `Kuponunuz başarıyla oluşturuldu. Potansiyel kazancınız: ${Math.round(totalOdds * betAmount)} kredi`,
+        'Ticket Oluşturuldu! 🎉',
+        `Ticketınız başarıyla oluşturuldu. Potansiyel kazancınız: ${Math.round(totalOdds * betAmount)} kredi`,
         [{ text: 'Tamam', style: 'default' }]
       );
       
@@ -199,7 +199,7 @@ export function CouponDrawer({
       
       Alert.alert(
         'Hata',
-        'Kupon oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.',
+        'Ticket oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.',
         [{ text: 'Tamam', style: 'default' }]
       );
     }
@@ -380,7 +380,7 @@ export function CouponDrawer({
                     </LinearGradient>
                   </Animated.View>
                   <View style={styles.headerText}>
-                    <Text style={styles.headerTitle}>Kuponum</Text>
+                    <Text style={styles.headerTitle}>Ticketım</Text>
                     <View style={styles.headerSubtitle}>
                       <Text style={styles.headerSubtitleText}>
                         {selections.length}/5 tahmin
@@ -435,9 +435,9 @@ export function CouponDrawer({
               <View style={styles.emptyIcon}>
                 <Text style={styles.emptyIconText}>🎯</Text>
               </View>
-              <Text style={styles.emptyTitle}>Kuponun Boş</Text>
+              <Text style={styles.emptyTitle}>Ticketın Boş</Text>
               <Text style={styles.emptySubtitle}>
-                Tahmin yapmak için sorulara evet veya hayır diyerek kuponunu oluştur.
+                Tahmin yapmak için sorulara evet veya hayır diyerek ticketını oluştur.
               </Text>
             </View>
           ) : (
@@ -459,8 +459,8 @@ export function CouponDrawer({
                             <LinearGradient
                               colors={
                                 selection.vote === 'yes' 
-                                  ? ['#34C759', '#28A745']
-                                  : ['#FF3B30', '#DC3545']
+                                  ? ['#8B5CF6', '#7C3AED']
+                                  : ['#06B6D4', '#0891B2']
                               }
                               style={styles.voteBadge}
                             >
@@ -578,7 +578,7 @@ export function CouponDrawer({
                           <Text style={styles.submitButtonTextDisabled}>Oluşturuluyor...</Text>
                         </View>
                       ) : (
-                        <Text style={styles.submitButtonText}>Kupon Oluştur</Text>
+                        <Text style={styles.submitButtonText}>Ticket Oluştur</Text>
                       )}
                     </TouchableOpacity>
                   </View>
@@ -1246,7 +1246,7 @@ const styles = StyleSheet.create({
   creditInfoAmount: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#34C759',
+    color: '#8B5CF6',
   },
   betInputLabel: {
     fontSize: 16,

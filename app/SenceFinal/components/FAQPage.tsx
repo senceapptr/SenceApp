@@ -27,7 +27,7 @@ const FAQ_DATA: FAQItem[] = [
   {
     id: 1,
     question: 'Tahmin nasıl yapılır?',
-    answer: 'Anasayfada veya Keşfet sekmesinde istediğin soruyu seç, EVET veya HAYIR butonlarından birine tıkla. Tahminler kuponuna eklenecektir.',
+    answer: 'Anasayfada veya Keşfet sekmesinde istediğin soruyu seç, EVET veya HAYIR butonlarından birine tıkla. Tahminler ticketına eklenecektir.',
     category: 'Tahminler'
   },
   {
@@ -44,9 +44,9 @@ const FAQ_DATA: FAQItem[] = [
   },
   {
     id: 4,
-    question: 'Kuponda yer alan tahmin değiştirilebilir mi?',
-    answer: 'Evet, kuponuna eklediğin bir tahmin üzerine tekrar tıklayarak EVET veya HAYIR seçeneğini değiştirebilirsin.',
-    category: 'Kuponlar'
+    question: 'Ticketta yer alan tahmin değiştirilebilir mi?',
+    answer: 'Evet, ticketına eklediğin bir tahmin üzerine tekrar tıklayarak EVET veya HAYIR seçeneğini değiştirebilirsin.',
+    category: 'Ticketlar'
   },
   {
     id: 5,

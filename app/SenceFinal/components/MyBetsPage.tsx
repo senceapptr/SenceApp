@@ -178,12 +178,12 @@ export function MyBetsPage({ showHeader = true }: MyBetsPageProps) {
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyIcon}>📊</Text>
       <Text style={styles.emptyTitle}>
-        {selectedTab === 'all' ? 'Henüz Kupon Yok' : 
-         selectedTab === 'pending' ? 'Bekleyen Kupon Yok' : 
-         'Kazanan Kupon Yok'}
+        {selectedTab === 'all' ? 'Henüz Ticket Yok' : 
+         selectedTab === 'pending' ? 'Bekleyen Ticket Yok' : 
+         'Kazanan Ticket Yok'}
       </Text>
       <Text style={styles.emptySubtitle}>
-        Tahmin yapmaya başla ve kuponlarını burada takip et!
+        Tahmin yapmaya başla ve ticketlarını burada takip et!
       </Text>
     </View>
   );

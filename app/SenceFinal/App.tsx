@@ -33,7 +33,7 @@ import { SlideOutMenu } from './components/SlideOutMenu';
 import { LoginPage } from './components/LoginPage';
 import { AdminPanel } from './components/AdminPanel';
 import { QuestionDetailSkeleton } from './components/QuestionDetailSkeleton';
-import { EmailVerificationPage } from './components/EmailVerificationPage';
+// EmailVerificationPage is defined inline in this file
 import { InputOTP } from '@/components/PremiumSence/ui/input-otp';
 import { verificationService } from '@/services/verification.service';
 
@@ -512,17 +512,20 @@ function AppContent() {
           />
         );
       case 'emailVerification':
-        return (
-          <EmailVerificationPage 
-            onBack={handleBack}
-            onVerified={async () => {
-              await markEmailAsVerified();
-              // Verification başarılı - profil güncellendi
-              // EmailVerificationBanner otomatik kapanacak (isEmailVerified değişecek)
-              setCurrentPage('home');
-            }}
-          />
-        );
+        // Email verification page - shows when user manually navigates
+        if (user) {
+          return (
+            <EmailVerificationPageWrapper
+              userId={user.id}
+              userEmail={user.email || ''}
+              onVerified={async () => {
+                await markEmailAsVerified();
+                setCurrentPage('home');
+              }}
+            />
+          );
+        }
+        return null;
       case 'editProfile':
         return (
           <EditProfilePage 

@@ -49,7 +49,7 @@ export function CouponCard({ coupon, isDarkMode, theme, onPress }: CouponCardPro
         end={{ x: 1, y: 1 }}
       >
       <Text style={[styles.name, { color: isDarkMode ? (theme.textPrimary || '#000000') : '#FFFFFF' }]}>
-        {coupon.name || 'Kupon'}
+        {coupon.name || 'Ticket'}
       </Text>
       
       <View style={styles.stats}>

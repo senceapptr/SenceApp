@@ -282,6 +282,14 @@ export default function SignUpScreen() {
                         placeholderTextColor="#999"
                         secureTextEntry={!showPassword}
                         editable={!loading}
+                        textContentType="oneTimeCode"
+                        autoComplete="off"
+                        autoCorrect={false}
+                        autoCapitalize="none"
+                        passwordRules=""
+                        importantForAutofill="no"
+                        keyboardType="default"
+                        spellCheck={false}
                       />
                       <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                         <Ionicons
@@ -306,6 +314,14 @@ export default function SignUpScreen() {
                         placeholderTextColor="#999"
                         secureTextEntry={!showConfirmPassword}
                         editable={!loading}
+                        textContentType="oneTimeCode"
+                        autoComplete="off"
+                        autoCorrect={false}
+                        autoCapitalize="none"
+                        passwordRules=""
+                        importantForAutofill="no"
+                        keyboardType="default"
+                        spellCheck={false}
                       />
                       <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
                         <Ionicons

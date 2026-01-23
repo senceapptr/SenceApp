@@ -28,7 +28,7 @@ export function ActiveCouponsSection({ coupons, isDarkMode, theme, onCouponPress
     return (
       <View style={[styles.section, { backgroundColor: isDarkMode ? (theme.surface || '#FFFFFF') : '#FFFFFF' }]}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.textPrimary || '#000000' }]}>Aktif Kuponlar</Text>
+          <Text style={[styles.title, { color: theme.textPrimary || '#000000' }]}>Aktif Ticketlar</Text>
         </View>
         
         <View style={styles.emptyStateContainer}>
@@ -40,7 +40,7 @@ export function ActiveCouponsSection({ coupons, isDarkMode, theme, onCouponPress
             </View>
             
             <Text style={styles.emptyStateTitle}>
-              Aktif Kuponun Yok
+              Aktif Ticketın Yok
             </Text>
             
             <TouchableOpacity 
@@ -50,7 +50,7 @@ export function ActiveCouponsSection({ coupons, isDarkMode, theme, onCouponPress
             >
               <Ionicons name="add-circle" size={20} color="#432870" />
               <Text style={styles.createCouponButtonText}>
-                Kupon Oluştur
+                Ticket Oluştur
               </Text>
             </TouchableOpacity>
           </View>
@@ -62,7 +62,7 @@ export function ActiveCouponsSection({ coupons, isDarkMode, theme, onCouponPress
   return (
     <View style={[styles.section, { backgroundColor: isDarkMode ? (theme.surface || '#FFFFFF') : '#FFFFFF' }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.textPrimary || '#000000' }]}>Aktif Kuponlar</Text>
+        <Text style={[styles.title, { color: theme.textPrimary || '#000000' }]}>Aktif Ticketlar</Text>
         <TouchableOpacity onPress={onSeeAllPress}>
           <Text style={[styles.seeAll, { color: theme.primary || '#432870' }]}>Tümünü gör</Text>
         </TouchableOpacity>

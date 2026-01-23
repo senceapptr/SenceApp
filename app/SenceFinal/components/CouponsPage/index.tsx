@@ -17,7 +17,7 @@ interface CouponsPageProps {
   onMenuToggle: () => void;
   onQuestionDetail?: (questionId: number) => void;
   refreshTrigger?: number; // Bu prop değiştiğinde sayfa yenilenecek
-  onCreateCouponPress?: () => void; // Kupon oluşturmaya yönlendir
+  onCreateCouponPress?: () => void; // Ticket oluşturmaya yönlendir
 }
 
 // Empty State Component with animations
@@ -103,10 +103,10 @@ function CouponsEmptyState({ onCreatePress }: { onCreatePress?: () => void }) {
           <View style={[styles.decorativeCircle, styles.decorativeCircle3]} />
         </Animated.View>
 
-        <Text style={styles.emptyTitle}>Henüz Kupon Yok</Text>
+        <Text style={styles.emptyTitle}>Henüz Ticket Yok</Text>
         <Text style={styles.emptyDescription}>
           Sorulara oy vererek heyecan dolu{'\n'}
-          kuponlar oluştur ve kazanmaya başla! 🎯
+          ticketlar oluştur ve kazanmaya başla! 🎯
         </Text>
 
         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
@@ -116,7 +116,7 @@ function CouponsEmptyState({ onCreatePress }: { onCreatePress?: () => void }) {
             activeOpacity={0.8}
           >
             <Ionicons name="add-circle" size={24} color="#FFFFFF" />
-            <Text style={styles.emptyActionButtonText}>İlk Kuponunu Oluştur</Text>
+            <Text style={styles.emptyActionButtonText}>İlk Ticketını Oluştur</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -135,7 +135,7 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
   const [showSkeleton, setShowSkeleton] = useState(true);
   const { headerTranslateY, handleScroll } = useHeaderAnimation();
 
-  // Backend'den kupon verilerini yükle
+  // Backend'den ticket verilerini yükle
   const loadCouponsData = async (isRefresh = false) => {
     if (!user) {
       setLoading(false);
@@ -153,7 +153,7 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
       
       if (result.error) {
         console.error('Error loading coupons:', result.error);
-        Alert.alert('Hata', 'Kuponlar yüklenirken bir hata oluştu');
+        Alert.alert('Hata', 'Ticketlar yüklenirken bir hata oluştu');
         setLoading(false);
         setShowSkeleton(false);
         return;
@@ -205,7 +205,7 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
       }
     } catch (err) {
       console.error('Coupons load error:', err);
-      Alert.alert('Hata', 'Kuponlar yüklenirken bir hata oluştu');
+      Alert.alert('Hata', 'Ticketlar yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
       // Animasyon olmadan direkt geçiş
@@ -256,7 +256,7 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
         <SafeAreaView style={styles.safeArea}>
           <Header onMenuToggle={onMenuToggle} headerTranslateY={headerTranslateY} />
           <View style={styles.loadingContent}>
-            <Text style={styles.errorText}>Kuponları görüntülemek için giriş yapmalısınız</Text>
+            <Text style={styles.errorText}>Ticketları görüntülemek için giriş yapmalısınız</Text>
           </View>
         </SafeAreaView>
       </View>
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FF3B30',
+    color: '#DC2626',
     textAlign: 'center',
     paddingHorizontal: 32,
   },

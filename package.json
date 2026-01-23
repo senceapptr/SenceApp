@@ -59,6 +59,7 @@
     "react-native-chart-kit": "^6.12.0",
     "react-native-collapsible": "^1.6.2",
     "react-native-gesture-handler": "~2.24.0",
+    "react-native-image-colors": "^2.5.1",
     "react-native-imaged-carousel-card": "^0.1.1",
     "react-native-modal": "^14.0.0-rc.1",
     "react-native-paper": "^5.14.5",

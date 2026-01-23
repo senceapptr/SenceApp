@@ -71,7 +71,7 @@ export const mapCouponToActiveCoupon = (coupon: any): ActiveCoupon => {
 
   return {
     id: coupon.display_id || coupon.id,
-    name: `Kupon #${coupon.display_id || coupon.id}`,
+    name: `Ticket #${coupon.display_id || coupon.id}`,
     questionCount: coupon.selections_count || predictions.length || 0,
     totalOdds: coupon.total_odds || 1,
     potentialWinnings: coupon.potential_win || 0,

@@ -173,12 +173,12 @@ const styles = StyleSheet.create({
   progressLabelYes: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#34C759',
+    color: '#8B5CF6',
   },
   progressLabelNo: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#FF3B30',
+    color: '#06B6D4',
   },
   progressBar: {
     height: 8,
@@ -189,11 +189,11 @@ const styles = StyleSheet.create({
   },
   progressYes: {
     height: '100%',
-    backgroundColor: '#34C759',
+    backgroundColor: '#8B5CF6',
   },
   progressNo: {
     height: '100%',
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#06B6D4',
   },
   voteResult: {
     flexDirection: 'row',
@@ -209,12 +209,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resultButtonYes: {
-    backgroundColor: 'rgba(52, 199, 89, 0.1)',
-    borderColor: '#34C759',
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    borderColor: '#8B5CF6',
   },
   resultButtonNo: {
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
-    borderColor: '#FF3B30',
+    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    borderColor: '#06B6D4',
   },
   resultText: {
     fontSize: 16,
@@ -223,10 +223,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   resultTextYes: {
-    color: '#34C759',
+    color: '#8B5CF6',
   },
   resultTextNo: {
-    color: '#FF3B30',
+    color: '#06B6D4',
   },
   resultOdds: {
     fontSize: 12,

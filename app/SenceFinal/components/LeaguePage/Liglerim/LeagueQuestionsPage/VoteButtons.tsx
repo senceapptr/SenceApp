@@ -18,7 +18,7 @@ export function VoteButtons({ yesOdds, noOdds, onYesPress, onNoPress }: VoteButt
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={['#34C759', '#28A745']}
+          colors={['#8B5CF6', '#7C3AED']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradient}
@@ -33,7 +33,7 @@ export function VoteButtons({ yesOdds, noOdds, onYesPress, onNoPress }: VoteButt
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={['#FF3B30', '#DC3545']}
+          colors={['#06B6D4', '#0891B2']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradient}

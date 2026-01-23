@@ -12,7 +12,7 @@ export function StatisticsCards({ totalCoupons, totalEarnings, totalLost }: Stat
     <View style={styles.container}>
       <View style={styles.row}>
         <View style={[styles.card, styles.cardLarge, styles.cardPurple]}>
-          <Text style={styles.label}>Toplam Kupon</Text>
+          <Text style={styles.label}>Toplam Ticket</Text>
           <Text style={styles.value}>{totalCoupons}</Text>
         </View>
 

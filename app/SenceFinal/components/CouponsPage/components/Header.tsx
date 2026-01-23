@@ -17,7 +17,7 @@ export function Header({ onMenuToggle, headerTranslateY }: HeaderProps) {
       ]}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>Kuponlarım</Text>
+        <Text style={styles.title}>Ticketlarım</Text>
         <TouchableOpacity 
           style={styles.menuButton}
           onPress={onMenuToggle}

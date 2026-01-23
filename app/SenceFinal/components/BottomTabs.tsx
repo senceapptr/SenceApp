@@ -12,7 +12,7 @@ export function BottomTabs({ currentPage, onPageChange }: BottomTabsProps) {
   const tabs = [
     { id: 'home', name: 'Ana Sayfa', lib: 'ion', active: 'home', inactive: 'home-outline' },
     { id: 'discover', name: 'Keşfet', lib: 'ion', active: 'search', inactive: 'search-outline' },
-    { id: 'coupons', name: 'Kuponlarım', lib: 'mci', active: 'ticket-confirmation', inactive: 'ticket-confirmation-outline' },
+    { id: 'coupons', name: 'Ticketlarım', lib: 'mci', active: 'ticket-confirmation', inactive: 'ticket-confirmation-outline' },
     { id: 'leagues', name: 'Ligler', lib: 'ion', active: 'trophy', inactive: 'trophy-outline' },
   ] as const;
 

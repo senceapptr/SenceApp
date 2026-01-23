@@ -61,7 +61,7 @@ export const calculateTimeRemaining = (endDate: Date): string => {
   }
 };
 
-// Kupon içerisindeki en son sonuçlanacak sorunun tarihini bul
+// Ticket içerisindeki en son sonuçlanacak sorunun tarihini bul
 export const getLatestEndDate = (predictions: any[]): Date | null => {
   if (!predictions || predictions.length === 0) return null;
   

@@ -362,7 +362,7 @@ export function DailyChallengeSwipeDeck({ onComplete, onBack, triviaMultiplier }
               style={styles.noButton}
             >
               <LinearGradient
-                colors={['#FF3B30', '#DC3545']}
+                colors={['#06B6D4', '#0891B2']}
                 style={styles.actionButtonGradient}
               >
                 <Text style={styles.actionButtonIcon}>✗</Text>
@@ -388,7 +388,7 @@ export function DailyChallengeSwipeDeck({ onComplete, onBack, triviaMultiplier }
               style={styles.yesButton}
             >
               <LinearGradient
-                colors={['#34C759', '#28A745']}
+                colors={['#8B5CF6', '#7C3AED']}
                 style={styles.actionButtonGradient}
               >
                 <Text style={styles.actionButtonIcon}>✓</Text>
@@ -605,14 +605,14 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   yesOdds: {
-    backgroundColor: '#34C759',
+    backgroundColor: '#8B5CF6',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 16,
     alignItems: 'center',
   },
   noOdds: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#06B6D4',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 16,
@@ -659,9 +659,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(52, 199, 89, 0.2)',
+    backgroundColor: 'rgba(139, 92, 246, 0.2)',
     borderWidth: 4,
-    borderColor: '#34C759',
+    borderColor: '#8B5CF6',
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
@@ -673,9 +673,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 59, 48, 0.2)',
+    backgroundColor: 'rgba(6, 182, 212, 0.2)',
     borderWidth: 4,
-    borderColor: '#FF3B30',
+    borderColor: '#06B6D4',
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
@@ -734,7 +734,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     overflow: 'hidden',
-    shadowColor: '#FF3B30',
+    shadowColor: '#06B6D4',
     shadowOffset: {
       width: 0,
       height: 10,
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     overflow: 'hidden',
-    shadowColor: '#34C759',
+    shadowColor: '#8B5CF6',
     shadowOffset: {
       width: 0,
       height: 10,

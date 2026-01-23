@@ -51,7 +51,7 @@ export function CouponDetailModal({ visible, coupon, onClose, onClaimReward, onQ
                 style={styles.userImage}
               />
               <View>
-                <Text style={styles.title}>Kupon #{coupon.display_id || coupon.id}</Text>
+                <Text style={styles.title}>Ticket #{coupon.display_id || coupon.id}</Text>
                 <Text style={styles.username}>{coupon.username || 'Kullanıcı'}</Text>
               </View>
             </View>
@@ -158,7 +158,7 @@ export function CouponDetailModal({ visible, coupon, onClose, onClaimReward, onQ
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Text style={styles.shareButtonText}>📤 Kuponu Paylaş</Text>
+              <Text style={styles.shareButtonText}>📤 Ticketı Paylaş</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -318,10 +318,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   yesBadge: {
-    backgroundColor: '#D1FAE5',
+    backgroundColor: '#EDE9FE',
   },
   noBadge: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: '#CFFAFE',
   },
   choiceBadgeText: {
     fontSize: 10,

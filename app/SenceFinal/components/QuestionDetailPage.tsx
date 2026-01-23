@@ -6,6 +6,7 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  Pressable,
   Dimensions,
   TextInput,
   Animated,
@@ -14,6 +15,8 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  Modal,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,7 +26,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { questionsService } from '@/services/questions.service';
 import { predictionsService } from '@/services/predictions.service';
 import { commentsService } from '@/services/comments.service';
-import { analyzeImageColors, getGradientByCategory, getPaletteByCategory, ColorPalette } from './utils/imageColorAnalyzer';
+// Image color analyzer artık kullanılmıyor
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -79,8 +82,17 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
   const [relatedQuestions, setRelatedQuestions] = useState<RelatedQuestion[]>([]);
   const [topInvestors, setTopInvestors] = useState<TopInvestor[]>([]);
   const [userPrediction, setUserPrediction] = useState<any>(null);
-  const [countdownGradient, setCountdownGradient] = useState<string[]>(['#8B5CF6', '#7C3AED']);
-  const [countdownShadowColor, setCountdownShadowColor] = useState<string>('#8B5CF6');
+  
+  // Ticket Modal State'leri
+  const [ticketModalVisible, setTicketModalVisible] = useState(false);
+  const [selectedVote, setSelectedVote] = useState<'yes' | 'no' | null>(null);
+  const [betAmount, setBetAmount] = useState('100');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Success modal animation
+  const successScaleAnim = useRef(new Animated.Value(0)).current;
+  const confettiAnim = useRef(new Animated.Value(0)).current;
   
   const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -105,26 +117,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         const q = detailsResult.data;
         setQuestionDetails(q);
         
-        // Görsel analizi ve gradient oluştur
-        const categoryName = sourceCategory?.name || q.categories?.name || 'Genel';
-        const imageUrl = q.image_url || '';
-        
-        // Kategoriye göre varsayılan palette
-        const categoryPalette = getPaletteByCategory(categoryName);
-        setCountdownGradient(categoryPalette.gradient);
-        setCountdownShadowColor(categoryPalette.shadowColor);
-        
-        // Görsel analizi ile dinamik renk (async - background'da çalışır)
-        if (imageUrl) {
-          analyzeImageColors(imageUrl).then((palette: ColorPalette) => {
-            if (palette.gradient && palette.gradient.length > 0) {
-              setCountdownGradient(palette.gradient);
-              setCountdownShadowColor(palette.shadowColor);
-            }
-          }).catch(() => {
-            // Hata durumunda kategori gradient'ini kullan
-          });
-        }
+        // Countdown artık sadece gün olarak küçük badge'de gösteriliyor
         
         // Countdown hesapla
         const endDate = new Date(q.end_date);
@@ -197,83 +190,37 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
     loadQuestionDetails();
   }, [question?.id, user]);
 
-  // Countdown timer effect
+  // Countdown timer effect - her saniye güncelle
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev.minutes > 0) {
-          return { ...prev, minutes: prev.minutes - 1 };
-        } else if (prev.hours > 0) {
-          return { ...prev, hours: prev.hours - 1, minutes: 59 };
-        } else if (prev.days > 0) {
-          return { ...prev, days: prev.days - 1, hours: 23, minutes: 59 };
-        }
-        return prev;
-      });
-    }, 60000); // Update every minute
+    if (!questionDetails?.end_date) return;
+
+    const updateCountdown = () => {
+      const endDate = new Date(questionDetails.end_date);
+      const now = new Date();
+      const diff = endDate.getTime() - now.getTime();
+      
+      if (diff > 0) {
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        setTimeLeft({ days, hours, minutes });
+      } else {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0 });
+      }
+    };
+
+    // İlk güncelleme
+    updateCountdown();
+
+    // Her saniye güncelle
+    const timer = setInterval(updateCountdown, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [questionDetails?.end_date]);
 
-  // Pulse animation for countdown
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.02,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
-
-  // Animated countdown values for smooth transitions
-  const daysAnim = useRef(new Animated.Value(timeLeft.days)).current;
-  const hoursAnim = useRef(new Animated.Value(timeLeft.hours)).current;
-  const minutesAnim = useRef(new Animated.Value(timeLeft.minutes)).current;
-  const countdownScale = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    // Scale animation when values change
-    Animated.sequence([
-      Animated.timing(countdownScale, {
-        toValue: 1.1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(countdownScale, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Update animated values
-    Animated.parallel([
-      Animated.timing(daysAnim, {
-        toValue: timeLeft.days,
-        duration: 500,
-        useNativeDriver: false,
-      }),
-      Animated.timing(hoursAnim, {
-        toValue: timeLeft.hours,
-        duration: 500,
-        useNativeDriver: false,
-      }),
-      Animated.timing(minutesAnim, {
-        toValue: timeLeft.minutes,
-        duration: 500,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }, [timeLeft]);
+  // Countdown artık sadece gün olarak gösteriliyor, animasyon gerekmiyor
 
   // Kategori ikonu fonksiyonu
   const getCategoryIcon = (category: string): string => {
@@ -324,32 +271,116 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
     setRefreshing(false);
   };
 
-  // Tahmin yapma fonksiyonu
-  const handleVote = async (vote: 'yes' | 'no') => {
+  // Ticket Modal'ı aç
+  const openTicketModal = (vote: 'yes' | 'no') => {
     if (!user || !mainQuestion) {
-      Alert.alert('Hata', 'Tahmin yapmak için giriş yapmalısınız');
+      Alert.alert('Hata', 'Ticket almak için giriş yapmalısınız');
       return;
     }
 
+    // Kullanıcının bu soruya daha önce tahmin yapıp yapmadığını kontrol et
+    if (userPrediction) {
+      Alert.alert(
+        'Uyarı',
+        'Bu soruya zaten ticket aldınız. Aynı soruya birden fazla ticket alamazsınız.',
+        [{ text: 'Tamam', style: 'default' }]
+      );
+      return;
+    }
+
+    setSelectedVote(vote);
+    setBetAmount('100');
+    setTicketModalVisible(true);
+  };
+
+  // Potansiyel kazanç hesaplama
+  const calculatePotentialWin = () => {
+    if (!mainQuestion || !selectedVote || !betAmount) return 0;
+    const amount = parseFloat(betAmount) || 0;
+    const odds = selectedVote === 'yes' ? mainQuestion.yesOdds : mainQuestion.noOdds;
+    return amount * odds;
+  };
+
+  // Ticket alma işlemi
+  const handleConfirmTicket = async () => {
+    if (!user || !mainQuestion || !selectedVote) return;
+    
+    const amount = parseFloat(betAmount) || 0;
+    if (amount < 10) {
+      Alert.alert('Hata', 'Minimum ticket miktarı 10 kredidir');
+      return;
+    }
+
+    setIsProcessing(true);
+
     try {
+      const odds = selectedVote === 'yes' ? mainQuestion.yesOdds : mainQuestion.noOdds;
       const result = await predictionsService.createPrediction({
         question_id: question.id.toString(),
-        vote,
-        amount: 1000, // TODO: Kullanıcıdan miktar al
-        odds: vote === 'yes' ? mainQuestion.yesOdds : mainQuestion.noOdds,
-        potential_win: vote === 'yes' ? mainQuestion.yesOdds * 1000 : mainQuestion.noOdds * 1000,
+        vote: selectedVote,
+        amount: amount,
+        odds: odds,
+        potential_win: amount * odds,
       });
 
       if (result.data) {
         setUserPrediction(result.data);
-        Alert.alert('Başarılı', 'Tahmininiz kaydedildi!');
+        setTicketModalVisible(false);
+        
+        // Success modal göster
+        setShowSuccessModal(true);
+        
+        // Success animasyonu
+        Animated.parallel([
+          Animated.spring(successScaleAnim, {
+            toValue: 1,
+            friction: 4,
+            tension: 50,
+            useNativeDriver: true,
+          }),
+          Animated.timing(confettiAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ]).start();
+
         // Verileri yenile
         loadQuestionDetails();
+      } else if (result.error) {
+        const errorMessage = result.error.message || 'Ticket alınırken bir hata oluştu';
+        if (errorMessage.includes('already') || errorMessage.includes('duplicate') || errorMessage.includes('zaten')) {
+          Alert.alert(
+            'Uyarı',
+            'Bu soruya zaten ticket aldınız. Aynı soruya birden fazla ticket alamazsınız.',
+            [{ text: 'Tamam', style: 'default' }]
+          );
+        } else {
+          Alert.alert('Hata', errorMessage);
+        }
       }
-    } catch (err) {
-      console.error('Vote error:', err);
-      Alert.alert('Hata', 'Tahmin yapılırken bir hata oluştu');
+    } catch (err: any) {
+      console.error('Ticket error:', err);
+      const errorMessage = err?.message || 'Ticket alınırken bir hata oluştu';
+      if (errorMessage.includes('already') || errorMessage.includes('duplicate') || errorMessage.includes('zaten')) {
+        Alert.alert(
+          'Uyarı',
+          'Bu soruya zaten ticket aldınız. Aynı soruya birden fazla ticket alamazsınız.',
+          [{ text: 'Tamam', style: 'default' }]
+        );
+      } else {
+        Alert.alert('Hata', errorMessage);
+      }
+    } finally {
+      setIsProcessing(false);
     }
+  };
+
+  // Success modal kapat
+  const closeSuccessModal = () => {
+    setShowSuccessModal(false);
+    successScaleAnim.setValue(0);
+    confettiAnim.setValue(0);
   };
 
   // Odds change chart data
@@ -486,7 +517,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         </View>
         <TouchableOpacity style={styles.followButton} activeOpacity={0.8}>
           <LinearGradient
-            colors={['#432870', '#5A3A8B']}
+            colors={['#A78BFA', '#8B5CF6']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.followButtonGradient}
@@ -643,7 +674,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                     activeOpacity={0.8}
                   >
         <LinearGradient
-          colors={['#432870', '#B29EFD']}
+          colors={['#A78BFA', '#8B5CF6']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.sendButtonGradient}
@@ -691,7 +722,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
     <View style={styles.detailsTabContainer}>
       {/* Total Pool Card */}
       <LinearGradient
-        colors={['#432870', '#5A3A8B', '#B29EFD']}
+        colors={['#A78BFA', '#8B5CF6', '#7C3AED']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.totalPoolCard}
@@ -735,7 +766,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       {/* Line Chart */}
       <View style={styles.chartSection}>
         <View style={styles.chartHeader}>
-          <Ionicons name="trending-up" size={20} color="#432870" />
+          <Ionicons name="trending-up" size={20} color="#A78BFA" />
           <Text style={styles.chartTitle}>Oran Değişimi Grafiği</Text>
                   </View>
         <View style={styles.chartCard}>
@@ -858,7 +889,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
   if (loading && !mainQuestion) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#432870" />
+        <ActivityIndicator size="large" color="#A78BFA" />
         <Text style={styles.loadingText}>Soru yükleniyor...</Text>
       </View>
     );
@@ -922,8 +953,8 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={['#432870', '#5A3A8B']}
-            tintColor="#432870"
+            colors={['#A78BFA', '#8B5CF6']}
+            tintColor="#A78BFA"
           />
         }
       >
@@ -934,11 +965,18 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
           <View style={styles.questionHeader}>
             <View style={styles.questionTitleRow}>
               <Text style={styles.questionTitle}>{mainQuestion.title}</Text>
-              <View style={styles.ratingBadge}>
-                <Ionicons name="star" size={16} color="#C9F158" />
-                <Text style={styles.ratingText}>{mainQuestion.rating}</Text>
+              <View style={styles.rightColumn}>
+                <View style={styles.ratingBadge}>
+                  <Ionicons name="star" size={16} color="#C9F158" />
+                  <Text style={styles.ratingText}>{mainQuestion.rating}</Text>
+                </View>
+                {/* Countdown - Sadece Gün (Yıldızın altında) */}
+                <View style={styles.countdownBadge}>
+                  <Text style={styles.countdownBadgeValue}>{timeLeft.days}</Text>
+                  <Text style={styles.countdownBadgeLabel}>GÜN</Text>
                 </View>
               </View>
+            </View>
 
             {/* Published Date and Vote Count */}
             <View style={styles.metaRow}>
@@ -947,49 +985,13 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                 <Text style={styles.metaText}>
                   {formatPublishDate(mainQuestion.publishedAt)} yayınlandı
                 </Text>
-                </View>
+              </View>
               <View style={styles.voteCountBadge}>
-                <Ionicons name="people" size={16} color="#432870" />
+                <Ionicons name="people" size={16} color="#A78BFA" />
                 <Text style={styles.voteCountText}>{mainQuestion.totalVotes}</Text>
                 <Text style={styles.voteCountLabel}>oy</Text>
               </View>
             </View>
-
-            {/* Countdown Timer */}
-                    <Animated.View 
-                      style={[
-                styles.countdownCard,
-                { transform: [{ scale: pulseAnim }] }
-              ]}
-            >
-              <LinearGradient
-                colors={countdownGradient as any}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.countdownGradient}
-              >
-                <View style={styles.countdownHeader}>
-                  <View style={styles.countdownDot} />
-                  <Text style={styles.countdownLabel}>SONUÇLANMAK İÇİN KALAN SÜRE</Text>
-                  </View>
-                <Animated.View style={[styles.countdownTime, { transform: [{ scale: countdownScale }] }]}>
-                  <View style={styles.countdownTimeItem}>
-                    <Text style={styles.countdownTimeValue}>{timeLeft.days}</Text>
-                    <Text style={styles.countdownTimeLabel}>GÜN</Text>
-                </View>
-                  <Text style={styles.countdownTimeSeparator}>:</Text>
-                  <View style={styles.countdownTimeItem}>
-                    <Text style={styles.countdownTimeValue}>{String(timeLeft.hours).padStart(2, '0')}</Text>
-                    <Text style={styles.countdownTimeLabel}>SAAT</Text>
-                  </View>
-                  <Text style={styles.countdownTimeSeparator}>:</Text>
-                  <View style={styles.countdownTimeItem}>
-                    <Text style={styles.countdownTimeValue}>{String(timeLeft.minutes).padStart(2, '0')}</Text>
-                    <Text style={styles.countdownTimeLabel}>DAKİKA</Text>
-                  </View>
-                </Animated.View>
-              </LinearGradient>
-            </Animated.View>
 
             {/* Tabs */}
             <View style={styles.tabs}>
@@ -1014,7 +1016,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                   <Ionicons 
                     name="chatbubble-outline" 
                     size={14} 
-                    color={activeTab === 'comments' ? '#432870' : '#20202066'}
+                    color={activeTab === 'comments' ? '#A78BFA' : '#20202066'}
                   />
                   <Text style={[styles.tabText, activeTab === 'comments' && styles.tabTextActive]}>
                     Yorumlar
@@ -1042,7 +1044,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                   <Ionicons 
                     name="bar-chart" 
                     size={14} 
-                    color={activeTab === 'stats' ? '#432870' : '#20202066'}
+                    color={activeTab === 'stats' ? '#A78BFA' : '#20202066'}
                   />
                   <Text style={[styles.tabText, activeTab === 'stats' && styles.tabTextActive]}>
                     İstatistikler
@@ -1054,7 +1056,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
 
             {/* Divider */}
             <LinearGradient
-              colors={['transparent', '#43287033', 'transparent']}
+              colors={['transparent', '#A78BFA33', 'transparent']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.divider}
@@ -1089,35 +1091,279 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       </View>
 
       {/* Fixed Bottom Vote Buttons - Premium UI */}
-      <View style={[styles.fixedBottomButtons, { paddingBottom: insets.bottom + 12 }]}>
+      <View style={styles.fixedBottomButtons}>
         <LinearGradient
           colors={['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 0.95)', '#FFFFFF']}
           style={styles.fixedBottomGradient}
         />
-        <View style={styles.fixedBottomContent}>
-          <TouchableOpacity 
-            style={styles.fixedVoteButtonYes}
-            onPress={() => handleVote('yes')}
-            activeOpacity={0.85}
-          >
-            <View style={styles.fixedVoteButtonGradient}>
-              <Text style={styles.fixedVoteButtonLabel}>EVET</Text>
-              <Text style={styles.fixedVoteButtonOdds}>{mainQuestion?.yesOdds || 2}x</Text>
-            </View>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.fixedVoteButtonNo}
-            onPress={() => handleVote('no')}
-            activeOpacity={0.85}
-          >
-            <View style={styles.fixedVoteButtonGradient}>
-              <Text style={styles.fixedVoteButtonLabel}>HAYIR</Text>
-              <Text style={styles.fixedVoteButtonOdds}>{mainQuestion?.noOdds || 2}x</Text>
-            </View>
-          </TouchableOpacity>
+        <View style={[styles.voteCardContainer, { paddingBottom: insets.bottom + 12 }]}>
+          <Text style={styles.voteCardTitle}>Ticketı Alın</Text>
+          <View style={styles.fixedBottomContent}>
+            <Pressable
+              onPress={() => openTicketModal('yes')}
+              style={({ pressed }) => pressed && styles.fixedVoteButtonPressWrapper}
+            >
+              <View style={styles.fixedVoteButtonYes}>
+                <View style={styles.fixedVoteButtonContent}>
+                  <Text style={styles.fixedVoteButtonLabelYes}>EVET</Text>
+                  <Text style={styles.fixedVoteButtonOddsYes}>{mainQuestion?.yesOdds || 2}x</Text>
+                </View>
+              </View>
+            </Pressable>
+            
+            <Pressable
+              onPress={() => openTicketModal('no')}
+              style={({ pressed }) => pressed && styles.fixedVoteButtonPressWrapper}
+            >
+              <View style={styles.fixedVoteButtonNo}>
+                <View style={styles.fixedVoteButtonContent}>
+                  <Text style={styles.fixedVoteButtonLabelNo}>HAYIR</Text>
+                  <Text style={styles.fixedVoteButtonOddsNo}>{mainQuestion?.noOdds || 2}x</Text>
+                </View>
+              </View>
+            </Pressable>
+          </View>
         </View>
       </View>
+
+      {/* Ticket Alma Modal */}
+      <Modal
+        visible={ticketModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setTicketModalVisible(false)}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <Pressable 
+            style={styles.modalBackdrop} 
+            onPress={() => setTicketModalVisible(false)}
+          />
+          <View style={styles.ticketModalContainer}>
+            {/* Modal Header */}
+            <View style={styles.ticketModalHeader}>
+              <View style={styles.ticketModalHandle} />
+              <Text style={styles.ticketModalTitle}>Ticket Al</Text>
+              <TouchableOpacity 
+                style={styles.ticketModalCloseBtn}
+                onPress={() => setTicketModalVisible(false)}
+              >
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Seçilen Oy */}
+            <View style={[
+              styles.selectedVoteContainer,
+              selectedVote === 'yes' ? styles.selectedVoteYes : styles.selectedVoteNo
+            ]}>
+              <View style={styles.selectedVoteIcon}>
+                <Ionicons 
+                  name={selectedVote === 'yes' ? 'checkmark-circle' : 'close-circle'} 
+                  size={32} 
+                  color={selectedVote === 'yes' ? '#A78BFA' : '#06B6D4'} 
+                />
+              </View>
+              <View style={styles.selectedVoteInfo}>
+                <Text style={styles.selectedVoteLabel}>Seçiminiz</Text>
+                <Text style={[
+                  styles.selectedVoteText,
+                  selectedVote === 'yes' ? styles.selectedVoteTextYes : styles.selectedVoteTextNo
+                ]}>
+                  {selectedVote === 'yes' ? 'EVET' : 'HAYIR'}
+                </Text>
+              </View>
+              <View style={styles.selectedVoteOdds}>
+                <Text style={styles.selectedVoteOddsValue}>
+                  {selectedVote === 'yes' ? mainQuestion?.yesOdds : mainQuestion?.noOdds}x
+                </Text>
+                <Text style={styles.selectedVoteOddsLabel}>oran</Text>
+              </View>
+            </View>
+
+            {/* Miktar Girişi */}
+            <View style={styles.amountInputSection}>
+              <Text style={styles.amountInputLabel}>Yatırmak İstediğiniz Kredi</Text>
+              <View style={styles.amountInputContainer}>
+                <TextInput
+                  style={styles.amountInput}
+                  value={betAmount}
+                  onChangeText={setBetAmount}
+                  keyboardType="numeric"
+                  placeholder="100"
+                  placeholderTextColor="#999"
+                />
+                <Text style={styles.amountInputCurrency}>Kredi</Text>
+              </View>
+              
+              {/* Hızlı Seçim Butonları */}
+              <View style={styles.quickAmountButtons}>
+                {['50', '100', '250', '500', '1000'].map((amount) => (
+                  <TouchableOpacity
+                    key={amount}
+                    style={[
+                      styles.quickAmountBtn,
+                      betAmount === amount && styles.quickAmountBtnActive
+                    ]}
+                    onPress={() => setBetAmount(amount)}
+                  >
+                    <Text style={[
+                      styles.quickAmountBtnText,
+                      betAmount === amount && styles.quickAmountBtnTextActive
+                    ]}>
+                      {amount}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Potansiyel Kazanç */}
+            <View style={styles.potentialWinSection}>
+              <View style={styles.potentialWinRow}>
+                <Text style={styles.potentialWinLabel}>Yatırım</Text>
+                <Text style={styles.potentialWinValue}>{betAmount || '0'} Kredi</Text>
+              </View>
+              <View style={styles.potentialWinRow}>
+                <Text style={styles.potentialWinLabel}>Oran</Text>
+                <Text style={styles.potentialWinValue}>
+                  {selectedVote === 'yes' ? mainQuestion?.yesOdds : mainQuestion?.noOdds}x
+                </Text>
+              </View>
+              <View style={styles.potentialWinDivider} />
+              <View style={styles.potentialWinRow}>
+                <Text style={styles.potentialWinTotalLabel}>Potansiyel Kazanç</Text>
+                <Text style={styles.potentialWinTotalValue}>
+                  {calculatePotentialWin().toFixed(0)} Kredi
+                </Text>
+              </View>
+            </View>
+
+            {/* Ticket Al Butonu */}
+            <TouchableOpacity
+              style={[
+                styles.confirmTicketBtn,
+                isProcessing && styles.confirmTicketBtnDisabled
+              ]}
+              onPress={handleConfirmTicket}
+              disabled={isProcessing}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={selectedVote === 'yes' ? ['#A78BFA', '#8B5CF6'] : ['#06B6D4', '#0891B2']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.confirmTicketBtnGradient}
+              >
+                {isProcessing ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="ticket" size={22} color="#fff" />
+                    <Text style={styles.confirmTicketBtnText}>Ticket Al</Text>
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Success Modal - Happy End */}
+      <Modal
+        visible={showSuccessModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeSuccessModal}
+      >
+        <View style={styles.successModalOverlay}>
+          {/* Confetti Animation */}
+          <Animated.View style={[styles.confettiContainer, {
+            opacity: confettiAnim,
+            transform: [{ translateY: confettiAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [-100, 0],
+            })}],
+          }]}>
+            {[...Array(20)].map((_, i) => (
+              <Animated.View
+                key={i}
+                style={[
+                  styles.confettiPiece,
+                  {
+                    left: `${Math.random() * 100}%`,
+                    backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#9B59B6', '#3498DB'][i % 5],
+                    transform: [{
+                      translateY: confettiAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, SCREEN_HEIGHT * 0.6 + Math.random() * 200],
+                      }),
+                    }, {
+                      rotate: confettiAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0deg', `${Math.random() * 720}deg`],
+                      }),
+                    }],
+                  }
+                ]}
+              />
+            ))}
+          </Animated.View>
+
+          <Animated.View style={[
+            styles.successModalCard,
+            { transform: [{ scale: successScaleAnim }] }
+          ]}>
+            {/* Success Icon */}
+            <View style={styles.successIconContainer}>
+              <LinearGradient
+                colors={selectedVote === 'yes' ? ['#A78BFA', '#8B5CF6'] : ['#06B6D4', '#0891B2']}
+                style={styles.successIconGradient}
+              >
+                <Ionicons name="checkmark" size={48} color="#fff" />
+              </LinearGradient>
+            </View>
+
+            {/* Success Text */}
+            <Text style={styles.successTitle}>🎉 Tebrikler!</Text>
+            <Text style={styles.successSubtitle}>Ticketınız Başarıyla Alındı</Text>
+
+            {/* Ticket Details */}
+            <View style={styles.successTicketDetails}>
+              <View style={styles.successTicketRow}>
+                <Text style={styles.successTicketLabel}>Tahmin</Text>
+                <Text style={[
+                  styles.successTicketValue,
+                  selectedVote === 'yes' ? styles.successTicketValueYes : styles.successTicketValueNo
+                ]}>
+                  {selectedVote === 'yes' ? 'EVET' : 'HAYIR'}
+                </Text>
+              </View>
+              <View style={styles.successTicketRow}>
+                <Text style={styles.successTicketLabel}>Yatırım</Text>
+                <Text style={styles.successTicketValue}>{betAmount} Kredi</Text>
+              </View>
+              <View style={styles.successTicketRow}>
+                <Text style={styles.successTicketLabel}>Potansiyel Kazanç</Text>
+                <Text style={styles.successTicketValueHighlight}>
+                  {calculatePotentialWin().toFixed(0)} Kredi
+                </Text>
+              </View>
+            </View>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              style={styles.successCloseBtn}
+              onPress={closeSuccessModal}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.successCloseBtnText}>Tamam</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
 
     </View>
   );
@@ -1136,7 +1382,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     fontWeight: '600',
-    color: '#432870',
+    color: '#A78BFA',
   },
   errorText: {
     fontSize: 16,
@@ -1269,7 +1515,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   questionTitle: {
     flex: 1,
@@ -1278,6 +1524,10 @@ const styles = StyleSheet.create({
     color: '#202020',
     lineHeight: 32,
     paddingRight: 16,
+  },
+  rightColumn: {
+    alignItems: 'flex-end',
+    gap: 6,
   },
   ratingBadge: {
     flexDirection: 'row',
@@ -1297,7 +1547,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   metaItem: {
     flexDirection: 'row',
@@ -1328,73 +1578,38 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#20202099',
   },
-  countdownCard: {
-    marginTop: 4,
-    marginBottom: 12,
-    borderRadius: 20,
-    overflow: 'hidden',
+  countdownBadge: {
+    backgroundColor: 'rgba(242, 243, 245, 0.7)',
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(229, 229, 229, 0.5)',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
       },
       android: {
-        elevation: 6,
+        elevation: 1,
       },
     }),
   },
-  countdownGradient: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-  },
-  countdownHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-    gap: 6,
-  },
-  countdownDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#10B981',
-  },
-  countdownLabel: {
-    fontSize: 8,
-    fontWeight: '700',
-    color: 'rgba(255, 255, 255, 0.85)',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
-  countdownTime: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  countdownTimeItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  countdownTimeValue: {
-    fontSize: 28,
+  countdownBadgeValue: {
+    fontSize: 18,
     fontWeight: '800',
-    color: '#fff',
+    color: '#202020',
+    textAlign: 'center',
     marginBottom: 1,
   },
-  countdownTimeLabel: {
-    fontSize: 7,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.7)',
-    letterSpacing: 0.5,
-  },
-  countdownTimeSeparator: {
-    fontSize: 20,
+  countdownBadgeLabel: {
+    fontSize: 9,
     fontWeight: '700',
-    color: 'rgba(255, 255, 255, 0.5)',
-    marginHorizontal: 2,
+    color: '#20202099',
+    textAlign: 'center',
+    letterSpacing: 0.5,
   },
   tabs: {
     flexDirection: 'row',
@@ -1412,7 +1627,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   tabActive: {
-    backgroundColor: '#4328700D',
+    backgroundColor: '#A78BFA0D',
   },
   tabContent: {
     flexDirection: 'row',
@@ -1429,7 +1644,7 @@ const styles = StyleSheet.create({
     color: '#20202066',
   },
   tabTextActive: {
-    color: '#432870',
+    color: '#A78BFA',
   },
   commentCountBadge: {
     backgroundColor: '#2020201A',
@@ -1438,7 +1653,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   commentCountBadgeActive: {
-    backgroundColor: '#432870',
+    backgroundColor: '#A78BFA',
   },
   commentCountText: {
     fontSize: 12,
@@ -1454,7 +1669,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 4,
-    backgroundColor: '#432870',
+    backgroundColor: '#A78BFA',
     borderRadius: 2,
   },
   divider: {
@@ -1503,17 +1718,17 @@ const styles = StyleSheet.create({
   creatorUsername: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#432870',
+    color: '#A78BFA',
   },
   creatorUsernameAt: {
-    color: '#432870',
+    color: '#A78BFA',
   },
   followButton: {
     borderRadius: 20,
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#432870',
+        shadowColor: '#A78BFA',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
@@ -1567,22 +1782,22 @@ const styles = StyleSheet.create({
   voteStatLabelYes: {
     fontSize: 12,
     fontWeight: '900',
-    color: '#34C759',
+    color: '#A78BFA',
   },
   voteStatLabelNo: {
     fontSize: 12,
     fontWeight: '900',
-    color: '#FF3B30',
+    color: '#0891B2',
   },
   voteStatPercentageYes: {
     fontSize: 12,
     fontWeight: '900',
-    color: '#34C759',
+    color: '#A78BFA',
   },
   voteStatPercentageNo: {
     fontSize: 12,
     fontWeight: '900',
-    color: '#FF3B30',
+    color: '#0891B2',
   },
   progressBarContainer: {
     height: 12,
@@ -1598,12 +1813,12 @@ const styles = StyleSheet.create({
   },
   progressBarYes: {
     height: '100%',
-    backgroundColor: '#34C759',
+    backgroundColor: '#A78BFA',
     borderRadius: 6,
   },
   progressBarNo: {
     height: '100%',
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#0891B2',
     borderRadius: 6,
   },
   voteStatFooter: {
@@ -1658,80 +1873,120 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    paddingTop: 40,
+    paddingTop: 12,
   },
   fixedBottomGradient: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 60,
+    height: 40,
+  },
+  voteCardContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    paddingTop: 12,
+    paddingHorizontal: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  voteCardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#202020',
+    textAlign: 'center',
+    marginBottom: 10,
   },
   fixedBottomContent: {
     flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
-    paddingTop: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 60,
+    paddingHorizontal: 20,
+  },
+  fixedVoteButtonPressWrapper: {
+    opacity: 0.7,
   },
   fixedVoteButtonYes: {
-    flex: 1,
-    backgroundColor: '#10B981',
-    borderRadius: 16,
-    overflow: 'hidden',
-    minHeight: 64,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#10B981',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.35,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
-  },
-  fixedVoteButtonNo: {
-    flex: 1,
-    backgroundColor: '#EF4444',
-    borderRadius: 16,
-    overflow: 'hidden',
-    minHeight: 64,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#EF4444',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.35,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
-  },
-  fixedVoteButtonGradient: {
-    flex: 1,
+    width: 130,
+    backgroundColor: 'transparent',
+    borderRadius: 26,
+    borderWidth: 3,
+    borderColor: '#A78BFA',
+    minHeight: 60,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    shadowColor: '#A78BFA',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  fixedVoteButtonLabel: {
-    fontSize: 18,
+  fixedVoteButtonNo: {
+    width: 130,
+    backgroundColor: 'transparent',
+    borderRadius: 26,
+    borderWidth: 3,
+    borderColor: '#0891B2',
+    minHeight: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fixedVoteButtonContent: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  fixedVoteButtonLabelYes: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#A78BFA',
+    letterSpacing: 1.2,
+    textShadowColor: 'rgba(255, 255, 255, 0.8)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
+    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif-medium' }),
+  },
+  fixedVoteButtonLabelNo: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0891B2',
+    letterSpacing: 1.2,
+    textShadowColor: 'rgba(255, 255, 255, 0.8)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
+    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif-medium' }),
+  },
+  fixedVoteButtonOddsYes: {
+    fontSize: 13,
     fontWeight: '700',
-    color: '#fff',
-    letterSpacing: 0.5,
+    color: '#A78BFA',
+    textShadowColor: 'rgba(255, 255, 255, 0.6)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
+    opacity: 0.95,
   },
-  fixedVoteButtonOdds: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.9)',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 3,
-    borderRadius: 10,
-    marginTop: 4,
-    overflow: 'hidden',
+  fixedVoteButtonOddsNo: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0891B2',
+    textShadowColor: 'rgba(255, 255, 255, 0.6)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
+    opacity: 0.95,
   },
   voteButtonGradient: {
     paddingVertical: 20,
@@ -1765,7 +2020,7 @@ const styles = StyleSheet.create({
   seeAllButton: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#432870',
+    color: '#A78BFA',
   },
   relatedScrollContent: {
     paddingRight: 24,
@@ -2162,10 +2417,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   investorVoteBadgeYes: {
-    backgroundColor: '#34C75933',
+    backgroundColor: '#A78BFA33',
   },
   investorVoteBadgeNo: {
-    backgroundColor: '#FF3B3033',
+    backgroundColor: '#0891B233',
   },
   investorVoteText: {
     fontSize: 12,
@@ -2199,13 +2454,13 @@ const styles = StyleSheet.create({
   voteDistributionPercentageYes: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#34C759',
+    color: '#A78BFA',
     marginBottom: 4,
   },
   voteDistributionPercentageNo: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#FF3B30',
+    color: '#0891B2',
     marginBottom: 4,
   },
   voteDistributionLabel: {
@@ -2223,5 +2478,327 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: '#20202033',
     marginHorizontal: 16,
+  },
+  
+  // Ticket Modal Styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  ticketModalContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 20,
+      },
+    }),
+  },
+  ticketModalHeader: {
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    marginBottom: 20,
+  },
+  ticketModalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
+    marginBottom: 16,
+  },
+  ticketModalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#202020',
+  },
+  ticketModalCloseBtn: {
+    position: 'absolute',
+    right: 0,
+    top: 20,
+    padding: 8,
+  },
+  selectedVoteContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 24,
+  },
+  selectedVoteYes: {
+    backgroundColor: 'rgba(167, 139, 250, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(167, 139, 250, 0.3)',
+  },
+  selectedVoteNo: {
+    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
+  },
+  selectedVoteIcon: {
+    marginRight: 12,
+  },
+  selectedVoteInfo: {
+    flex: 1,
+  },
+  selectedVoteLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
+  },
+  selectedVoteText: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  selectedVoteTextYes: {
+    color: '#A78BFA',
+  },
+  selectedVoteTextNo: {
+    color: '#06B6D4',
+  },
+  selectedVoteOdds: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  selectedVoteOddsValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#202020',
+  },
+  selectedVoteOddsLabel: {
+    fontSize: 10,
+    color: '#666',
+  },
+  amountInputSection: {
+    marginBottom: 20,
+  },
+  amountInputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 12,
+  },
+  amountInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+  },
+  amountInput: {
+    flex: 1,
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#202020',
+  },
+  amountInputCurrency: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  quickAmountButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    gap: 8,
+  },
+  quickAmountBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  quickAmountBtnActive: {
+    backgroundColor: '#A78BFA',
+    borderColor: '#A78BFA',
+  },
+  quickAmountBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#666',
+  },
+  quickAmountBtnTextActive: {
+    color: '#fff',
+  },
+  potentialWinSection: {
+    backgroundColor: '#F8F8F8',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+  },
+  potentialWinRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  potentialWinLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  potentialWinValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#202020',
+  },
+  potentialWinDivider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 12,
+  },
+  potentialWinTotalLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#202020',
+  },
+  potentialWinTotalValue: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#A78BFA',
+  },
+  confirmTicketBtn: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  confirmTicketBtnDisabled: {
+    opacity: 0.7,
+  },
+  confirmTicketBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    gap: 10,
+  },
+  confirmTicketBtnText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#fff',
+  },
+
+  // Success Modal Styles
+  successModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confettiContainer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  confettiPiece: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+    top: -20,
+  },
+  successModalCard: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 32,
+    width: SCREEN_WIDTH - 48,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 24,
+      },
+      android: {
+        elevation: 24,
+      },
+    }),
+  },
+  successIconContainer: {
+    marginBottom: 20,
+  },
+  successIconGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  successTitle: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#202020',
+    marginBottom: 8,
+  },
+  successSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 24,
+  },
+  successTicketDetails: {
+    width: '100%',
+    backgroundColor: '#F8F8F8',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+  },
+  successTicketRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  successTicketLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  successTicketValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#202020',
+  },
+  successTicketValueYes: {
+    color: '#A78BFA',
+  },
+  successTicketValueNo: {
+    color: '#06B6D4',
+  },
+  successTicketValueHighlight: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#A78BFA',
+  },
+  successCloseBtn: {
+    backgroundColor: '#A78BFA',
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    borderRadius: 16,
+  },
+  successCloseBtnText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#fff',
   },
 });
