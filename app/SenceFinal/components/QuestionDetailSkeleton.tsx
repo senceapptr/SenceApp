@@ -134,7 +134,7 @@ export function QuestionDetailSkeleton({ onBack }: QuestionDetailSkeletonProps) 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#0D1117',
   },
   header: {
     flexDirection: 'row',
@@ -142,9 +142,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#161B22',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#30363D',
   },
   headerLeft: {
     flex: 1,
@@ -234,6 +234,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   skeletonBox: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#21262D',
   },
 });

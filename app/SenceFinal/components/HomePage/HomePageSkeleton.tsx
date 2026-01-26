@@ -43,7 +43,7 @@ function ShimmerPlaceholder({
           borderRadius,
           overflow: 'hidden',
         },
-        { backgroundColor: '#E5E7EB' },
+        { backgroundColor: '#21262D' },
         style,
       ]}
     >
@@ -56,9 +56,9 @@ function ShimmerPlaceholder({
       >
         <LinearGradient
           colors={[
-            'rgba(229, 231, 235, 0)',
-            'rgba(255, 255, 255, 1)',
-            'rgba(229, 231, 235, 0)',
+            'rgba(33, 38, 45, 0)',
+            'rgba(48, 54, 61, 1)',
+            'rgba(33, 38, 45, 0)',
           ]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
@@ -86,14 +86,14 @@ export function HomePageSkeleton() {
 
         {/* Question text - ortada */}
         <View style={styles.questionText}>
-          <ShimmerPlaceholder width="70%" height={22} borderRadius={4} style={{ marginBottom: 8, backgroundColor: '#FFFFFF' }} />
-          <ShimmerPlaceholder width="50%" height={22} borderRadius={4} style={{ backgroundColor: '#FFFFFF' }} />
+          <ShimmerPlaceholder width="70%" height={22} borderRadius={4} style={{ marginBottom: 8 }} />
+          <ShimmerPlaceholder width="50%" height={22} borderRadius={4} />
         </View>
 
         {/* Vote buttons - EVET/HAYIR */}
         <View style={styles.voteButtonsRow}>
-          <ShimmerPlaceholder width="47%" height={60} borderRadius={16} style={{ backgroundColor: '#FFFFFF' }} />
-          <ShimmerPlaceholder width="47%" height={60} borderRadius={16} style={{ backgroundColor: '#FFFFFF' }} />
+          <ShimmerPlaceholder width="47%" height={60} borderRadius={16} />
+          <ShimmerPlaceholder width="47%" height={60} borderRadius={16} />
         </View>
 
         {/* Pagination dots */}
@@ -138,13 +138,13 @@ function ActivityButtonSkeleton() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0D1117',
   },
 
   // Featured Section (Question Card Area)
   featuredSection: {
     height: SCREEN_HEIGHT * 0.56,
-    backgroundColor: '#e4e4e4',
+    backgroundColor: '#161B22',
     position: 'relative',
     paddingHorizontal: 24,
     paddingTop: 120,
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
 
   // Günlük Aktiviteler
   activitiesSection: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 20,
@@ -193,12 +193,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderRadius: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#21262D',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
 
   // Aktif Kuponlar
   couponsSection: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     paddingHorizontal: 24,
     paddingTop: 12,
     paddingBottom: 32,

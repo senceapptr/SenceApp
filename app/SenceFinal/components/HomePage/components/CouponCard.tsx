@@ -22,16 +22,14 @@ export function CouponCard({ coupon, isDarkMode, theme, onPress }: CouponCardPro
     return null;
   }
 
-  // 3 farklı mor tonu
-  const purpleGradients = [
-    ['#432870', '#5A3A8B'], // Koyu mor
-    ['#6B46C1', '#8B5CF6'], // Orta mor
-    ['#7C3AED', '#A855F7'], // Açık mor
+  // Koyu tema için gradient tonları
+  const darkGradients = [
+    ['#1A2E1A', '#243524'], // Koyu yeşil tonu
+    ['#21262D', '#30363D'], // Koyu gri
+    ['#1E2A1E', '#2D3A2D'], // Yeşilimsi koyu
   ];
 
-  const gradientColors = isDarkMode 
-    ? [theme.surfaceCard || '#FFFFFF', theme.surfaceElevated || '#F5F5F5', theme.surface || '#FFFFFF']
-    : purpleGradients[(coupon.id || 0) % purpleGradients.length];
+  const gradientColors = darkGradients[(coupon.id || 0) % darkGradients.length];
 
   // Güvenlik kontrolü - gradientColors'ın bir array olduğundan emin ol
   const safeGradientColors = Array.isArray(gradientColors) ? gradientColors : ['#432870', '#5A3A8B'];
@@ -41,50 +39,50 @@ export function CouponCard({ coupon, isDarkMode, theme, onPress }: CouponCardPro
       <LinearGradient
         colors={safeGradientColors}
         style={[styles.card, {
-          borderWidth: isDarkMode ? 1 : 0,
-          borderColor: isDarkMode ? (theme.border || '#E5E5E5') : 'transparent',
-          shadowColor: isDarkMode ? 'transparent' : '#000'
+          borderWidth: 1,
+          borderColor: '#10B981',
+          shadowColor: '#000'
         }]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-      <Text style={[styles.name, { color: isDarkMode ? (theme.textPrimary || '#000000') : '#FFFFFF' }]}>
+      <Text style={[styles.name, { color: '#F0F6FC' }]}>
         {coupon.name || 'Ticket'}
       </Text>
       
       <View style={styles.stats}>
         <View style={styles.statRow}>
-          <Text style={[styles.statLabel, { color: isDarkMode ? (theme.textSecondary || '#666666') : 'rgba(255,255,255,0.8)' }]}>
+          <Text style={[styles.statLabel, { color: '#8B949E' }]}>
             Soru Sayısı
           </Text>
-          <Text style={[styles.statValue, { color: isDarkMode ? (theme.textPrimary || '#000000') : '#FFFFFF' }]}>
+          <Text style={[styles.statValue, { color: '#F0F6FC' }]}>
             {coupon.questionCount || 0} adet
           </Text>
         </View>
         <View style={styles.statRow}>
-          <Text style={[styles.statLabel, { color: isDarkMode ? (theme.textSecondary || '#666666') : 'rgba(255,255,255,0.8)' }]}>
+          <Text style={[styles.statLabel, { color: '#8B949E' }]}>
             Toplam Oran
           </Text>
-          <Text style={[styles.statValue, { color: isDarkMode ? (theme.textPrimary || '#000000') : '#FFFFFF' }]}>
+          <Text style={[styles.statValue, { color: '#F0F6FC' }]}>
             {coupon.totalOdds || 0}x
           </Text>
         </View>
         <View style={styles.statRow}>
-          <Text style={[styles.statLabel, { color: isDarkMode ? (theme.textSecondary || '#666666') : 'rgba(255,255,255,0.8)' }]}>
+          <Text style={[styles.statLabel, { color: '#8B949E' }]}>
             Potansiyel Kazanç
           </Text>
           <View style={styles.coinContainer}>
-            <Text style={[styles.statValue, { color: '#FFFFFF' }]}>
+            <Text style={[styles.statValue, { color: '#10B981' }]}>
               {coupon.potentialWinnings || 0}
             </Text>
-            <Ionicons name="diamond" size={16} color="#FFFFFF" />
+            <Ionicons name="diamond" size={16} color="#10B981" />
           </View>
         </View>
         <View style={styles.statRow}>
-          <Text style={[styles.statLabel, { color: isDarkMode ? (theme.textSecondary || '#666666') : 'rgba(255,255,255,0.8)' }]}>
+          <Text style={[styles.statLabel, { color: '#8B949E' }]}>
             Bitiş
           </Text>
-          <Text style={[styles.statValue, { color: '#FFFFFF' }]}>
+          <Text style={[styles.statValue, { color: '#F0F6FC' }]}>
             {coupon.endsIn || 'Bilinmiyor'}
           </Text>
         </View>

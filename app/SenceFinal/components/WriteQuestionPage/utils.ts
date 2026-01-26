@@ -43,35 +43,35 @@ export const getMinDate = (): string => {
   return today.toISOString().split('T')[0];
 };
 
-// Status badge colors
+// Status badge colors (dark theme)
 export const getStatusBadgeColors = (status: string): StatusBadgeColors => {
   switch (status) {
     case 'approved':
       return {
-        backgroundColor: '#D1FAE5',
+        backgroundColor: 'rgba(16, 185, 129, 0.25)',
         dotColor: '#10B981',
-        textColor: '#065F46',
+        textColor: '#34D399',
         label: 'Onaylandı'
       };
     case 'pending':
       return {
-        backgroundColor: '#FEF3C7',
+        backgroundColor: 'rgba(245, 158, 11, 0.25)',
         dotColor: '#F59E0B',
-        textColor: '#92400E',
+        textColor: '#FCD34D',
         label: 'Bekliyor'
       };
     case 'rejected':
       return {
-        backgroundColor: '#FEE2E2',
+        backgroundColor: 'rgba(239, 68, 68, 0.25)',
         dotColor: '#EF4444',
-        textColor: '#991B1B',
+        textColor: '#FCA5A5',
         label: 'Reddedildi'
       };
     default:
       return {
-        backgroundColor: '#F2F3F5',
-        dotColor: '#6B7280',
-        textColor: '#374151',
+        backgroundColor: 'rgba(107, 114, 128, 0.3)',
+        dotColor: '#9CA3AF',
+        textColor: '#D1D5DB',
         label: 'Bilinmiyor'
       };
   }

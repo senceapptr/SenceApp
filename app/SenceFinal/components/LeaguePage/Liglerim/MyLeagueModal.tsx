@@ -36,7 +36,7 @@ export function MyLeagueModal({
         <View style={styles.content}>
           {/* Header with Gradient */}
           <LinearGradient
-            colors={['#c61585', '#5a3a8f', '#432870']}
+            colors={['#DC2626', '#5a3a8f', '#10B981']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.header}
@@ -119,7 +119,7 @@ export function MyLeagueModal({
                   activeOpacity={0.8}
                 >
                   <LinearGradient
-                    colors={['#432870', '#5a3a8f']}
+                    colors={['#10B981', '#5a3a8f']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.primaryButtonGradient}
@@ -151,7 +151,7 @@ export function MyLeagueModal({
                   activeOpacity={0.8}
                 >
                   <LinearGradient
-                    colors={['#c61585', '#ff1a8c']}
+                    colors={['#DC2626', '#ff1a8c']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.shareButtonGradient}

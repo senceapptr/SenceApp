@@ -17,7 +17,7 @@ export const StatusTab: React.FC<StatusTabProps> = ({ questions, loading = false
         
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#432870" />
+            <ActivityIndicator size="large" color="#10B981" />
             <Text style={styles.loadingText}>Sorular yükleniyor...</Text>
           </View>
         ) : questions.length === 0 ? (
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   statusCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#161B22',
     borderRadius: 24,
     padding: 24,
     shadowColor: '#000',
@@ -48,12 +48,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#F2F3F5',
+    borderColor: '#30363D',
   },
   statusTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 16,
   },
   questionsList: {
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#6B7280',
+    color: '#8B949E',
     fontWeight: '500',
   },
 });

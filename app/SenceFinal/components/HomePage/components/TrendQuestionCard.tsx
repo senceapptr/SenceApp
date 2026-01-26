@@ -210,7 +210,7 @@ export function TrendQuestionCard({ question, onQuestionPress, onVote }: TrendQu
                   top: 0,
                   bottom: 0,
                   width: yesFillWidth,
-                  backgroundColor: '#8B5CF6',
+                  backgroundColor: '#10B981',
                   borderRadius: 14,
                 }}
               />
@@ -231,7 +231,7 @@ export function TrendQuestionCard({ question, onQuestionPress, onVote }: TrendQu
                   top: 0,
                   bottom: 0,
                   width: noFillWidth,
-                  backgroundColor: '#06B6D4',
+                  backgroundColor: '#DC2626',
                   borderRadius: 14,
                 }}
               />
@@ -326,10 +326,10 @@ const styles = StyleSheet.create({
     textShadowRadius: 6,
   },
   yesLabel: {
-    color: '#8B5CF6',
+    color: '#10B981',
   },
   noLabel: {
-    color: '#06B6D4',
+    color: '#DC2626',
   },
   progressBarContainer: {
     position: 'relative',
@@ -347,11 +347,11 @@ const styles = StyleSheet.create({
   },
   yesBar: {
     left: 0,
-    backgroundColor: '#8B5CF6',
+    backgroundColor: '#10B981',
   },
   noBar: {
     right: 0,
-    backgroundColor: '#06B6D4',
+    backgroundColor: '#DC2626',
   },
   buttonsContainer: {
     flexDirection: 'row',
@@ -374,10 +374,10 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   yesButton: {
-    borderColor: '#8B5CF6',
+    borderColor: '#10B981',
   },
   noButton: {
-    borderColor: '#06B6D4',
+    borderColor: '#DC2626',
   },
   voteButtonText: {
     color: '#FFFFFF',

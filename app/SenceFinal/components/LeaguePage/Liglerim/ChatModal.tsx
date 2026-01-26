@@ -192,7 +192,7 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
     >
       <SafeAreaView style={styles.container}>
         <LinearGradient
-          colors={['#432870', '#5A3A8B']}
+          colors={['#10B981', '#059669']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.header}
@@ -213,7 +213,7 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
         <ScrollView style={styles.messages} showsVerticalScrollIndicator={false}>
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#432870" />
+              <ActivityIndicator size="large" color="#10B981" />
               <Text style={styles.loadingText}>Mesajlar yükleniyor...</Text>
             </View>
           ) : (
@@ -253,7 +253,7 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
             disabled={sending || !message.trim()}
           >
             <LinearGradient
-              colors={sending || !message.trim() ? ['#CCCCCC', '#DDDDDD'] : ['#432870', '#B29EFD']}
+              colors={sending || !message.trim() ? ['#CCCCCC', '#DDDDDD'] : ['#10B981', '#34D399']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.sendGradient}
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     fontWeight: '600',
-    color: '#432870',
+    color: '#10B981',
   },
 });
 

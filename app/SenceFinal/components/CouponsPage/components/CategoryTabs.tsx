@@ -78,12 +78,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeTab: {
-    backgroundColor: '#432870',
+    backgroundColor: '#10B981',
   },
   inactiveTab: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#21262D',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
   },
   tabText: {
     fontSize: 14,
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   inactiveTabText: {
-    color: '#374151',
+    color: '#8B949E',
   },
   tabCount: {
     fontSize: 12,
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   inactiveTabCount: {
-    color: '#6B7280',
+    color: '#484F58',
   },
 });
 

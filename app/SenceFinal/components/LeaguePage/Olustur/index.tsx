@@ -121,10 +121,10 @@ export function OlusturTab({ currentUser, onSuccess }: OlusturTabProps) {
             ]}
           >
             <View style={styles.trophyCircle}>
-              <LinearGradient
-                colors={['#432870', '#5a3a8f']}
-                style={styles.trophyGradient}
-              >
+            <LinearGradient
+              colors={['#10B981', '#059669']}
+              style={styles.trophyGradient}
+            >
                 <Ionicons name="trophy" size={64} color="#FFD700" />
               </LinearGradient>
             </View>
@@ -144,7 +144,7 @@ export function OlusturTab({ currentUser, onSuccess }: OlusturTabProps) {
           {/* Feature Pills */}
           <View style={styles.featuresContainer}>
             <View style={styles.featurePill}>
-              <Ionicons name="people" size={16} color="#432870" />
+              <Ionicons name="people" size={16} color="#10B981" />
               <Text style={styles.featurePillText}>Özel Lig</Text>
             </View>
             <View style={styles.featurePill}>
@@ -285,27 +285,30 @@ function BenefitItem({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#0D1117',
   },
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 40,
+    backgroundColor: '#0D1117',
   },
   heroContainer: {
     width: '100%',
   },
   heroCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161B22',
     borderRadius: 28,
     padding: 32,
     alignItems: 'center',
-    shadowColor: '#432870',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 24,
     elevation: 10,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   trophyContainer: {
     position: 'relative',
@@ -318,7 +321,7 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 70,
     overflow: 'hidden',
-    shadowColor: '#432870',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
@@ -334,7 +337,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderRadius: 100,
     borderWidth: 2,
-    borderColor: '#432870',
+    borderColor: '#10B981',
     borderStyle: 'dashed',
     opacity: 0.15,
   },
@@ -353,13 +356,13 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#1F2937',
+    color: '#F0F6FC',
     marginBottom: 8,
     textAlign: 'center',
   },
   heroSubtitle: {
     fontSize: 16,
-    color: '#6B7280',
+    color: '#8B949E',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 22,
@@ -374,25 +377,25 @@ const styles = StyleSheet.create({
   featurePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#21262D',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     gap: 6,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
   },
   featurePillText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#374151',
+    color: '#F0F6FC',
   },
   createButton: {
     width: '100%',
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: '#432870',
-    shadowColor: '#432870',
+    backgroundColor: '#10B981',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
     shadowRadius: 16,
@@ -426,7 +429,7 @@ const styles = StyleSheet.create({
   benefitsTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#F0F6FC',
     marginBottom: 16,
     paddingHorizontal: 4,
   },
@@ -436,17 +439,17 @@ const styles = StyleSheet.create({
   benefitItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161B22',
     padding: 16,
     borderRadius: 16,
     gap: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#30363D',
   },
   benefitIconContainer: {
     width: 48,
@@ -461,12 +464,12 @@ const styles = StyleSheet.create({
   benefitTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#F0F6FC',
     marginBottom: 4,
   },
   benefitDescription: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#8B949E',
     lineHeight: 18,
   },
 });

@@ -7,6 +7,7 @@ import { useHeaderAnimation } from './hooks';
 import { Header } from './components/Header';
 import { FeaturedCarousel } from './components/FeaturedCarousel';
 import { ActivitiesSection } from './components/ActivitiesSection';
+import { CategoriesSection } from './components/CategoriesSection';
 import { ActiveCouponsSection } from './components/ActiveCouponsSection';
 import { TrendQuestionsSection } from './components/TrendQuestionsSection';
 import { DailyChallengeFlow } from '../DailyChallengeFlow';
@@ -27,7 +28,6 @@ interface HomePageProps {
   onMenuToggle: () => void;
   onTasksNavigate?: () => void;
   onCouponsNavigate?: () => void;
-  onDiscoverAllNavigate?: () => void;
 }
 
 export function HomePage({ 
@@ -36,8 +36,7 @@ export function HomePage({
   handleVote, 
   onMenuToggle, 
   onTasksNavigate,
-  onCouponsNavigate,
-  onDiscoverAllNavigate
+  onCouponsNavigate
 }: HomePageProps) {
   const { theme, isDarkMode } = useTheme();
   const { user } = useAuth();
@@ -225,7 +224,7 @@ export function HomePage({
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: '#0D1117' }]}>
       <StatusBar 
         barStyle={isDarkMode ? "light-content" : "light-content"} 
         backgroundColor="transparent" 
@@ -235,8 +234,8 @@ export function HomePage({
       {/* Background Gradient */}
       <LinearGradient
         colors={isDarkMode 
-          ? [theme.background, theme.surface, theme.surfaceElevated, theme.surfaceCard]
-          : ['#FAFAFA', '#F5F5F5', '#F0F0F0', '#EBEBEB']
+          ? ['#0D1117', '#131A24', '#1A2332', '#0D1117']
+          : ['#0D1117', '#131A24', '#1A2332', '#0D1117']
         }
         style={styles.backgroundGradient}
         start={{ x: 0, y: 0 }}
@@ -280,6 +279,18 @@ export function HomePage({
           />
         )}
 
+        {/* Categories Section - Featured Questions'ın Altında */}
+        <CategoriesSection
+          isDarkMode={isDarkMode}
+          theme={theme}
+          onCategorySelect={(categoryId, categoryName, categoryIcon) => {
+            // Category selection handled internally
+          }}
+          onMenuToggle={onMenuToggle}
+          handleQuestionDetail={handleQuestionDetail}
+          handleVote={handleVote}
+        />
+
         <ActivitiesSection
           isDarkMode={isDarkMode}
           theme={theme}
@@ -295,7 +306,10 @@ export function HomePage({
           theme={theme}
           onCouponPress={handleCouponPress}
           onSeeAllPress={handleSeeAllCoupons}
-          onCreateCouponPress={onDiscoverAllNavigate}
+          onCreateCouponPress={() => {
+            // Sorulara scroll et - kullanıcı oy vererek ticket oluşturabilir
+            scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+          }}
         />
 
         {/* Trend Questions - Backend'den */}
@@ -306,7 +320,10 @@ export function HomePage({
             theme={theme}
             onQuestionPress={handleQuestionDetail}
             onVote={handleVote}
-            onSeeAllPress={onDiscoverAllNavigate}
+            onSeeAllPress={() => {
+              // Sorulara scroll et
+              scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+            }}
           />
         )}
         </ScrollView>
@@ -336,7 +353,7 @@ export function HomePage({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#0D1117',
   },
   skeletonContainer: {
     flex: 1,

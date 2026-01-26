@@ -45,12 +45,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   tabsWrapper: {
-    backgroundColor: 'white',
+    backgroundColor: '#161B22',
     borderRadius: 16,
     padding: 4,
     flexDirection: 'row',
     borderWidth: 1,
-    borderColor: '#F2F3F5',
+    borderColor: '#30363D',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   activeTab: {
-    backgroundColor: '#432870',
+    backgroundColor: '#10B981',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -81,10 +81,10 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 14,
     fontWeight: '700',
-    color: 'rgba(32,32,32,0.7)',
+    color: '#8B949E',
   },
   activeTabText: {
-    color: 'white',
+    color: '#FFFFFF',
   },
 });
 

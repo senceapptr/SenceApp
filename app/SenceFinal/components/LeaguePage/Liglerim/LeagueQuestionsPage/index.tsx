@@ -114,7 +114,7 @@ export function LeagueQuestionsPage({
     <View style={styles.container}>
       {/* Header */}
       <LinearGradient
-        colors={['#432870', '#5A3A8B', '#B29EFD']}
+        colors={['#10B981', '#059669', '#047857']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.headerSafeArea}
@@ -174,7 +174,7 @@ export function LeagueQuestionsPage({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#0D1117',
   },
   headerSafeArea: {
     backgroundColor: 'transparent',
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 24,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#0D1117',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
@@ -240,12 +240,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.7)',
+    color: '#8B949E',
   },
 });
 

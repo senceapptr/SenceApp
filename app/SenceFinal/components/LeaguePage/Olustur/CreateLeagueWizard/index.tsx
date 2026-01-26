@@ -474,7 +474,7 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
                 activeOpacity={0.8}
               >
                 <LinearGradient
-                  colors={['#432870', '#B29EFD']}
+                  colors={['#10B981', '#059669']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.paymentOptionGradient}
@@ -565,8 +565,8 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
                       styles.continueButtonContent,
                       {
                         backgroundColor: (step === 1 && canProceedStep1) || (step === 2 && canProceedStep2)
-                          ? '#432870'
-                          : '#E5E7EB'
+                          ? '#10B981'
+                          : '#21262D'
                       }
                     ]}
                   >
@@ -643,7 +643,7 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
                   activeOpacity={0.8}
                 >
                   <LinearGradient
-                    colors={['#432870', '#B29EFD']}
+                    colors={['#10B981', '#059669']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.modalConfirmGradient}
@@ -684,7 +684,7 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
                       activeOpacity={0.8}
                     >
                       <LinearGradient
-                        colors={['#432870', '#B29EFD']}
+                        colors={['#10B981', '#059669']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                         style={styles.useTicketGradient}
@@ -814,7 +814,7 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
                   onPress={() => setShowCreditPaymentModal(false)}
                   style={styles.paymentModalCloseButton}
                 >
-                  <Ionicons name="close" size={24} color="#1F2937" />
+                  <Ionicons name="close" size={24} color="#F0F6FC" />
                 </TouchableOpacity>
               </View>
 
@@ -909,7 +909,7 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
                   onPress={() => setShowTicketPaymentModal(false)}
                   style={styles.paymentModalCloseButton}
                 >
-                  <Ionicons name="close" size={24} color="#1F2937" />
+                  <Ionicons name="close" size={24} color="#F0F6FC" />
                 </TouchableOpacity>
               </View>
 
@@ -1093,7 +1093,7 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
         <Modal visible={showSuccessAnimation} transparent animationType="fade">
           <View style={styles.successContainer}>
             <LinearGradient
-              colors={['#432870', '#5A3A8B', '#B29EFD']}
+              colors={['#10B981', '#059669', '#34D399']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.successGradient}
@@ -1112,10 +1112,10 @@ export function CreateLeagueWizard({ onClose, onSuccess, currentUser }: CreateLe
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0D1117',
   },
   header: {
-    backgroundColor: '#432870',
+    backgroundColor: '#0D1117',
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 24,
@@ -1191,7 +1191,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.6)',
   },
   progressStepTextActive: {
-    color: '#432870',
+    color: '#10B981',
   },
   progressStepTextCompleted: {
     fontSize: 20,
@@ -1269,7 +1269,7 @@ const styles = StyleSheet.create({
   },
   iconButtonActive: {
     backgroundColor: 'rgba(67, 40, 112, 0.1)',
-    borderColor: '#432870',
+    borderColor: '#10B981',
   },
   iconText: {
     fontSize: 32,
@@ -1290,7 +1290,7 @@ const styles = StyleSheet.create({
   },
   categoryButtonActive: {
     backgroundColor: 'rgba(67, 40, 112, 0.1)',
-    borderColor: '#432870',
+    borderColor: '#10B981',
   },
   categoryIcon: {
     fontSize: 20,
@@ -1302,7 +1302,7 @@ const styles = StyleSheet.create({
     color: '#202020',
   },
   categoryTextActive: {
-    color: '#432870',
+    color: '#10B981',
   },
   formRow: {
     flexDirection: 'row',
@@ -1332,7 +1332,7 @@ const styles = StyleSheet.create({
   prizePoolValue: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#432870',
+    color: '#10B981',
   },
   prizePoolSubtext: {
     fontSize: 12,
@@ -1353,7 +1353,7 @@ const styles = StyleSheet.create({
   },
   leagueTypeButtonActive: {
     backgroundColor: 'rgba(67, 40, 112, 0.1)',
-    borderColor: '#432870',
+    borderColor: '#10B981',
   },
   leagueTypeIcon: {
     fontSize: 24,
@@ -1365,7 +1365,7 @@ const styles = StyleSheet.create({
     color: '#202020',
   },
   leagueTypeTextActive: {
-    color: '#432870',
+    color: '#10B981',
   },
   paymentSection: {
     alignItems: 'center',
@@ -1448,23 +1448,23 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 24,
     gap: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0D1117',
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#30363D',
     minHeight: 80,
   },
   backButton: {
     paddingVertical: 14,
     paddingHorizontal: 24,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
   },
   backButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#374151',
+    color: '#F0F6FC',
   },
   continueButton: {
     flex: 1,
@@ -1482,7 +1482,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 10,
     borderRadius: 18,
-    shadowColor: '#432870',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -1497,7 +1497,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   continueButtonTextDisabled: {
-    color: '#6B7280',
+    color: '#8B949E',
     fontWeight: '700',
   },
   modalOverlay: {
@@ -1508,11 +1508,13 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161B22',
     borderRadius: 24,
     width: '100%',
     maxWidth: 400,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   modalHeader: {
     padding: 24,
@@ -1525,12 +1527,12 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 8,
   },
   modalSubtitle: {
     fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.7)',
+    color: '#8B949E',
     textAlign: 'center',
   },
   modalBody: {
@@ -1538,9 +1540,11 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   creditDetails: {
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     padding: 16,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   creditRow: {
     flexDirection: 'row',
@@ -1551,16 +1555,16 @@ const styles = StyleSheet.create({
   creditRowBorder: {
     paddingTop: 12,
     borderTopWidth: 2,
-    borderTopColor: '#FFFFFF',
+    borderTopColor: '#30363D',
   },
   creditLabel: {
     fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.7)',
+    color: '#8B949E',
   },
   creditValue: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#432870',
+    color: '#10B981',
   },
   creditValueRed: {
     fontSize: 18,
@@ -1570,7 +1574,7 @@ const styles = StyleSheet.create({
   creditLabelBold: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   creditValueGreen: {
     fontSize: 18,
@@ -1586,14 +1590,16 @@ const styles = StyleSheet.create({
   modalCancelButton: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   modalCancelText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   modalConfirmButton: {
     flex: 1,
@@ -1614,10 +1620,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ticketModalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161B22',
     borderRadius: 24,
     margin: 16,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   ticketCard: {
     backgroundColor: 'rgba(201, 241, 88, 0.2)',
@@ -1630,13 +1638,13 @@ const styles = StyleSheet.create({
   },
   ticketCardLabel: {
     fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.7)',
+    color: '#8B949E',
     marginBottom: 4,
   },
   ticketCardValue: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   useTicketButton: {
     borderRadius: 16,
@@ -1652,24 +1660,26 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   noTicketCard: {
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   noTicketText: {
     fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.7)',
+    color: '#8B949E',
   },
   ticketPurchaseSection: {
     borderTopWidth: 2,
-    borderTopColor: '#F2F3F5',
+    borderTopColor: '#30363D',
     padding: 24,
   },
   ticketPurchaseTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -1680,17 +1690,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     padding: 16,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   ticketOptionFeatured: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(67, 40, 112, 0.1)',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
     borderWidth: 2,
-    borderColor: 'rgba(67, 40, 112, 0.3)',
+    borderColor: 'rgba(16, 185, 129, 0.3)',
     padding: 16,
     borderRadius: 16,
     position: 'relative',
@@ -1724,7 +1736,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: '#432870',
+    backgroundColor: '#10B981',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -1740,38 +1752,40 @@ const styles = StyleSheet.create({
   ticketOptionTitle: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 2,
   },
   ticketOptionSubtitle: {
     fontSize: 12,
-    color: 'rgba(32, 32, 32, 0.7)',
+    color: '#8B949E',
   },
   ticketOptionRight: {
     alignItems: 'flex-end',
   },
   ticketOptionOldPrice: {
     fontSize: 12,
-    color: 'rgba(32, 32, 32, 0.5)',
+    color: '#8B949E',
     textDecorationLine: 'line-through',
   },
   ticketOptionPriceOld: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#432870',
+    color: '#10B981',
   },
   ticketCloseButton: {
     margin: 24,
     marginTop: 0,
     paddingVertical: 12,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   ticketCloseText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   successContainer: {
     flex: 1,
@@ -1821,10 +1835,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   datePickerContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161B22',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '70%',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   datePickerHeader: {
     flexDirection: 'row',
@@ -1833,24 +1849,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#30363D',
   },
   datePickerHeaderTitle: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   datePickerCloseButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     justifyContent: 'center',
     alignItems: 'center',
   },
   datePickerCloseText: {
     fontSize: 18,
-    color: '#6B7280',
+    color: '#8B949E',
     fontWeight: '600',
   },
   datePickerContent: {
@@ -1859,7 +1875,7 @@ const styles = StyleSheet.create({
   },
   datePickerInfo: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#8B949E',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -1889,10 +1905,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   capacityPickerContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161B22',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '50%',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   capacityPickerHeader: {
     flexDirection: 'row',
@@ -1901,24 +1919,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#30363D',
   },
   capacityPickerHeaderTitle: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   capacityPickerCloseButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     justifyContent: 'center',
     alignItems: 'center',
   },
   capacityPickerCloseText: {
     fontSize: 18,
-    color: '#6B7280',
+    color: '#8B949E',
     fontWeight: '600',
   },
   capacityPickerContent: {
@@ -1927,39 +1945,39 @@ const styles = StyleSheet.create({
   },
   capacityPickerInfo: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#8B949E',
     marginBottom: 20,
     textAlign: 'center',
   },
   capacityOption: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#21262D',
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
   },
   capacityOptionSelected: {
-    backgroundColor: '#FDF4FF',
-    borderColor: '#432870',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderColor: '#10B981',
     borderWidth: 2,
   },
   capacityOptionText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 4,
   },
   capacityOptionSubtext: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#8B949E',
   },
   calendarGridNew: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1975,7 +1993,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#8B949E',
     paddingVertical: 8,
   },
   calendarDaysNew: {
@@ -1995,15 +2013,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
     margin: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#161B22',
   },
   calendarDaySelectedNew: {
-    backgroundColor: '#432870',
+    backgroundColor: '#10B981',
   },
   calendarDayTextNew: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   calendarDayTextSelectedNew: {
     color: '#FFFFFF',
@@ -2015,7 +2033,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   paymentModalContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161B22',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     maxHeight: '85%',
@@ -2024,6 +2042,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 20,
     elevation: 10,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   paymentModalHeader: {
     flexDirection: 'row',
@@ -2033,18 +2053,18 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#30363D',
   },
   paymentModalHeaderTitle: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#1F2937',
+    color: '#F0F6FC',
   },
   paymentModalCloseButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#21262D',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2053,11 +2073,11 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   paymentInfoCard: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#21262D',
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
   },
   paymentInfoHeader: {
     flexDirection: 'row',
@@ -2068,26 +2088,26 @@ const styles = StyleSheet.create({
   paymentInfoLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#8B949E',
   },
   paymentInfoValue: {
     fontSize: 36,
     fontWeight: '900',
-    color: '#1F2937',
+    color: '#F0F6FC',
     textAlign: 'center',
   },
   paymentBreakdownCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0D1117',
     borderRadius: 20,
     padding: 20,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
     gap: 12,
   },
   paymentBreakdownTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#F0F6FC',
     marginBottom: 8,
   },
   paymentBreakdownRow: {
@@ -2098,17 +2118,17 @@ const styles = StyleSheet.create({
   paymentBreakdownLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#8B949E',
   },
   paymentBreakdownValue: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#F0F6FC',
   },
   paymentBreakdownLabelTotal: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#F0F6FC',
   },
   paymentBreakdownValueTotal: {
     fontSize: 18,
@@ -2117,7 +2137,7 @@ const styles = StyleSheet.create({
   },
   paymentBreakdownDivider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#30363D',
     marginVertical: 8,
   },
   paymentModalActions: {
@@ -2130,14 +2150,16 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderRadius: 16,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#21262D',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   paymentCancelButtonText: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#6B7280',
+    color: '#F0F6FC',
   },
   paymentConfirmButton: {
     flex: 2,
@@ -2182,7 +2204,7 @@ const styles = StyleSheet.create({
   ticketOptionsTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#F0F6FC',
   },
   ticketOptionsGrid: {
     flexDirection: 'row',
@@ -2190,13 +2212,13 @@ const styles = StyleSheet.create({
   },
   ticketOptionCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     gap: 8,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
     position: 'relative',
   },
   ticketOptionBadge: {
@@ -2218,7 +2240,7 @@ const styles = StyleSheet.create({
   ticketOptionCount: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#F0F6FC',
   },
   ticketOptionPriceContainer: {
     flexDirection: 'row',

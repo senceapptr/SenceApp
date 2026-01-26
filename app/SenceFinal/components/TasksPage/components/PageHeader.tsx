@@ -9,7 +9,7 @@ export function PageHeader({ title, subtitle, onBack, onMenuToggle }: PageHeader
     <View style={styles.header}>
       <View style={styles.headerContent}>
         <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-          <Ionicons name="chevron-back" size={24} color="#202020" />
+          <Ionicons name="chevron-back" size={24} color="#F0F6FC" />
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
@@ -18,7 +18,7 @@ export function PageHeader({ title, subtitle, onBack, onMenuToggle }: PageHeader
         </View>
 
         <TouchableOpacity onPress={onMenuToggle} activeOpacity={0.7}>
-          <LinearGradient colors={["#c61585", "#432870"]} style={styles.checkIconGradient}>
+          <LinearGradient colors={["#10B981", "#059669"]} style={styles.checkIconGradient}>
             <Ionicons name="checkmark-circle" size={24} color="white" />
           </LinearGradient>
         </TouchableOpacity>
@@ -29,9 +29,9 @@ export function PageHeader({ title, subtitle, onBack, onMenuToggle }: PageHeader
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: 'white',
+    backgroundColor: '#161B22',
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F3F5',
+    borderBottomColor: '#30363D',
   },
   headerContent: {
     flexDirection: 'row',
@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -55,12 +55,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   headerSubtitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#432870',
+    color: '#10B981',
   },
   checkIconGradient: {
     width: 40,

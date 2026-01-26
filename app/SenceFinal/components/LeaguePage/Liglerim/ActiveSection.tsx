@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 16,
   },
 });

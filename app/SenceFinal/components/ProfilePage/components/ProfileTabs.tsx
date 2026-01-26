@@ -16,7 +16,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange
         style={[styles.tab, activeTab === 'predictions' && styles.activeTab]}
         activeOpacity={0.7}
       >
-        <Ionicons name="stats-chart" size={16} color={activeTab === 'predictions' ? 'white' : '#202020'} />
+        <Ionicons name="stats-chart" size={16} color={activeTab === 'predictions' ? '#fff' : '#8B949E'} />
         <Text style={[styles.tabText, activeTab === 'predictions' && styles.activeTabText]}>
           Tahminler
         </Text>
@@ -26,7 +26,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange
         style={[styles.tab, activeTab === 'statistics' && styles.activeTab]}
         activeOpacity={0.7}
       >
-        <Ionicons name="trending-up" size={16} color={activeTab === 'statistics' ? 'white' : '#202020'} />
+        <Ionicons name="trending-up" size={16} color={activeTab === 'statistics' ? '#fff' : '#8B949E'} />
         <Text style={[styles.tabText, activeTab === 'statistics' && styles.activeTabText]}>
           İstatistikler
         </Text>
@@ -38,19 +38,14 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange
 const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: 'white',
+    backgroundColor: '#161B22',
     borderWidth: 1,
-    borderColor: 'rgba(32,32,32,0.1)',
+    borderColor: '#30363D',
     borderRadius: 16,
     padding: 4,
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   tab: {
     flex: 1,
@@ -63,15 +58,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   activeTab: {
-    backgroundColor: '#432870',
+    backgroundColor: '#10B981',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#202020',
+    color: '#8B949E',
   },
   activeTabText: {
-    color: 'white',
+    color: '#fff',
   },
 });
 

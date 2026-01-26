@@ -140,11 +140,11 @@ export function LeagueQuestionsPage({
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#432870" translucent={false} />
+      <StatusBar barStyle="light-content" backgroundColor="#10B981" translucent={false} />
       
       {/* Header */}
       <LinearGradient
-        colors={['#432870', '#5a3a8f', '#c61585']}
+        colors={['#10B981', '#5a3a8f', '#DC2626']}
         style={styles.header}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
@@ -196,7 +196,7 @@ export function LeagueQuestionsPage({
       {/* Questions List */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#432870" />
+          <ActivityIndicator size="large" color="#10B981" />
           <Text style={styles.loadingText}>Lig soruları yükleniyor...</Text>
         </View>
       ) : (
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   categoryButtonTextActive: {
-    color: '#432870',
+    color: '#10B981',
   },
   content: {
     flex: 1,
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     fontWeight: '600',
-    color: '#432870',
+    color: '#10B981',
   },
 });
 

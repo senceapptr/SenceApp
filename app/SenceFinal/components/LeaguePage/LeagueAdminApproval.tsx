@@ -86,7 +86,7 @@ export function LeagueAdminApprovalPage({
           >
             {selectedFilter === 'all' ? (
               <LinearGradient
-                colors={['#432870', '#c61585']}
+                colors={['#10B981', '#DC2626']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.filterButtonGradient}
@@ -204,7 +204,7 @@ export function LeagueAdminApprovalPage({
                       >
                         <View style={styles.statHeader}>
                           <Text style={styles.statIcon}>🎯</Text>
-                          <Text style={[styles.statValue, { color: '#432870' }]}>
+                          <Text style={[styles.statValue, { color: '#10B981' }]}>
                             {request.predictionCount}
                           </Text>
                         </View>
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#432870',
+    color: '#10B981',
   },
   headerSpacer: {
     width: 40,
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#432870',
+    borderColor: '#10B981',
   },
   accuracyBadge: {
     position: 'absolute',
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
   performanceValue: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#432870',
+    color: '#10B981',
   },
   performanceBarBg: {
     width: '100%',
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
   summaryCount: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#432870',
+    color: '#10B981',
   },
   summarySubtitle: {
     fontSize: 14,
@@ -632,6 +632,6 @@ const styles = StyleSheet.create({
   summaryAverage: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#432870',
+    color: '#10B981',
   },
 });

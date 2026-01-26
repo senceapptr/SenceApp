@@ -13,7 +13,7 @@ export function Tabs({ activeTab, onChangeTab }: TabsProps) {
       >
         <Text style={[styles.tabText, activeTab === 'daily' && styles.activeTabText]}>Günlük Görevler</Text>
         {activeTab === 'daily' && (
-          <LinearGradient colors={["#c61585", "#432870"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.tabIndicator} />
+          <LinearGradient colors={["#10B981", "#059669"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.tabIndicator} />
         )}
       </TouchableOpacity>
       <TouchableOpacity
@@ -23,7 +23,7 @@ export function Tabs({ activeTab, onChangeTab }: TabsProps) {
       >
         <Text style={[styles.tabText, activeTab === 'monthly' && styles.activeTabText]}>Aylık Görevler</Text>
         {activeTab === 'monthly' && (
-          <LinearGradient colors={["#c61585", "#432870"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.tabIndicator} />
+          <LinearGradient colors={["#10B981", "#059669"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.tabIndicator} />
         )}
       </TouchableOpacity>
     </View>
@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: '#F2F3F5',
+    borderTopColor: '#30363D',
   },
   tab: {
     flex: 1,
@@ -46,11 +46,11 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: 'rgba(32, 32, 32, 0.6)',
+    color: '#8B949E',
     textAlign: 'center',
   },
   activeTabText: {
-    color: '#432870',
+    color: '#10B981',
     fontWeight: '700',
   },
   tabIndicator: {

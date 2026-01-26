@@ -23,7 +23,7 @@ export function CreateCard({ onCreatePress }: CreateCardProps) {
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={['#432870', '#B29EFD']}
+          colors={['#10B981', '#059669']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.buttonGradient}
@@ -37,11 +37,11 @@ export function CreateCard({ onCreatePress }: CreateCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(67, 40, 112, 0.1)',
+    backgroundColor: '#161B22',
     borderRadius: 24,
     padding: 24,
-    borderWidth: 2,
-    borderColor: 'rgba(67, 40, 112, 0.3)',
+    borderWidth: 1,
+    borderColor: '#30363D',
     marginBottom: 16,
   },
   content: {
@@ -55,13 +55,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 12,
     textAlign: 'center',
   },
   text: {
     fontSize: 16,
-    color: 'rgba(32, 32, 32, 0.8)',
+    color: '#8B949E',
     textAlign: 'center',
     lineHeight: 24,
   },

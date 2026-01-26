@@ -94,7 +94,7 @@ function CouponsEmptyState({ onCreatePress }: { onCreatePress?: () => void }) {
           ]}
         >
           <View style={styles.emptyIconCircle}>
-            <Ionicons name="ticket" size={64} color="#432870" />
+            <Ionicons name="ticket" size={64} color="#10B981" />
           </View>
           
           {/* Decorative elements */}
@@ -286,11 +286,11 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={['#432870', '#5A3A8B']}
-                tintColor="#432870"
-                progressBackgroundColor="#FFFFFF"
+                colors={['#10B981', '#059669']}
+                tintColor="#10B981"
+                progressBackgroundColor="#161B22"
                 title="Yenileniyor..."
-                titleColor="#432870"
+                titleColor="#10B981"
               />
             }
           >
@@ -343,7 +343,7 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#0D1117',
   },
   safeArea: {
     flex: 1,
@@ -391,13 +391,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   emptyStateCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161B22',
     borderRadius: 24,
     padding: 40,
     alignItems: 'center',
-    shadowColor: '#432870',
+    borderWidth: 1,
+    borderColor: '#30363D',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.4,
     shadowRadius: 20,
     elevation: 8,
   },
@@ -411,18 +413,18 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#21262D',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#432870',
+    borderColor: '#10B981',
     borderStyle: 'dashed',
   },
   decorativeCircle: {
     position: 'absolute',
     borderRadius: 100,
     borderWidth: 2,
-    borderColor: '#432870',
+    borderColor: '#10B981',
     opacity: 0.2,
   },
   decorativeCircle1: {
@@ -443,13 +445,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#F0F6FC',
     marginBottom: 12,
     textAlign: 'center',
   },
   emptyDescription: {
     fontSize: 15,
-    color: '#6B7280',
+    color: '#8B949E',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 32,
@@ -457,12 +459,12 @@ const styles = StyleSheet.create({
   emptyActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#432870',
+    backgroundColor: '#10B981',
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 16,
     gap: 10,
-    shadowColor: '#432870',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 12,

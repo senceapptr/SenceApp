@@ -14,7 +14,7 @@ export const WriteQuestionHeader: React.FC<WriteQuestionHeaderProps> = ({
   return (
     <View style={styles.header}>
       <TouchableOpacity onPress={onBack} style={styles.headerButton} activeOpacity={0.7}>
-        <Ionicons name="chevron-back" size={24} color="#202020" />
+        <Ionicons name="chevron-back" size={24} color="#F0F6FC" />
       </TouchableOpacity>
       
       <View style={styles.headerContent}>
@@ -41,15 +41,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: 'white',
+    backgroundColor: '#0D1117',
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F3F5',
+    borderBottomColor: '#30363D',
   },
   headerButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -60,11 +60,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   headerSubtitle: {
     fontSize: 14,
-    color: 'rgba(32,32,32,0.7)',
+    color: '#8B949E',
     marginTop: 2,
   },
   hamburgerIcon: {
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   hamburgerLine: {
     width: 20,
     height: 2.5,
-    backgroundColor: '#202020',
+    backgroundColor: '#F0F6FC',
     borderRadius: 1.25,
   },
 });

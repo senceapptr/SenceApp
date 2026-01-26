@@ -162,7 +162,7 @@ export function CategoryQuestionsPage({
                   yesOdds: q.yes_odds || 2.0,
                   noOdds: q.no_odds || 2.0,
                   yesPercentage: q.yes_percentage || 50,
-                  image: q.image_url,
+                  image: (q.image_url && String(q.image_url).trim() !== '') ? q.image_url : 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?w=600',
                   end_date: q.end_date,
                   total_amount: q.total_amount || 0,
                   is_trending: q.is_trending || false,
@@ -220,7 +220,7 @@ export function CategoryQuestionsPage({
                   yesOdds: q.yes_odds || 2.0,
                   noOdds: q.no_odds || 2.0,
                   yesPercentage: q.yes_percentage || 50,
-                  image: q.image_url,
+                  image: (q.image_url && String(q.image_url).trim() !== '') ? q.image_url : 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?w=600',
                   end_date: q.end_date,
                   total_amount: q.total_amount || 0,
                   is_trending: q.is_trending || false,
@@ -385,11 +385,88 @@ export function CategoryQuestionsPage({
     });
   }, [filteredQuestions]);
 
+  // Dinamik stiller
+  const dynamicStyles = {
+    animatedHeader: {
+      ...styles.animatedHeader,
+      backgroundColor: theme.background,
+    },
+    backButton: {
+      ...styles.backButton,
+      backgroundColor: theme.surfaceElevated,
+      borderColor: theme.border,
+    },
+    headerTitle: {
+      ...styles.headerTitle,
+      color: theme.textPrimary,
+    },
+    menuButton: {
+      ...styles.menuButton,
+      backgroundColor: theme.surfaceElevated,
+      borderColor: theme.border,
+    },
+    hamburgerLine: {
+      ...styles.hamburgerLine,
+      backgroundColor: theme.textPrimary,
+    },
+    searchInput: {
+      ...styles.searchInput,
+      backgroundColor: theme.surfaceCard,
+      borderColor: theme.border,
+      color: theme.textPrimary,
+    },
+    yesLabel: {
+      ...styles.yesLabel,
+      color: theme.accent,
+    },
+    noLabel: {
+      ...styles.noLabel,
+      color: theme.error,
+    },
+    yesBar: {
+      ...styles.yesBar,
+      backgroundColor: theme.accent,
+    },
+    noBar: {
+      ...styles.noBar,
+      backgroundColor: theme.error,
+    },
+    yesButton: {
+      ...styles.yesButton,
+      borderColor: theme.accent,
+    },
+    noButton: {
+      ...styles.noButton,
+      borderColor: theme.error,
+    },
+    sortMenu: {
+      ...styles.sortMenu,
+      backgroundColor: theme.surfaceModal,
+      borderColor: theme.border,
+    },
+    sortMenuTitle: {
+      ...styles.sortMenuTitle,
+      color: theme.textPrimary,
+    },
+    sortOptionActive: {
+      ...styles.sortOptionActive,
+      backgroundColor: theme.accent + '15',
+    },
+    loadingText: {
+      ...styles.loadingText,
+      color: theme.textMuted,
+    },
+    emptyText: {
+      ...styles.emptyText,
+      color: theme.textMuted,
+    },
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={styles.container}>
       <StatusBar 
-        barStyle={isDarkMode ? "light-content" : "dark-content"} 
-        backgroundColor={theme.background} 
+        barStyle="light-content" 
+        backgroundColor="#0D1117" 
       />
       
       {/* Header - Animated */}
@@ -401,7 +478,7 @@ export function CategoryQuestionsPage({
               style={styles.backButton}
               activeOpacity={0.7}
             >
-              <Ionicons name="chevron-back" size={20} color="#432870" />
+              <Ionicons name="chevron-back" size={20} color="#F0F6FC" />
             </TouchableOpacity>
             
             <Text style={styles.headerTitle}>{category.label} ({filteredQuestions.length})</Text>
@@ -435,13 +512,13 @@ export function CategoryQuestionsPage({
             <TextInput
               style={styles.searchInput}
               placeholder="Hemen Keşfet!"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#8B949E"
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
             <View style={styles.searchIconContainer}>
               <LinearGradient
-                colors={['#432870', '#B29EFD']}
+                colors={[theme.accent, theme.success]}
                 style={styles.searchIconGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
@@ -458,7 +535,7 @@ export function CategoryQuestionsPage({
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={['#432870', '#c61585']}
+              colors={[theme.accent, theme.success]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.sortGradient}
@@ -470,12 +547,12 @@ export function CategoryQuestionsPage({
 
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#432870" />
-            <Text style={styles.loadingText}>Sorular yükleniyor...</Text>
+            <ActivityIndicator size="large" color={theme.accent} />
+            <Text style={dynamicStyles.loadingText}>Sorular yükleniyor...</Text>
           </View>
         ) : filteredQuestions.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Bu kategoride henüz soru bulunmuyor.</Text>
+            <Text style={dynamicStyles.emptyText}>Bu kategoride henüz soru bulunmuyor.</Text>
           </View>
         ) : (
           filteredQuestions.map((question, index) => {
@@ -566,8 +643,9 @@ export function CategoryQuestionsPage({
               ]}
             >
               <Image 
-                source={{ uri: question.image }}
+                source={{ uri: question.image || 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?w=600' }}
                 style={styles.questionImage}
+                resizeMode="cover"
               />
               <LinearGradient
                 colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.2)']}
@@ -598,10 +676,10 @@ export function CategoryQuestionsPage({
                 <View style={styles.percentageContainer}>
                   {/* Percentage Labels */}
                   <View style={styles.percentageLabels}>
-                    <Text style={[styles.percentageLabel, styles.yesLabel]}>
+                    <Text style={[styles.percentageLabel, dynamicStyles.yesLabel]}>
                       Yes {question.yesPercentage}%
                     </Text>
-                    <Text style={[styles.percentageLabel, styles.noLabel]}>
+                    <Text style={[styles.percentageLabel, dynamicStyles.noLabel]}>
                       No {noPercentage}%
                     </Text>
                   </View>
@@ -612,7 +690,7 @@ export function CategoryQuestionsPage({
                     <Animated.View 
                       style={[
                         styles.progressBar,
-                        styles.yesBar,
+                        dynamicStyles.yesBar,
                         {
                           width: animation.yesBarWidth.interpolate({
                             inputRange: [0, 100],
@@ -625,7 +703,7 @@ export function CategoryQuestionsPage({
                     <Animated.View 
                       style={[
                         styles.progressBar,
-                        styles.noBar,
+                        dynamicStyles.noBar,
                         {
                           width: animation.noBarWidth.interpolate({
                             inputRange: [0, 100],
@@ -643,7 +721,7 @@ export function CategoryQuestionsPage({
                     onPress={() => handleVote(question.id, 'yes', question.yesOdds)}
                     onPressIn={handleYesPressIn}
                     onPressOut={handleYesPressOut}
-                    style={[styles.voteButton, styles.yesButton]}
+                    style={[styles.voteButton, dynamicStyles.yesButton]}
                     activeOpacity={1}
                   >
                     <Animated.View
@@ -653,7 +731,7 @@ export function CategoryQuestionsPage({
                         top: 0,
                         bottom: 0,
                         width: yesFillWidth,
-                        backgroundColor: '#34C759',
+                        backgroundColor: theme.accent,
                         borderRadius: 14,
                       }}
                     />
@@ -664,7 +742,7 @@ export function CategoryQuestionsPage({
                     onPress={() => handleVote(question.id, 'no', question.noOdds)}
                     onPressIn={handleNoPressIn}
                     onPressOut={handleNoPressOut}
-                    style={[styles.voteButton, styles.noButton]}
+                    style={[styles.voteButton, dynamicStyles.noButton]}
                     activeOpacity={1}
                   >
                     <Animated.View
@@ -674,7 +752,7 @@ export function CategoryQuestionsPage({
                         top: 0,
                         bottom: 0,
                         width: noFillWidth,
-                        backgroundColor: '#FF3B30',
+                        backgroundColor: theme.error,
                         borderRadius: 14,
                       }}
                     />
@@ -715,9 +793,9 @@ export function CategoryQuestionsPage({
           onPress={() => setShowSortMenu(false)}
         >
           <View style={styles.sortMenuContainer}>
-            <View style={[styles.sortMenu, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <View style={styles.sortMenuHeader}>
-                <Text style={[styles.sortMenuTitle, { color: theme.textPrimary }]}>Sıralama Seçenekleri</Text>
+          <View style={dynamicStyles.sortMenu}>
+            <View style={styles.sortMenuHeader}>
+              <Text style={dynamicStyles.sortMenuTitle}>Sıralama Seçenekleri</Text>
                 <TouchableOpacity
                   onPress={() => setShowSortMenu(false)}
                   style={styles.sortMenuCloseButton}
@@ -731,8 +809,9 @@ export function CategoryQuestionsPage({
                   key={option.id}
                   style={[
                     styles.sortOption,
-                    sortBy === option.id && styles.sortOptionActive,
-                    { borderBottomColor: theme.border }
+                    sortBy === option.id && dynamicStyles.sortOptionActive,
+                    { borderBottomColor: theme.border },
+                    index === sortOptions.length - 1 && { borderBottomWidth: 0 }
                   ]}
                   onPress={() => {
                     setSortBy(option.id);
@@ -745,7 +824,7 @@ export function CategoryQuestionsPage({
                     <View style={styles.sortOptionTextContainer}>
                       <Text style={[
                         styles.sortOptionLabel,
-                        { color: sortBy === option.id ? '#432870' : theme.textPrimary }
+                        { color: sortBy === option.id ? theme.accent : theme.textPrimary }
                       ]}>
                         {option.label}
                       </Text>
@@ -758,7 +837,7 @@ export function CategoryQuestionsPage({
                     </View>
                   </View>
                   {sortBy === option.id && (
-                    <Ionicons name="checkmark-circle" size={24} color="#432870" />
+                    <Ionicons name="checkmark-circle" size={24} color={theme.accent} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -773,7 +852,7 @@ export function CategoryQuestionsPage({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#0D1117',
   },
   animatedHeader: {
     position: 'absolute',
@@ -781,15 +860,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#0D1117',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   safeArea: {
-    backgroundColor: 'transparent',
+    flex: 0,
+    backgroundColor: '#0D1117',
   },
   header: {
     flexDirection: 'row',
@@ -797,16 +877,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 8,
+    backgroundColor: '#0D1117',
   },
   backButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#1A1F2A',
+    borderColor: '#30363D',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -816,22 +897,22 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#111827',
+    color: '#F0F6FC',
   },
   menuButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#1A1F2A',
+    borderColor: '#30363D',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 4,
   },
   hamburgerIcon: {
     width: 20,
@@ -841,8 +922,8 @@ const styles = StyleSheet.create({
   hamburgerLine: {
     width: 20,
     height: 2.5,
-    backgroundColor: '#432870',
     borderRadius: 1.25,
+    backgroundColor: '#F0F6FC',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -850,24 +931,25 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 8,
     alignItems: 'center',
+    backgroundColor: '#0D1117',
   },
   searchInputContainer: {
     flex: 1,
     position: 'relative',
   },
   searchInput: {
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
     borderRadius: 24,
     paddingVertical: 16,
     paddingHorizontal: 24,
     paddingRight: 64,
     fontSize: 16,
-    color: '#111827',
+    backgroundColor: '#21262D',
+    borderColor: '#30363D',
+    color: '#F0F6FC',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -898,11 +980,13 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    backgroundColor: '#0D1117',
   },
   scrollContent: {
     paddingTop: 120, // Header height compensation
     padding: 16,
     gap: 8,
+    backgroundColor: '#0D1117',
   },
   cardContainer: {
     marginBottom: 8,
@@ -983,12 +1067,8 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 6,
   },
-  yesLabel: {
-    color: '#34C759',
-  },
-  noLabel: {
-    color: '#FF3B30',
-  },
+  yesLabel: {},
+  noLabel: {},
   progressBarContainer: {
     position: 'relative',
     width: '100%',
@@ -1005,11 +1085,9 @@ const styles = StyleSheet.create({
   },
   yesBar: {
     left: 0,
-    backgroundColor: '#34C759',
   },
   noBar: {
     right: 0,
-    backgroundColor: '#FF3B30',
   },
   buttonsContainer: {
     flexDirection: 'row',
@@ -1031,12 +1109,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  yesButton: {
-    borderColor: '#34C759',
-  },
-  noButton: {
-    borderColor: '#FF3B30',
-  },
+  yesButton: {},
+  noButton: {},
   voteButtonText: {
     color: '#FFFFFF',
     fontSize: 15,
@@ -1076,10 +1150,8 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   sortMenu: {
-    backgroundColor: 'white',
     borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#F3F4F6',
+    borderWidth: 1,
     overflow: 'hidden',
   },
   sortMenuHeader: {
@@ -1089,12 +1161,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   sortMenuTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
   },
   sortMenuCloseButton: {
     padding: 4,
@@ -1106,11 +1176,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
-  sortOptionActive: {
-    backgroundColor: 'rgba(67, 40, 112, 0.05)',
-  },
+  sortOptionActive: {},
   sortOptionContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1136,7 +1203,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#432870',
   },
   loadingContainer: {
     alignItems: 'center',
@@ -1146,7 +1212,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#6B7280',
     fontWeight: '500',
   },
   emptyContainer: {
@@ -1156,7 +1221,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#6B7280',
     fontWeight: '500',
     textAlign: 'center',
   },

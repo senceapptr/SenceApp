@@ -4,7 +4,7 @@ import { StatusBar } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { profileService } from '@/services/profile.service';
 import { predictionsService } from '@/services/predictions.service';
-import { ProfilePageProps, Prediction, CreditHistoryItem } from './types';
+import { ProfilePageProps, Prediction } from './types';
 import { useProfileAnimations, useProfileState } from './hooks';
 import { ANIMATION_CONSTANTS, profileData, creditHistory } from './utils';
 import { ProfileHeader } from './components/ProfileHeader';
@@ -14,6 +14,7 @@ import { ProfileTabs } from './components/ProfileTabs';
 import { PredictionsTab } from './components/PredictionsTab';
 import { StatisticsTab } from './components/StatisticsTab';
 import { ProfileImageModal } from './components/ProfileImageModal';
+import { FollowListModal, FollowUserItem } from './components/FollowListModal';
 
 export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePageProps) {
   const { user, profile } = useAuth();
@@ -23,6 +24,13 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+
+  // Takipçi / Takip listesi modal
+  const [followListModal, setFollowListModal] = useState<'followers' | 'following' | null>(null);
+  const [followListItems, setFollowListItems] = useState<FollowUserItem[]>([]);
+  const [followListLoading, setFollowListLoading] = useState(false);
 
   const {
     scrollY,
@@ -55,9 +63,11 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
       setLoading(true);
 
       // Paralel olarak tüm verileri yükle
-      const [predictionsResult, statsResult] = await Promise.all([
+      const [predictionsResult, statsResult, followerRes, followingRes] = await Promise.all([
         predictionsService.getUserPredictions(user.id),
         profileService.getProfileStats(user.id),
+        profileService.getFollowerCount(user.id),
+        profileService.getFollowingCount(user.id),
       ]);
 
       // Predictions
@@ -78,6 +88,13 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
         setStats(statsResult.data);
       }
 
+      setFollowerCount(followerRes.count ?? 0);
+      setFollowingCount(followingRes.count ?? 0);
+      
+      // Debug: Takip sayılarını kontrol et
+      console.log('Follower count:', followerRes.count, 'Following count:', followingRes.count);
+      if (followerRes.error) console.error('Follower count error:', followerRes.error);
+      if (followingRes.error) console.error('Following count error:', followingRes.error);
     } catch (err) {
       console.error('Profile data load error:', err);
       Alert.alert('Hata', 'Profil verileri yüklenirken bir hata oluştu');
@@ -98,6 +115,28 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
     setRefreshing(false);
   };
 
+  // Takipçi listesini aç
+  const handlePressFollowers = async () => {
+    if (!user) return;
+    setFollowListModal('followers');
+    setFollowListLoading(true);
+    setFollowListItems([]);
+    const { data } = await profileService.getFollowersList(user.id);
+    setFollowListItems(data || []);
+    setFollowListLoading(false);
+  };
+
+  // Takip listesini aç
+  const handlePressFollowing = async () => {
+    if (!user) return;
+    setFollowListModal('following');
+    setFollowListLoading(true);
+    setFollowListItems([]);
+    const { data } = await profileService.getFollowingList(user.id);
+    setFollowListItems(data || []);
+    setFollowListLoading(false);
+  };
+
   // Merge userProfile with profile data
   const mergedProfileData = {
     ...profileData,
@@ -108,8 +147,8 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
     bio: profile?.bio || userProfile?.bio || 'Henüz bio eklenmedi',
     predictions: stats?.total_predictions || 0,
     credits: profile?.credits || 10000,
-    followers: 0, // TODO: Follower sistemi eklenince burası güncellenecek
-    following: 0, // TODO: Following sistemi eklenince burası güncellenecek
+    followers: followerCount,
+    following: followingCount,
   };
 
   // Loading durumu
@@ -117,7 +156,7 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
     return (
       <View style={[styles.container, styles.loadingContainer]}>
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        <ActivityIndicator size="large" color="#432870" />
+        <ActivityIndicator size="large" color="#10B981" />
         <Text style={styles.loadingText}>Profil yükleniyor...</Text>
       </View>
     );
@@ -162,7 +201,7 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingTop: HEADER_MAX_HEIGHT }}
+        contentContainerStyle={{ paddingTop: HEADER_MAX_HEIGHT, backgroundColor: '#0D1117' }}
         refreshing={refreshing}
         onRefresh={handleRefresh}
       >
@@ -171,12 +210,15 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
           profileData={mergedProfileData}
           isFollowing={isFollowing}
           followButtonScale={followButtonScale}
+          isOwnProfile={true}
           onFollow={() => {
             handleFollow();
             animateButtonPress(followButtonScale);
           }}
           onPressIn={() => animateButtonHover(followButtonScale, true)}
           onPressOut={() => animateButtonHover(followButtonScale, false)}
+          onPressFollowers={handlePressFollowers}
+          onPressFollowing={handlePressFollowing}
         />
 
         {/* Tabs */}
@@ -209,6 +251,15 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
         userName={mergedProfileData.name}
         onClose={() => setShowProfileModal(false)}
       />
+
+      {/* Takipçi / Takip listesi modal */}
+      <FollowListModal
+        visible={followListModal !== null}
+        title={followListModal === 'followers' ? 'Takipçiler' : 'Takip Ettiklerim'}
+        items={followListItems}
+        loading={followListLoading}
+        onClose={() => setFollowListModal(null)}
+      />
     </View>
   );
 }
@@ -216,7 +267,7 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#0D1117',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -226,12 +277,12 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     fontWeight: '600',
-    color: '#432870',
+    color: '#10B981',
   },
   errorText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FF3B30',
+    color: '#EF4444',
     textAlign: 'center',
     paddingHorizontal: 32,
   },

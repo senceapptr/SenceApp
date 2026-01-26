@@ -18,12 +18,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#432870',
+    color: '#10B981',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 13,
-    color: 'rgba(32, 32, 32, 0.6)',
+    color: '#8B949E',
   },
 });
 

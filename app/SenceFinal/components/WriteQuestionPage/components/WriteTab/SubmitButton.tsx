@@ -21,7 +21,7 @@ export const SubmitButton: React.FC<SubmitButtonProps> = ({
       activeOpacity={0.8}
     >
       <LinearGradient
-        colors={disabled ? ['#E5E7EB', '#E5E7EB'] : ['#432870', '#B29EFD']}
+        colors={disabled ? ['#21262D', '#21262D'] : ['#10B981', '#059669']}
         style={styles.submitGradient}
       >
         {isSubmitting ? (

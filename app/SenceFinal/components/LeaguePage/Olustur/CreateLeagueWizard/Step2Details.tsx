@@ -132,7 +132,7 @@ export function Step2Details({
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="grid" size={18} color="#432870" />
+              <Ionicons name="grid" size={18} color="#10B981" />
               <Text style={styles.sectionTitle}>Kategoriler</Text>
               <View style={styles.requiredBadge}>
                 <Text style={styles.requiredText}>Zorunlu</Text>
@@ -147,7 +147,7 @@ export function Step2Details({
               
               // Backend'den gelen kategori için icon ve renk kullan
               const categoryIcon = category.icon || '📁';
-              const categoryColor = category.color || '#6B7280';
+              const categoryColor = category.color || '#8B949E';
 
               return (
                 <Animated.View
@@ -199,7 +199,7 @@ export function Step2Details({
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="settings" size={18} color="#432870" />
+              <Ionicons name="settings" size={18} color="#10B981" />
               <Text style={styles.sectionTitle}>Lig Ayarları</Text>
             </View>
           </View>
@@ -249,7 +249,7 @@ export function Step2Details({
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="diamond" size={18} color="#432870" />
+              <Ionicons name="diamond" size={18} color="#10B981" />
               <Text style={styles.sectionTitle}>Katılım Ücreti</Text>
             </View>
           </View>
@@ -295,7 +295,7 @@ export function Step2Details({
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="lock-closed" size={18} color="#432870" />
+              <Ionicons name="lock-closed" size={18} color="#10B981" />
               <Text style={styles.sectionTitle}>Gizlilik</Text>
             </View>
           </View>
@@ -368,7 +368,7 @@ export function Step2Details({
         {/* Summary Preview */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeader}>
-            <Ionicons name="receipt" size={18} color="#432870" />
+            <Ionicons name="receipt" size={18} color="#10B981" />
             <Text style={styles.summaryTitle}>Lig Özeti</Text>
           </View>
           
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#F0F6FC',
   },
   requiredBadge: {
     backgroundColor: '#FEE2E2',
@@ -462,18 +462,18 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
     position: 'relative',
     overflow: 'visible',
   },
   categoryButtonActive: {
     backgroundColor: '#F3E8FF',
-    borderColor: '#432870',
+    borderColor: '#10B981',
     borderWidth: 3,
-    shadowColor: '#432870',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
@@ -492,17 +492,17 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#8B949E',
   },
   categoryTextActive: {
-    color: '#432870',
+    color: '#10B981',
     fontWeight: 'bold',
   },
   categoryCheckBadge: {
     position: 'absolute',
     top: -8,
     right: -8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#21262D',
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -534,11 +534,11 @@ const styles = StyleSheet.create({
   settingCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#21262D',
     padding: 16,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
     gap: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#21262D',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -559,22 +559,22 @@ const styles = StyleSheet.create({
   },
   settingLabel: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#8B949E',
     marginBottom: 4,
   },
   settingValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#F0F6FC',
   },
   // Input Container
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
     padding: 16,
     gap: 12,
     shadowColor: '#000',
@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#21262D',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -595,13 +595,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#F0F6FC',
     padding: 0,
   },
   inputSuffix: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#8B949E',
   },
   // Prize Pool Card
   prizePoolCard: {
@@ -641,21 +641,21 @@ const styles = StyleSheet.create({
   },
   privacyCard: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#21262D',
     padding: 20,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
     alignItems: 'center',
     position: 'relative',
     overflow: 'visible',
     minHeight: 160,
   },
   privacyCardActive: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#432870',
+    backgroundColor: '#21262D',
+    borderColor: '#10B981',
     borderWidth: 3,
-    shadowColor: '#432870',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
@@ -667,12 +667,12 @@ const styles = StyleSheet.create({
   privacyTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#6B7280',
+    color: '#8B949E',
     marginBottom: 8,
     textAlign: 'center',
   },
   privacyTitleActive: {
-    color: '#1F2937',
+    color: '#F0F6FC',
   },
   privacyDescription: {
     fontSize: 12,
@@ -684,7 +684,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -8,
     right: -8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#21262D',
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -695,11 +695,11 @@ const styles = StyleSheet.create({
   },
   // Summary Card
   summaryCard: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#21262D',
     padding: 20,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#432870',
+    borderColor: '#10B981',
     borderStyle: 'dashed',
     marginBottom: 20,
   },
@@ -710,12 +710,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#30363D',
   },
   summaryTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#432870',
+    color: '#10B981',
   },
   summaryRow: {
     flexDirection: 'row',
@@ -727,16 +727,16 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: '#30363D',
   },
   summaryLabel: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#8B949E',
   },
   summaryValue: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#F0F6FC',
   },
 });
 

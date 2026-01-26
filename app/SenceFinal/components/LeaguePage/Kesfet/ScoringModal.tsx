@@ -22,7 +22,7 @@ export function ScoringModal({ visible, league, onClose }: ScoringModalProps) {
       <View style={styles.overlay}>
         <View style={styles.content}>
           <LinearGradient
-            colors={['#432870', '#5A3A8B', '#B29EFD']}
+            colors={['#10B981', '#059669', '#34D399']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.header}
@@ -82,7 +82,7 @@ export function ScoringModal({ visible, league, onClose }: ScoringModalProps) {
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={['#432870', '#B29EFD']}
+                colors={['#10B981', '#059669']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.buttonGradient}

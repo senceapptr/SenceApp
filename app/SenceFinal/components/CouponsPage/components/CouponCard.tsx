@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#111827',
+    color: '#F0F6FC',
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -148,10 +148,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: 'rgba(13, 17, 23, 0.5)',
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   predictionLeft: {
     flex: 1,
@@ -159,7 +161,7 @@ const styles = StyleSheet.create({
   predictionQuestion: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: '#F0F6FC',
     marginBottom: 6,
   },
   predictionMeta: {
@@ -173,24 +175,24 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   yesBadge: {
-    backgroundColor: '#EDE9FE',
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
   },
   noBadge: {
-    backgroundColor: '#CFFAFE',
+    backgroundColor: 'rgba(220, 38, 38, 0.2)',
   },
   choiceBadgeText: {
     fontSize: 10,
     fontWeight: 'bold',
   },
   yesBadgeText: {
-    color: '#7C3AED',
+    color: '#10B981',
   },
   noBadgeText: {
-    color: '#0891B2',
+    color: '#DC2626',
   },
   categoryText: {
     fontSize: 10,
-    color: '#6B7280',
+    color: '#8B949E',
   },
   resultIcon: {
     fontSize: 12,
@@ -198,7 +200,7 @@ const styles = StyleSheet.create({
   oddsText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#432870',
+    color: '#10B981',
   },
   morePredictions: {
     alignItems: 'center',
@@ -206,14 +208,14 @@ const styles = StyleSheet.create({
   },
   morePredictionsText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#8B949E',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.5)',
+    borderTopColor: '#30363D',
   },
   footerLeft: {
     flex: 1,
@@ -223,18 +225,18 @@ const styles = StyleSheet.create({
   },
   footerLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#8B949E',
     marginBottom: 4,
   },
   footerValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#111827',
+    color: '#F0F6FC',
   },
   totalOdds: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#432870',
+    color: '#10B981',
   },
 });
 

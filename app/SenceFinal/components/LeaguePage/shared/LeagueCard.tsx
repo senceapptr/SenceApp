@@ -75,7 +75,7 @@ export function LeagueCard({
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={['#432870', '#5A3A8B', '#6B4A9D']}
+              colors={['#10B981', '#059669']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.joinButton}
@@ -125,18 +125,18 @@ export function LeagueCard({
 const styles = StyleSheet.create({
   card: {
     borderRadius: 24,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#F2F3F5',
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: '#30363D',
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   featuredCard: {
-    borderColor: '#432870',
+    borderColor: '#10B981',
   },
   completedCard: {
     opacity: 0.6,
@@ -156,12 +156,12 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 8,
   },
   description: {
     fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.7)',
+    color: '#8B949E',
     marginBottom: 12,
   },
   meta: {
@@ -170,12 +170,12 @@ const styles = StyleSheet.create({
   },
   separator: {
     fontSize: 12,
-    color: 'rgba(32, 32, 32, 0.5)',
+    color: '#484F58',
     marginHorizontal: 8,
   },
   creator: {
     fontSize: 12,
-    color: 'rgba(32, 32, 32, 0.5)',
+    color: '#8B949E',
   },
   headerRight: {
     alignItems: 'flex-end',
@@ -183,22 +183,22 @@ const styles = StyleSheet.create({
   prizeText: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#432870',
+    color: '#10B981',
     textAlign: 'right',
   },
   prizeLabel: {
     fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.5)',
+    color: '#8B949E',
     marginTop: 4,
   },
   positionText: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#432870',
+    color: '#10B981',
   },
   positionLabel: {
     fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.5)',
+    color: '#8B949E',
     marginTop: 4,
   },
   stats: {
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   },
   statsText: {
     fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.7)',
+    color: '#8B949E',
   },
   joinButtonWrapper: {
     borderRadius: 24,
@@ -232,19 +232,21 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 12,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   actionButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   chatActionButton: {
     paddingVertical: 12,
     paddingHorizontal: 12,
-    backgroundColor: '#432870',
+    backgroundColor: '#10B981',
     borderRadius: 16,
     alignItems: 'center',
   },

@@ -21,11 +21,11 @@ export function TrendQuestionsSection({
   onSeeAllPress
 }: TrendQuestionsSectionProps) {
   return (
-    <View style={[styles.section, { backgroundColor: isDarkMode ? theme.surface : '#FFFFFF' }]}>
+    <View style={[styles.section, { backgroundColor: 'transparent' }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>Trend Sorular</Text>
+        <Text style={[styles.title, { color: '#F0F6FC' }]}>Trend Sorular</Text>
         <TouchableOpacity onPress={() => onSeeAllPress?.()}>
-          <Text style={[styles.seeAll, { color: theme.primary }]}>Tümünü görüntüle</Text>
+          <Text style={[styles.seeAll, { color: '#10B981' }]}>Tümünü görüntüle</Text>
         </TouchableOpacity>
       </View>
       
@@ -68,12 +68,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#432870',
+    color: '#F0F6FC',
   },
   seeAll: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#432870',
+    color: '#10B981',
   },
   list: {
     paddingHorizontal: 16,

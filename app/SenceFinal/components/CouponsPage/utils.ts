@@ -20,19 +20,19 @@ export const calculateStatistics = (coupons: Coupon[]) => {
 
 export const getStatusColor = (status: 'live' | 'won' | 'lost'): [string, string] => {
   switch (status) {
-    case 'live': return ['#C4B5FD', '#A78BFA']; // Mor - Bekleyen
-    case 'won': return ['#A7F3D0', '#6EE7B7']; // Yeşil - Kazanan
-    case 'lost': return ['#FCA5A5', '#F87171']; // Kırmızı - Kaybeden
-    default: return ['#C4B5FD', '#A78BFA']; // Varsayılan olarak mor (bekleyen)
+    case 'live': return ['#21262D', '#1A1F2A']; // Koyu - Bekleyen
+    case 'won': return ['#1A2E1A', '#243524']; // Koyu yeşil - Kazanan
+    case 'lost': return ['#2E1A1A', '#352424']; // Koyu kırmızı - Kaybeden
+    default: return ['#21262D', '#1A1F2A']; // Varsayılan olarak koyu (bekleyen)
   }
 };
 
 export const getStatusBorderColor = (status: 'live' | 'won' | 'lost'): string => {
   switch (status) {
-    case 'live': return '#8B5CF6'; // Mor border
+    case 'live': return '#30363D'; // Koyu border
     case 'won': return '#10B981'; // Yeşil border
-    case 'lost': return '#EF4444'; // Kırmızı border
-    default: return '#8B5CF6'; // Varsayılan olarak mor
+    case 'lost': return '#DC2626'; // Kırmızı border
+    default: return '#30363D'; // Varsayılan olarak koyu
   }
 };
 
@@ -91,10 +91,10 @@ export const getStatusBadge = (status: 'live' | 'won' | 'lost', predictions?: an
           return { text: `⏰ ${timeRemaining}`, color: '#8B5CF6' };
         }
       }
-      return { text: '⏰ Bekliyor', color: '#8B5CF6' };
+      return { text: '⏰ Bekliyor', color: '#10B981' };
     case 'won': return { text: '🎉 Kazandı', color: '#10B981' };
-    case 'lost': return { text: '😞 Kaybetti', color: '#EF4444' };
-    default: return { text: '⏰ Bekliyor', color: '#8B5CF6' };
+    case 'lost': return { text: '😞 Kaybetti', color: '#DC2626' };
+    default: return { text: '⏰ Bekliyor', color: '#10B981' };
   }
 };
 

@@ -38,11 +38,11 @@ export const QuestionStatusCard: React.FC<QuestionStatusCardProps> = ({ question
 
 const styles = StyleSheet.create({
   questionCard: {
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#161B22',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'white',
+    borderColor: '#30363D',
   },
   questionHeader: {
     flexDirection: 'row',
@@ -57,13 +57,13 @@ const styles = StyleSheet.create({
   questionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 4,
     lineHeight: 22,
   },
   questionDescription: {
     fontSize: 14,
-    color: 'rgba(32,32,32,0.7)',
+    color: '#8B949E',
     lineHeight: 20,
   },
   questionStatus: {
@@ -76,12 +76,12 @@ const styles = StyleSheet.create({
   },
   questionDate: {
     fontSize: 12,
-    color: 'rgba(32,32,32,0.5)',
+    color: '#8B949E',
   },
   rejectionContainer: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: 'rgba(220, 38, 38, 0.15)',
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: 'rgba(220, 38, 38, 0.3)',
     borderRadius: 12,
     padding: 12,
     marginTop: 12,
@@ -89,12 +89,12 @@ const styles = StyleSheet.create({
   rejectionTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#DC2626',
+    color: '#F87171',
     marginBottom: 4,
   },
   rejectionText: {
     fontSize: 14,
-    color: '#DC2626',
+    color: '#FCA5A5',
     lineHeight: 20,
   },
 });

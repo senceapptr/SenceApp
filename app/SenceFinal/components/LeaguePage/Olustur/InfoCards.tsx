@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 export function InfoCards() {
   const infoItems = [
     {
-      gradient: ['#432870', '#B29EFD'],
+      gradient: ['#10B981', '#34D399'],
       emoji: '🎯',
       title: 'Özelleştirilebilir',
       description: 'Kategorileri, kuralları ve ödül sistemini sen belirle'
@@ -17,7 +17,7 @@ export function InfoCards() {
       description: 'Public veya private lig seçenekleri'
     },
     {
-      gradient: ['#432870', '#B29EFD'],
+      gradient: ['#10B981', '#34D399'],
       emoji: '💰',
       title: 'Ödül Havuzu',
       description: 'Katılım ücretlerinden oluşan büyük ödüller'
@@ -53,11 +53,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161B22',
     borderRadius: 16,
     padding: 16,
-    borderWidth: 2,
-    borderColor: '#F2F3F5',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -80,12 +80,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 4,
   },
   description: {
     fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.7)',
+    color: '#8B949E',
   },
 });
 

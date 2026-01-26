@@ -18,7 +18,7 @@ export function EmptyState({ onDiscover }: EmptyStateProps) {
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={['#432870', '#B29EFD']}
+          colors={['#10B981', '#34D399']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.buttonGradient}
@@ -42,12 +42,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 8,
   },
   text: {
     fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.7)',
+    color: '#8B949E',
     marginBottom: 24,
   },
   button: {

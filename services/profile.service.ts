@@ -207,4 +207,235 @@ export const profileService = {
       return { data: null, error: error as Error };
     }
   },
+
+  // ===== FOLLOW SYSTEM =====
+
+  /**
+   * Kullanıcıyı takip et
+   */
+  async followUser(followingId: string): Promise<{ success: boolean; error: Error | null }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: new Error('User not authenticated') };
+      }
+
+      if (user.id === followingId) {
+        return { success: false, error: new Error('Cannot follow yourself') };
+      }
+
+      const { error } = await supabase
+        .from('followers')
+        .insert({
+          follower_id: user.id,
+          following_id: followingId,
+        });
+
+      if (error) {
+        // Duplicate follow error is acceptable
+        if (error.code === '23505') {
+          return { success: true, error: null };
+        }
+        console.error('Follow user error:', error);
+        return { success: false, error };
+      }
+
+      return { success: true, error: null };
+    } catch (error) {
+      console.error('Follow user error:', error);
+      return { success: false, error: error as Error };
+    }
+  },
+
+  /**
+   * Kullanıcıyı takipten çık
+   */
+  async unfollowUser(followingId: string): Promise<{ success: boolean; error: Error | null }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, error: new Error('User not authenticated') };
+      }
+
+      const { error } = await supabase
+        .from('followers')
+        .delete()
+        .eq('follower_id', user.id)
+        .eq('following_id', followingId);
+
+      if (error) {
+        console.error('Unfollow user error:', error);
+        return { success: false, error };
+      }
+
+      return { success: true, error: null };
+    } catch (error) {
+      console.error('Unfollow user error:', error);
+      return { success: false, error: error as Error };
+    }
+  },
+
+  /**
+   * Takip durumunu kontrol et
+   */
+  async isFollowing(followingId: string): Promise<{ isFollowing: boolean; error: Error | null }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { isFollowing: false, error: null };
+      }
+
+      const { data, error } = await supabase
+        .from('followers')
+        .select('id')
+        .eq('follower_id', user.id)
+        .eq('following_id', followingId)
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        // Not found - not following
+        return { isFollowing: false, error: null };
+      }
+
+      if (error) {
+        console.error('Check following error:', error);
+        return { isFollowing: false, error };
+      }
+
+      return { isFollowing: !!data, error: null };
+    } catch (error) {
+      console.error('Check following error:', error);
+      return { isFollowing: false, error: error as Error };
+    }
+  },
+
+  /**
+   * Takipçi sayısını getir
+   */
+  async getFollowerCount(userId: string): Promise<{ count: number; error: Error | null }> {
+    try {
+      const { count, error } = await supabase
+        .from('followers')
+        .select('*', { count: 'exact', head: true })
+        .eq('following_id', userId);
+
+      if (error) {
+        console.error('Get follower count error:', error);
+        return { count: 0, error };
+      }
+
+      return { count: count || 0, error: null };
+    } catch (error) {
+      console.error('Get follower count error:', error);
+      return { count: 0, error: error as Error };
+    }
+  },
+
+  /**
+   * Takip edilen sayısını getir
+   */
+  async getFollowingCount(userId: string): Promise<{ count: number; error: Error | null }> {
+    try {
+      const { count, error } = await supabase
+        .from('followers')
+        .select('*', { count: 'exact', head: true })
+        .eq('follower_id', userId);
+
+      if (error) {
+        console.error('Get following count error:', error);
+        return { count: 0, error };
+      }
+
+      return { count: count || 0, error: null };
+    } catch (error) {
+      console.error('Get following count error:', error);
+      return { count: 0, error: error as Error };
+    }
+  },
+
+  /**
+   * Takipçi listesi (beni takip edenler)
+   */
+  async getFollowersList(userId: string): Promise<{ data: { id: string; username: string; profile_image: string | null; full_name: string | null }[]; error: Error | null }> {
+    try {
+      const { data: rows, error: followError } = await supabase
+        .from('followers')
+        .select('follower_id')
+        .eq('following_id', userId);
+
+      if (followError || !rows?.length) {
+        return { data: [], error: followError || null };
+      }
+
+      const ids = rows.map((r: { follower_id: string }) => r.follower_id);
+      const { data: profiles, error: profError } = await supabase
+        .from('profiles')
+        .select('id, username, profile_image, full_name')
+        .in('id', ids);
+
+      if (profError) {
+        console.error('Get followers profiles error:', profError);
+        return { data: [], error: profError };
+      }
+
+      return { data: profiles || [], error: null };
+    } catch (error) {
+      console.error('Get followers list error:', error);
+      return { data: [], error: error as Error };
+    }
+  },
+
+  /**
+   * Takip listesi (benim takip ettiklerim)
+   */
+  async getFollowingList(userId: string): Promise<{ data: { id: string; username: string; profile_image: string | null; full_name: string | null }[]; error: Error | null }> {
+    try {
+      const { data: rows, error: followError } = await supabase
+        .from('followers')
+        .select('following_id')
+        .eq('follower_id', userId);
+
+      if (followError || !rows?.length) {
+        return { data: [], error: followError || null };
+      }
+
+      const ids = rows.map((r: { following_id: string }) => r.following_id);
+      const { data: profiles, error: profError } = await supabase
+        .from('profiles')
+        .select('id, username, profile_image, full_name')
+        .in('id', ids);
+
+      if (profError) {
+        console.error('Get following profiles error:', profError);
+        return { data: [], error: profError };
+      }
+
+      return { data: profiles || [], error: null };
+    } catch (error) {
+      console.error('Get following list error:', error);
+      return { data: [], error: error as Error };
+    }
+  },
+
+  /**
+   * Takip et/çık toggle
+   */
+  async toggleFollow(userId: string): Promise<{ isFollowing: boolean; error: Error | null }> {
+    try {
+      const { isFollowing: currentlyFollowing } = await this.isFollowing(userId);
+      
+      if (currentlyFollowing) {
+        const { error } = await this.unfollowUser(userId);
+        if (error) return { isFollowing: true, error };
+        return { isFollowing: false, error: null };
+      } else {
+        const { error } = await this.followUser(userId);
+        if (error) return { isFollowing: false, error };
+        return { isFollowing: true, error: null };
+      }
+    } catch (error) {
+      console.error('Toggle follow error:', error);
+      return { isFollowing: false, error: error as Error };
+    }
+  },
 };

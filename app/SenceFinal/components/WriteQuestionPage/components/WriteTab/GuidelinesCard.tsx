@@ -7,7 +7,7 @@ export const GuidelinesCard: React.FC = () => {
   return (
     <View style={styles.guidelinesCard}>
       <LinearGradient
-        colors={['rgba(67,40,112,0.1)', 'rgba(178,158,253,0.1)']}
+        colors={['rgba(16,185,129,0.08)', 'rgba(5,150,105,0.08)']}
         style={styles.guidelinesGradient}
       >
         <View style={styles.guidelinesHeader}>
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
   guidelinesGradient: {
     padding: 24,
     borderWidth: 1,
-    borderColor: 'rgba(67,40,112,0.2)',
+    borderColor: 'rgba(16,185,129,0.25)',
     borderRadius: 24,
   },
   guidelinesHeader: {
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   guidelinesTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   guidelinesList: {
     gap: 12,
@@ -62,12 +62,12 @@ const styles = StyleSheet.create({
   },
   guidelineBullet: {
     fontSize: 16,
-    color: '#432870',
+    color: '#10B981',
     marginTop: 2,
   },
   guidelineText: {
     fontSize: 14,
-    color: 'rgba(32,32,32,0.8)',
+    color: '#8B949E',
     flex: 1,
     lineHeight: 20,
   },

@@ -38,7 +38,7 @@ function ShimmerPlaceholder({
           width,
           height,
           borderRadius,
-          backgroundColor: '#E5E7EB',
+          backgroundColor: '#21262D',
           overflow: 'hidden',
         },
         style,
@@ -52,7 +52,7 @@ function ShimmerPlaceholder({
         }}
       >
         <LinearGradient
-          colors={['#E5E7EB', '#F3F4F6', '#E5E7EB']}
+          colors={['#21262D', '#30363D', '#21262D']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={{ flex: 1, width: 350 }}
@@ -146,9 +146,9 @@ const styles = StyleSheet.create({
   // League Card
   card: {
     borderRadius: 24,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#F2F3F5',
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: '#30363D',
     padding: 24,
     marginBottom: 16,
   },

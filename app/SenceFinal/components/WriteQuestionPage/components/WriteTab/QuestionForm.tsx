@@ -74,7 +74,7 @@ export const QuestionForm: React.FC<QuestionFormProps> = ({
           <TextInput
             style={styles.textArea}
             placeholder="Örn: 2024 yılında Bitcoin 100.000$ seviyesini aşacak mı?"
-            placeholderTextColor="rgba(32,32,32,0.4)"
+            placeholderTextColor="#8B949E"
             value={question}
             onChangeText={onQuestionChange}
             multiline
@@ -94,7 +94,7 @@ export const QuestionForm: React.FC<QuestionFormProps> = ({
           <TextInput
             style={[styles.textArea, styles.descriptionArea]}
             placeholder="Sorunuz hakkında daha detaylı bilgi verin. Kriterler ve koşulları açıklayın."
-            placeholderTextColor="rgba(32,32,32,0.4)"
+            placeholderTextColor="#8B949E"
             value={description}
             onChangeText={onDescriptionChange}
             multiline
@@ -206,7 +206,7 @@ export const QuestionForm: React.FC<QuestionFormProps> = ({
 
 const styles = StyleSheet.create({
   formCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#161B22',
     borderRadius: 24,
     padding: 24,
     shadowColor: '#000',
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#F2F3F5',
+    borderColor: '#30363D',
   },
   formHeader: {
     marginBottom: 24,
@@ -223,12 +223,12 @@ const styles = StyleSheet.create({
   formTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 8,
   },
   formSubtitle: {
     fontSize: 14,
-    color: 'rgba(32,32,32,0.7)',
+    color: '#8B949E',
     lineHeight: 20,
   },
   formFields: {
@@ -240,19 +240,19 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   requiredStar: {
     color: '#EF4444',
   },
   textArea: {
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderWidth: 2,
-    borderColor: 'rgba(67,40,112,0.2)',
+    borderColor: '#30363D',
     borderRadius: 16,
     padding: 16,
     fontSize: 16,
-    color: '#202020',
+    color: '#F0F6FC',
     minHeight: 96,
     textAlignVertical: 'top',
   },
@@ -260,9 +260,9 @@ const styles = StyleSheet.create({
     minHeight: 128,
   },
   dateInput: {
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderWidth: 2,
-    borderColor: 'rgba(67,40,112,0.2)',
+    borderColor: '#30363D',
     borderRadius: 16,
     padding: 16,
     justifyContent: 'center',
@@ -270,20 +270,20 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 16,
-    color: '#202020',
+    color: '#F0F6FC',
   },
   placeholderText: {
-    color: 'rgba(32,32,32,0.4)',
+    color: '#8B949E',
   },
   characterCount: {
     fontSize: 12,
-    color: 'rgba(32,32,32,0.5)',
+    color: '#8B949E',
     textAlign: 'right',
   },
   pickerContainer: {
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderWidth: 2,
-    borderColor: 'rgba(67,40,112,0.2)',
+    borderColor: '#30363D',
     borderRadius: 16,
     overflow: 'hidden',
   },
@@ -293,12 +293,12 @@ const styles = StyleSheet.create({
   },
   pickerItem: {
     fontSize: 16,
-    color: '#202020',
+    color: '#F0F6FC',
   },
   categoryButton: {
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderWidth: 2,
-    borderColor: 'rgba(67,40,112,0.2)',
+    borderColor: '#30363D',
     borderRadius: 16,
     padding: 16,
     justifyContent: 'center',
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   },
   categoryButtonText: {
     fontSize: 16,
-    color: '#202020',
+    color: '#F0F6FC',
   },
   modalOverlay: {
     flex: 1,
@@ -314,10 +314,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: '#161B22',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '80%',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -325,24 +327,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F3F5',
+    borderBottomColor: '#30363D',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   modalCloseButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalCloseText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: '#8B949E',
   },
   categoryList: {
     maxHeight: 400,
@@ -352,7 +354,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F3F5',
+    borderBottomColor: '#30363D',
   },
   categoryItemIcon: {
     fontSize: 24,
@@ -364,25 +366,25 @@ const styles = StyleSheet.create({
   categoryItemName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 4,
   },
   categoryItemDescription: {
     fontSize: 14,
-    color: 'rgba(32,32,32,0.7)',
+    color: '#8B949E',
   },
   categoryItemSelected: {
-    backgroundColor: 'rgba(67,40,112,0.1)',
-    borderColor: '#432870',
+    backgroundColor: 'rgba(16,185,129,0.15)',
+    borderColor: '#10B981',
   },
   categoryItemCheckmark: {
     fontSize: 18,
-    color: '#432870',
+    color: '#10B981',
     fontWeight: 'bold',
   },
   categoryDescription: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#8B949E',
     fontWeight: '400',
     marginBottom: 16,
     lineHeight: 20,
@@ -396,59 +398,59 @@ const styles = StyleSheet.create({
   categoryPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: '#30363D',
     minWidth: 100,
     justifyContent: 'center',
     position: 'relative',
   },
   categoryPillSelected: {
-    backgroundColor: '#432870',
-    borderColor: '#432870',
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
   },
   categoryPillPrimary: {
-    backgroundColor: '#432870',
-    borderColor: '#432870',
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
     transform: [{ scale: 1.05 }],
-    shadowColor: '#432870',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   categoryPillSecondary: {
-    backgroundColor: '#6B46C1',
-    borderColor: '#6B46C1',
+    backgroundColor: '#059669',
+    borderColor: '#059669',
   },
   categoryPillThird: {
-    backgroundColor: '#7C3AED',
-    borderColor: '#7C3AED',
+    backgroundColor: '#047857',
+    borderColor: '#047857',
   },
   categoryPillIcon: {
     fontSize: 18,
     marginRight: 8,
-    color: '#6B7280',
+    color: '#8B949E',
   },
   categoryPillIconSelected: {
-    color: 'white',
+    color: '#FFFFFF',
   },
   categoryPillText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#8B949E',
     fontWeight: '600',
   },
   categoryPillTextSelected: {
-    color: 'white',
+    color: '#FFFFFF',
   },
   primaryBadge: {
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: '#FFD700',
+    backgroundColor: '#10B981',
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -457,7 +459,7 @@ const styles = StyleSheet.create({
   },
   primaryBadgeText: {
     fontSize: 10,
-    color: '#432870',
+    color: '#0D1117',
     fontWeight: '900',
   },
 });

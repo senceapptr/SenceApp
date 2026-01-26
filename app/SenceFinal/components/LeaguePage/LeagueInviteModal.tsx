@@ -93,7 +93,7 @@ export function LeagueInviteModal({
         <View style={styles.content}>
           {/* Header */}
           <LinearGradient
-            colors={['#432870', '#5a3a8f', '#c61585']}
+            colors={['#10B981', '#5a3a8f', '#DC2626']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.header}
@@ -137,7 +137,7 @@ export function LeagueInviteModal({
                 </Text>
                     {activeTab === 'invite' && (
                   <LinearGradient
-                    colors={['#432870', '#c61585']}
+                    colors={['#10B981', '#DC2626']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.tabIndicator}
@@ -161,7 +161,7 @@ export function LeagueInviteModal({
                 </View>
                     {activeTab === 'pending' && (
                   <LinearGradient
-                    colors={['#432870', '#c61585']}
+                    colors={['#10B981', '#DC2626']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.tabIndicator}
@@ -192,7 +192,7 @@ export function LeagueInviteModal({
                         activeOpacity={0.8}
                       >
                         <LinearGradient
-                          colors={['#432870', '#c61585']}
+                          colors={['#10B981', '#DC2626']}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 0 }}
                           style={styles.qrGenerateGradient}
@@ -249,7 +249,7 @@ export function LeagueInviteModal({
                       activeOpacity={0.8}
                     >
                       <LinearGradient
-                        colors={['#c61585', '#ff1a8c']}
+                        colors={['#DC2626', '#ff1a8c']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                         style={styles.shareGradient}
@@ -328,7 +328,7 @@ export function LeagueInviteModal({
                         activeOpacity={0.8}
                       >
                         <LinearGradient
-                          colors={['#432870', '#c61585']}
+                          colors={['#10B981', '#DC2626']}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 0 }}
                           style={styles.qrGenerateGradient}
@@ -385,7 +385,7 @@ export function LeagueInviteModal({
                       activeOpacity={0.8}
                     >
                       <LinearGradient
-                        colors={['#c61585', '#ff1a8c']}
+                        colors={['#DC2626', '#ff1a8c']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                         style={styles.shareGradient}
@@ -500,11 +500,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   activeTabText: {
-    color: '#432870',
+    color: '#10B981',
     fontWeight: '700',
   },
   tabBadge: {
-    backgroundColor: '#c61585',
+    backgroundColor: '#DC2626',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(67, 40, 112, 0.1)',
   },
   sectionTitle: {
-    color: '#432870',
+    color: '#10B981',
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 16,
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   copyButton: {
-    backgroundColor: '#432870',
+    backgroundColor: '#10B981',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   infoTitle: {
-    color: '#432870',
+    color: '#10B981',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     borderWidth: 2,
-    borderColor: '#432870',
+    borderColor: '#10B981',
   },
   requestInfo: {
     flex: 1,
@@ -753,7 +753,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(52, 199, 89, 0.1)',
   },
   requestStatText: {
-    color: '#432870',
+    color: '#10B981',
     fontSize: 12,
     fontWeight: '700',
   },

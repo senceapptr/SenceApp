@@ -49,48 +49,48 @@ export const lightTheme = {
 };
 
 export const darkTheme = {
-  // Backgrounds (Deep Neutrals - Not Pure Black)
-  background: '#0E0F12',
-  surface: '#15171C',
-  surfaceElevated: '#171922',
-  surfaceCard: '#1B1D26',
-  surfaceModal: '#1F212A',
+  // Backgrounds (Dark Blue-Gray Gradient Base)
+  background: '#0D1117',
+  surface: '#161B22',
+  surfaceElevated: '#1A1F2A',
+  surfaceCard: '#21262D',
+  surfaceModal: '#262C36',
   
   // Text Colors (WCAG AA Compliant)
-  textPrimary: '#EDEDEF',
-  textSecondary: '#BABCC2',
-  textMuted: '#8B8E97',
-  textInverse: '#111827',
+  textPrimary: '#F0F6FC',
+  textSecondary: '#B1BAC4',
+  textMuted: '#8B949E',
+  textInverse: '#0D1117',
   
-  // Brand Colors (Slightly Reduced Brightness, Increased Saturation)
-  primary: '#7C5EF4',
-  primaryLight: '#9B7DF7',
-  primaryDark: '#6D4CE8',
-  secondary: '#4F93FF',
-  accent: '#20D4A7',
+  // Brand Colors - Updated for Yes/No
+  primary: '#10B981',      // Yes Green
+  primaryLight: '#34D399',
+  primaryDark: '#059669',
+  secondary: '#DC2626',    // No Red
+  accent: '#10B981',
   
   // System Colors
-  success: '#20D4A7',
-  warning: '#FFAD1F',
-  error: '#FF5757',
-  info: '#4F93FF',
+  success: '#10B981',
+  warning: '#F59E0B',
+  error: '#DC2626',
+  info: '#3B82F6',
   
   // Borders & Dividers (Subtle Strokes Replace Shadows)
-  border: '#2A2D35',
-  borderLight: '#242731',
-  borderDark: '#363943',
-  divider: '#242731',
+  border: '#30363D',
+  borderLight: '#262C36',
+  borderDark: '#3D444D',
+  divider: '#262C36',
   
   // Shadows & Elevation (Minimal in Dark Mode)
-  shadow: 'rgba(0, 0, 0, 0.3)',
-  shadowDark: 'rgba(0, 0, 0, 0.5)',
-  overlay: 'rgba(0, 0, 0, 0.7)',
+  shadow: 'rgba(0, 0, 0, 0.4)',
+  shadowDark: 'rgba(0, 0, 0, 0.6)',
+  overlay: 'rgba(0, 0, 0, 0.75)',
   
   // Interactive States
-  hover: '#1B1D26',
-  pressed: '#242731',
-  disabled: '#1B1D26',
-  disabledText: '#4A4D56',
+  hover: '#21262D',
+  pressed: '#30363D',
+  disabled: '#21262D',
+  disabledText: '#484F58',
 };
 
 export type Theme = typeof lightTheme;

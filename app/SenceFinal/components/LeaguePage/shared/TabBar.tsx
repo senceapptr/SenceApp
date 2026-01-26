@@ -51,10 +51,12 @@ const styles = StyleSheet.create({
   },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#161B22',
     borderRadius: 20,
     padding: 4,
     gap: 8,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   tab: {
     flex: 1,
@@ -62,15 +64,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 20,
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#21262D',
   },
   activeTab: {
-    backgroundColor: '#432870',
+    backgroundColor: '#10B981',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#8B949E',
   },
   activeTabText: {
     color: '#FFFFFF',

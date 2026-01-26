@@ -23,9 +23,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { questionsService } from '@/services/questions.service';
 import { predictionsService } from '@/services/predictions.service';
 import { commentsService } from '@/services/comments.service';
+import { profileService } from '@/services/profile.service';
+import { QuestionDetailSkeleton } from './QuestionDetailSkeleton';
 // Image color analyzer artık kullanılmıyor
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -68,6 +71,7 @@ interface TopInvestor {
 
 export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sourceCategory }: QuestionDetailPageProps) {
   const { user, profile } = useAuth();
+  const { theme, isDarkMode } = useTheme();
   const insets = useSafeAreaInsets();
   
   // State tanımlamaları
@@ -89,6 +93,10 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
   const [betAmount, setBetAmount] = useState('100');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Follow State'leri
+  const [isFollowingCreator, setIsFollowingCreator] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   
   // Success modal animation
   const successScaleAnim = useRef(new Animated.Value(0)).current;
@@ -243,7 +251,11 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
     title: questionDetails.title,
     category: sourceCategory?.name || questionDetails.categories?.name || 'Genel',
     categoryIcon: getCategoryIcon(sourceCategory?.name || questionDetails.categories?.name || 'Genel'),
-    image: questionDetails.image_url || 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0ZWNobm9sb2d5JTIwbW9kZXJuJTIwY2l0eXxlbnwxfHx8fDE3NjAxNzQyODR8MA&ixlib=rb-4.1.0&q=80&w=1080',
+    image: (questionDetails.image_url && String(questionDetails.image_url).trim() !== '') 
+      ? questionDetails.image_url 
+      : (question?.image && String(question.image).trim() !== '')
+        ? question.image
+        : 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?w=800&h=600&fit=crop',
     description: questionDetails.description || '',
     fullDescription: questionDetails.description || '',
     rating: 4.8, // TODO: Rating sistemi eklenince
@@ -256,6 +268,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
     endDate: questionDetails.end_date,
     daysLeft: timeLeft.days,
     creator: {
+      id: questionDetails.created_by || questionDetails.profiles?.id || null,
       username: questionDetails.profiles?.username || 'Anonim',
       avatar: questionDetails.profiles?.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face'
     },
@@ -263,6 +276,52 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
     yesInvestment: questionDetails.yes_investment || 0,
     noInvestment: questionDetails.no_investment || 0
   } : null;
+
+  // Check if user is following the creator
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      if (!user || !mainQuestion?.creator?.id) return;
+      
+      // Don't show follow button for own questions
+      if (user.id === mainQuestion.creator.id) {
+        setIsFollowingCreator(true); // Hide follow button by showing "following"
+        return;
+      }
+      
+      const { isFollowing } = await profileService.isFollowing(mainQuestion.creator.id);
+      setIsFollowingCreator(isFollowing);
+    };
+    
+    checkFollowStatus();
+  }, [user, mainQuestion?.creator?.id]);
+
+  // Handle follow/unfollow toggle
+  const handleFollowToggle = async () => {
+    if (!user || !mainQuestion?.creator?.id || followLoading) return;
+    
+    // Don't allow following yourself
+    if (user.id === mainQuestion.creator.id) {
+      Alert.alert('Bilgi', 'Kendi kendinizi takip edemezsiniz.');
+      return;
+    }
+    
+    setFollowLoading(true);
+    try {
+      const { isFollowing, error } = await profileService.toggleFollow(mainQuestion.creator.id);
+      
+      if (error) {
+        Alert.alert('Hata', 'İşlem sırasında bir hata oluştu.');
+        console.error('Follow toggle error:', error);
+      } else {
+        setIsFollowingCreator(isFollowing);
+      }
+    } catch (error) {
+      Alert.alert('Hata', 'İşlem sırasında bir hata oluştu.');
+      console.error('Follow toggle error:', error);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   // Refresh fonksiyonu
   const handleRefresh = async () => {
@@ -394,7 +453,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       },
       {
         data: [2.80, 2.95, 3.20, 3.35, 3.45, 3.55, 3.60, 3.64],
-        color: () => '#FF3B30', // HAYIR color
+        color: () => theme.error, // HAYIR color
         strokeWidth: 3,
       },
     ],
@@ -515,16 +574,29 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
             {mainQuestion.creator.username}
           </Text>
         </View>
-        <TouchableOpacity style={styles.followButton} activeOpacity={0.8}>
-          <LinearGradient
-            colors={['#A78BFA', '#8B5CF6']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.followButtonGradient}
+        {user?.id !== mainQuestion.creator?.id && (
+          <TouchableOpacity 
+            style={styles.followButton} 
+            activeOpacity={0.8}
+            onPress={handleFollowToggle}
+            disabled={followLoading}
           >
-            <Text style={styles.followButtonText}>Takip Et</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <LinearGradient
+              colors={isFollowingCreator ? ['#30363D', '#21262D'] : ['#10B981', '#059669']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.followButtonGradient}
+            >
+              {followLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.followButtonText}>
+                  {isFollowingCreator ? 'Takiptesin' : 'Takip Et'}
+                </Text>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Vote Stats */}
@@ -614,7 +686,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
               <Ionicons 
                     name={question.isFavorite ? "heart" : "heart-outline"}
                     size={20}
-                    color={question.isFavorite ? "#FF3B30" : "#202020"}
+                    color={question.isFavorite ? theme.error : theme.textPrimary}
                   />
             </TouchableOpacity>
         </View>
@@ -660,7 +732,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
               value={commentText}
               onChangeText={setCommentText}
               placeholder="Yorumunuzu yazın..."
-              placeholderTextColor="#202020AA"
+              placeholderTextColor={theme.textMuted + 'AA'}
                     style={styles.commentInput}
                     multiline
               numberOfLines={3}
@@ -674,7 +746,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                     activeOpacity={0.8}
                   >
         <LinearGradient
-          colors={['#A78BFA', '#8B5CF6']}
+          colors={['#10B981', '#059669']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.sendButtonGradient}
@@ -704,7 +776,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                   <Text style={styles.commentText}>{comment.text}</Text>
               <View style={styles.commentActions}>
                 <TouchableOpacity style={styles.commentLikeButton}>
-                  <Ionicons name="heart-outline" size={16} color="#20202099" />
+                  <Ionicons name="heart-outline" size={16} color={theme.textMuted + '99'} />
                   <Text style={styles.commentLikeCount}>{comment.likes}</Text>
             </TouchableOpacity>
                 <TouchableOpacity>
@@ -722,7 +794,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
     <View style={styles.detailsTabContainer}>
       {/* Total Pool Card */}
       <LinearGradient
-        colors={['#A78BFA', '#8B5CF6', '#7C3AED']}
+        colors={['#10B981', '#059669', '#047857']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.totalPoolCard}
@@ -766,7 +838,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       {/* Line Chart */}
       <View style={styles.chartSection}>
         <View style={styles.chartHeader}>
-          <Ionicons name="trending-up" size={20} color="#A78BFA" />
+          <Ionicons name="trending-up" size={20} color="#10B981" />
           <Text style={styles.chartTitle}>Oran Değişimi Grafiği</Text>
                   </View>
         <View style={styles.chartCard}>
@@ -775,9 +847,9 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
             width={SCREEN_WIDTH - 64}
             height={250}
             chartConfig={{
-              backgroundColor: '#F2F3F5',
-              backgroundGradientFrom: '#F2F3F5',
-              backgroundGradientTo: '#F2F3F5',
+              backgroundColor: theme.surface,
+              backgroundGradientFrom: theme.surface,
+              backgroundGradientTo: theme.surface,
               decimalPlaces: 2,
               color: (opacity = 1) => `rgba(67, 40, 112, ${opacity})`,
               labelColor: (opacity = 1) => `rgba(32, 32, 32, ${opacity})`,
@@ -885,27 +957,38 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
     </View>
   );
 
-  // Loading durumu
+  // Dinamik stiller theme'e göre (ana tema koyu – açık modda bile #0D1117)
+  const dynamicStyles = {
+    container: {
+      ...styles.container,
+      backgroundColor: isDarkMode ? theme.background : '#0D1117',
+    },
+    loadingText: {
+      ...styles.loadingText,
+      color: theme.accent,
+    },
+    errorText: {
+      ...styles.errorText,
+      color: theme.error,
+    },
+  };
+
+  // Loading durumu - Skeleton göster
   if (loading && !mainQuestion) {
-    return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#A78BFA" />
-        <Text style={styles.loadingText}>Soru yükleniyor...</Text>
-      </View>
-    );
+    return <QuestionDetailSkeleton onBack={onBack} />;
   }
 
   // Soru bulunamadı
   if (!mainQuestion) {
     return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <Text style={styles.errorText}>Soru bulunamadı</Text>
+      <View style={[dynamicStyles.container, styles.loadingContainer]}>
+        <Text style={dynamicStyles.errorText}>Soru bulunamadı</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={dynamicStyles.container}>
       {/* Navigation Buttons - RENDER FIRST (highest priority) */}
       <View style={[styles.headerNav, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
@@ -913,7 +996,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
           onPress={onBack}
           activeOpacity={0.8}
         >
-          <Ionicons name="chevron-back" size={24} color="#202020" />
+          <Ionicons name="chevron-back" size={22} color="#F0F6FC" />
         </TouchableOpacity>
 
         <View style={styles.headerNavRight}>
@@ -922,7 +1005,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
             onPress={handleShare}
             activeOpacity={0.8}
           >
-            <Ionicons name="share-social" size={20} color="#202020" />
+            <Ionicons name="share-social" size={20} color="#F0F6FC" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -932,8 +1015,8 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
           >
             <Ionicons 
               name={isFavorite ? "heart" : "heart-outline"}
-              size={24}
-              color={isFavorite ? "#FF3B30" : "#202020"}
+              size={22}
+              color={isFavorite ? '#EF4444' : '#F0F6FC'}
             />
           </TouchableOpacity>
         </View>
@@ -953,8 +1036,8 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={['#A78BFA', '#8B5CF6']}
-            tintColor="#A78BFA"
+            colors={[theme.accent, theme.primary]}
+            tintColor={theme.accent}
           />
         }
       >
@@ -981,13 +1064,13 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
             {/* Published Date and Vote Count */}
             <View style={styles.metaRow}>
               <View style={styles.metaItem}>
-                <Ionicons name="time-outline" size={16} color="#20202080" />
+                <Ionicons name="time-outline" size={16} color={theme.textMuted + '80'} />
                 <Text style={styles.metaText}>
                   {formatPublishDate(mainQuestion.publishedAt)} yayınlandı
                 </Text>
               </View>
               <View style={styles.voteCountBadge}>
-                <Ionicons name="people" size={16} color="#A78BFA" />
+                <Ionicons name="people" size={16} color={theme.accent} />
                 <Text style={styles.voteCountText}>{mainQuestion.totalVotes}</Text>
                 <Text style={styles.voteCountLabel}>oy</Text>
               </View>
@@ -1016,7 +1099,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                   <Ionicons 
                     name="chatbubble-outline" 
                     size={14} 
-                    color={activeTab === 'comments' ? '#A78BFA' : '#20202066'}
+                    color={activeTab === 'comments' ? theme.accent : theme.textMuted + '66'}
                   />
                   <Text style={[styles.tabText, activeTab === 'comments' && styles.tabTextActive]}>
                     Yorumlar
@@ -1044,7 +1127,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                   <Ionicons 
                     name="bar-chart" 
                     size={14} 
-                    color={activeTab === 'stats' ? '#A78BFA' : '#20202066'}
+                    color={activeTab === 'stats' ? theme.accent : theme.textMuted + '66'}
                   />
                   <Text style={[styles.tabText, activeTab === 'stats' && styles.tabTextActive]}>
                     İstatistikler
@@ -1056,7 +1139,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
 
             {/* Divider */}
             <LinearGradient
-              colors={['transparent', '#A78BFA33', 'transparent']}
+              colors={['transparent', 'rgba(16, 185, 129, 0.2)', 'transparent']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.divider}
@@ -1073,8 +1156,9 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       {/* Fixed Header Background - Behind everything */}
       <View style={styles.fixedHeaderBackground} pointerEvents="box-none">
         <Image 
-          source={{ uri: mainQuestion.image }}
+          source={{ uri: mainQuestion.image || question?.image || 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?w=800&h=600&fit=crop' }}
           style={styles.headerImage}
+          resizeMode="cover"
         />
         
         <LinearGradient
@@ -1090,39 +1174,40 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         </View>
       </View>
 
-      {/* Fixed Bottom Vote Buttons - Premium UI */}
-      <View style={styles.fixedBottomButtons}>
-        <LinearGradient
-          colors={['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 0.95)', '#FFFFFF']}
-          style={styles.fixedBottomGradient}
-        />
-        <View style={[styles.voteCardContainer, { paddingBottom: insets.bottom + 12 }]}>
-          <Text style={styles.voteCardTitle}>Ticketı Alın</Text>
-          <View style={styles.fixedBottomContent}>
-            <Pressable
-              onPress={() => openTicketModal('yes')}
-              style={({ pressed }) => pressed && styles.fixedVoteButtonPressWrapper}
-            >
-              <View style={styles.fixedVoteButtonYes}>
-                <View style={styles.fixedVoteButtonContent}>
-                  <Text style={styles.fixedVoteButtonLabelYes}>EVET</Text>
-                  <Text style={styles.fixedVoteButtonOddsYes}>{mainQuestion?.yesOdds || 2}x</Text>
-                </View>
-              </View>
-            </Pressable>
-            
-            <Pressable
-              onPress={() => openTicketModal('no')}
-              style={({ pressed }) => pressed && styles.fixedVoteButtonPressWrapper}
-            >
-              <View style={styles.fixedVoteButtonNo}>
-                <View style={styles.fixedVoteButtonContent}>
-                  <Text style={styles.fixedVoteButtonLabelNo}>HAYIR</Text>
-                  <Text style={styles.fixedVoteButtonOddsNo}>{mainQuestion?.noOdds || 2}x</Text>
-                </View>
-              </View>
-            </Pressable>
-          </View>
+      {/* Fixed Bottom Vote Bar - Yan yana, ortalı, basınca yeşil/kırmızı effect */}
+      <View style={[styles.compactVoteBar, { paddingBottom: insets.bottom }]}>
+        <View style={styles.compactVoteRow}>
+          {/* EVET Button */}
+          <Pressable
+            onPress={() => openTicketModal('yes')}
+            style={({ pressed }) => [
+              styles.compactVoteBtn,
+              styles.compactVoteBtnYes,
+              pressed && styles.compactVoteBtnYesPressed,
+            ]}
+          >
+            <View style={styles.compactVoteLabelBlockYes}>
+              <Text style={styles.compactVoteLabelYes}>EVET</Text>
+              <Text style={styles.compactVoteOddsYes}>{mainQuestion?.yesOdds || 2}x</Text>
+            </View>
+          </Pressable>
+
+          <View style={styles.compactVoteDivider} />
+
+          {/* HAYIR Button */}
+          <Pressable
+            onPress={() => openTicketModal('no')}
+            style={({ pressed }) => [
+              styles.compactVoteBtn,
+              styles.compactVoteBtnNo,
+              pressed && styles.compactVoteBtnNoPressed,
+            ]}
+          >
+            <View style={styles.compactVoteLabelBlockNo}>
+              <Text style={styles.compactVoteLabelNo}>HAYIR</Text>
+              <Text style={styles.compactVoteOddsNo}>{mainQuestion?.noOdds || 2}x</Text>
+            </View>
+          </Pressable>
         </View>
       </View>
 
@@ -1150,7 +1235,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                 style={styles.ticketModalCloseBtn}
                 onPress={() => setTicketModalVisible(false)}
               >
-                <Ionicons name="close" size={24} color="#666" />
+                <Ionicons name="close" size={24} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -1163,7 +1248,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                 <Ionicons 
                   name={selectedVote === 'yes' ? 'checkmark-circle' : 'close-circle'} 
                   size={32} 
-                  color={selectedVote === 'yes' ? '#A78BFA' : '#06B6D4'} 
+                  color={selectedVote === 'yes' ? theme.accent : theme.error} 
                 />
               </View>
               <View style={styles.selectedVoteInfo}>
@@ -1193,7 +1278,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                   onChangeText={setBetAmount}
                   keyboardType="numeric"
                   placeholder="100"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={theme.textMuted}
                 />
                 <Text style={styles.amountInputCurrency}>Kredi</Text>
               </View>
@@ -1252,7 +1337,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={selectedVote === 'yes' ? ['#A78BFA', '#8B5CF6'] : ['#06B6D4', '#0891B2']}
+                colors={selectedVote === 'yes' ? ['#10B981', '#059669'] : ['#DC2626', '#B91C1C']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.confirmTicketBtnGradient}
@@ -1319,7 +1404,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
             {/* Success Icon */}
             <View style={styles.successIconContainer}>
               <LinearGradient
-                colors={selectedVote === 'yes' ? ['#A78BFA', '#8B5CF6'] : ['#06B6D4', '#0891B2']}
+                colors={selectedVote === 'yes' ? ['#10B981', '#059669'] : ['#DC2626', '#B91C1C']}
                 style={styles.successIconGradient}
               >
                 <Ionicons name="checkmark" size={48} color="#fff" />
@@ -1372,7 +1457,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#0D1117',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -1394,32 +1479,40 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     zIndex: 1,
+    backgroundColor: '#0D1117',
   },
   scrollContent: {
-    paddingTop: 400,
-    paddingBottom: 160, // Space for fixed bottom buttons + safe area
+    paddingTop: 260,
+    paddingBottom: 140, // Space for fixed bottom buttons + safe area (küçültüldü)
+    backgroundColor: '#0D1117',
   },
   fixedHeaderBackground: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 400,
-    zIndex: 0,
+    height: 260,
+    zIndex: 10,
+    overflow: 'hidden',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   headerImageContainer: {
-    height: 400,
+    height: 260,
   },
   headerImage: {
     width: '100%',
     height: '100%',
+    backgroundColor: '#21262D',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   headerGradient: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 200,
+    height: 120,
   },
   headerNav: {
     position: 'absolute',
@@ -1432,10 +1525,12 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   navButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(13, 17, 23, 0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(48, 54, 61, 0.8)',
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
@@ -1456,16 +1551,18 @@ const styles = StyleSheet.create({
   },
   categoryBadgeContainer: {
     position: 'absolute',
-    bottom: 60,
-    right: 24,
+    bottom: 24,
+    right: 20,
   },
   categoryBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 24,
+    backgroundColor: 'rgba(13, 17, 23, 0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(48, 54, 61, 0.8)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     gap: 8,
     ...Platform.select({
       ios: {
@@ -1485,30 +1582,32 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   contentContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#161B22',
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
-    marginTop: -48,
+    marginTop: -32,
     minHeight: SCREEN_HEIGHT,
     paddingBottom: 40,
+    borderTopWidth: 1,
+    borderTopColor: '#30363D',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 16,
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 20,
       },
       android: {
-        elevation: 16,
+        elevation: 20,
       },
     }),
   },
   questionHeader: {
     paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingTop: 48,
     paddingBottom: 8,
   },
   questionTitleRow: {
@@ -1521,7 +1620,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 24,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     lineHeight: 32,
     paddingRight: 16,
   },
@@ -1532,16 +1631,18 @@ const styles = StyleSheet.create({
   ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     gap: 4,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   ratingText: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   metaRow: {
     flexDirection: 'row',
@@ -1557,57 +1658,59 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#202020B3',
+    color: '#8B949E',
   },
   voteCountBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     gap: 6,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   voteCountText: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   voteCountLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#20202099',
+    color: '#8B949E',
   },
   countdownBadge: {
-    backgroundColor: 'rgba(242, 243, 245, 0.7)',
+    backgroundColor: 'rgba(33, 38, 45, 0.8)',
     borderRadius: 10,
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: 'rgba(229, 229, 229, 0.5)',
+    borderColor: 'rgba(48, 54, 61, 0.6)',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 1,
+        elevation: 2,
       },
     }),
   },
   countdownBadgeValue: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#202020',
+    color: '#F0F6FC',
     textAlign: 'center',
     marginBottom: 1,
   },
   countdownBadgeLabel: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#20202099',
+    color: '#8B949E',
     textAlign: 'center',
     letterSpacing: 0.5,
   },
@@ -1627,7 +1730,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   tabActive: {
-    backgroundColor: '#A78BFA0D',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
   },
   tabContent: {
     flexDirection: 'row',
@@ -1641,24 +1744,24 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 12,
     fontWeight: '900',
-    color: '#20202066',
+    color: '#8B949E',
   },
   tabTextActive: {
-    color: '#A78BFA',
+    color: '#10B981',
   },
   commentCountBadge: {
-    backgroundColor: '#2020201A',
+    backgroundColor: '#21262D',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 12,
   },
   commentCountBadgeActive: {
-    backgroundColor: '#A78BFA',
+    backgroundColor: '#10B981',
   },
   commentCountText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#20202099',
+    color: '#8B949E',
   },
   commentCountTextActive: {
     color: '#fff',
@@ -1669,7 +1772,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 4,
-    backgroundColor: '#A78BFA',
+    backgroundColor: '#10B981',
     borderRadius: 2,
   },
   divider: {
@@ -1688,17 +1791,19 @@ const styles = StyleSheet.create({
   descriptionText: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#202020CC',
+    color: '#B1BAC4',
     marginBottom: 12,
   },
   creatorCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     padding: 16,
     borderRadius: 16,
     gap: 12,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   creatorAvatar: {
     width: 48,
@@ -1712,23 +1817,23 @@ const styles = StyleSheet.create({
   },
   creatorLabel: {
     fontSize: 10,
-    color: '#20202099',
+    color: '#8B949E',
     marginBottom: 2,
   },
   creatorUsername: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#A78BFA',
+    color: '#10B981',
   },
   creatorUsernameAt: {
-    color: '#A78BFA',
+    color: '#10B981',
   },
   followButton: {
     borderRadius: 20,
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#A78BFA',
+        shadowColor: '#10B981',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
@@ -1748,15 +1853,17 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   voteStatsSection: {
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 12,
   },
   voteStatsContainer: {
@@ -1782,43 +1889,38 @@ const styles = StyleSheet.create({
   voteStatLabelYes: {
     fontSize: 12,
     fontWeight: '900',
-    color: '#A78BFA',
+    color: '#10B981',
   },
   voteStatLabelNo: {
     fontSize: 12,
     fontWeight: '900',
-    color: '#0891B2',
+    color: '#DC2626',
   },
   voteStatPercentageYes: {
     fontSize: 12,
     fontWeight: '900',
-    color: '#A78BFA',
+    color: '#10B981',
   },
   voteStatPercentageNo: {
     fontSize: 12,
     fontWeight: '900',
-    color: '#0891B2',
+    color: '#DC2626',
   },
   progressBarContainer: {
     height: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#0D1117',
     borderRadius: 6,
     overflow: 'hidden',
     marginBottom: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
   progressBarYes: {
     height: '100%',
-    backgroundColor: '#A78BFA',
+    backgroundColor: '#10B981',
     borderRadius: 6,
   },
   progressBarNo: {
     height: '100%',
-    backgroundColor: '#0891B2',
+    backgroundColor: '#DC2626',
     borderRadius: 6,
   },
   voteStatFooter: {
@@ -1827,7 +1929,7 @@ const styles = StyleSheet.create({
   },
   voteStatInfo: {
     fontSize: 12,
-    color: '#20202099',
+    color: '#8B949E',
   },
   voteButtonsContainer: {
     flexDirection: 'row',
@@ -1856,7 +1958,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#FF3B30',
+        shadowColor: '#DC2626',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -1866,127 +1968,134 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  // Fixed Bottom Vote Buttons - Premium UI
-  fixedBottomButtons: {
+  // Compact Vote Bar - Yan yana, ortalı, birbirinden uzak
+  compactVoteBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    backgroundColor: '#161B22',
+    borderTopWidth: 1,
+    borderTopColor: '#30363D',
     zIndex: 1000,
-    paddingTop: 12,
-  },
-  fixedBottomGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 40,
-  },
-  voteCardContainer: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    paddingTop: 12,
-    paddingHorizontal: 12,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.3,
         shadowRadius: 12,
       },
       android: {
-        elevation: 8,
+        elevation: 12,
       },
     }),
   },
-  voteCardTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#202020',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  fixedBottomContent: {
+  compactVoteRow: {
     flexDirection: 'row',
+    flexWrap: 'nowrap',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 60,
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 4,
+    minHeight: 68,
   },
-  fixedVoteButtonPressWrapper: {
-    opacity: 0.7,
-  },
-  fixedVoteButtonYes: {
-    width: 130,
-    backgroundColor: 'transparent',
-    borderRadius: 26,
-    borderWidth: 3,
-    borderColor: '#A78BFA',
-    minHeight: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#A78BFA',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  fixedVoteButtonNo: {
-    width: 130,
-    backgroundColor: 'transparent',
-    borderRadius: 26,
-    borderWidth: 3,
-    borderColor: '#0891B2',
-    minHeight: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fixedVoteButtonContent: {
+  compactVoteBtn: {
+    flex: 1,
+    maxWidth: 160,
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 8,
+    paddingLeft: 8,
+    paddingRight: 8,
+    borderRadius: 12,
+    borderWidth: 2,
     gap: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
-  fixedVoteButtonLabelYes: {
-    fontSize: 17,
+  compactVoteBtnYes: {
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    borderColor: 'rgba(16, 185, 129, 0.5)',
+    alignItems: 'flex-start',
+    paddingLeft: 10,
+    paddingRight: 62,
+  },
+  compactVoteBtnNo: {
+    backgroundColor: 'rgba(220, 38, 38, 0.12)',
+    borderColor: 'rgba(220, 38, 38, 0.5)',
+    alignItems: 'flex-end',
+    paddingLeft: 62,
+    paddingRight: 10,
+  },
+  compactVoteDivider: {
+    width: 1,
+    height: 34,
+    backgroundColor: '#30363D',
+    marginHorizontal: 62,
+    borderRadius: 1,
+    alignSelf: 'center',
+  },
+  compactVoteBtnYesPressed: {
+    backgroundColor: 'rgba(16, 185, 129, 0.35)',
+    borderColor: '#10B981',
+    transform: [{ scale: 0.98 }],
+    ...Platform.select({
+      ios: { shadowColor: '#10B981', shadowOpacity: 0.35, shadowRadius: 8 },
+      android: { elevation: 6 },
+    }),
+  },
+  compactVoteBtnNoPressed: {
+    backgroundColor: 'rgba(220, 38, 38, 0.35)',
+    borderColor: '#DC2626',
+    transform: [{ scale: 0.98 }],
+    ...Platform.select({
+      ios: { shadowColor: '#DC2626', shadowOpacity: 0.35, shadowRadius: 8 },
+      android: { elevation: 6 },
+    }),
+  },
+  compactVoteLabelBlockYes: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compactVoteLabelBlockNo: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compactVoteLabelYes: {
+    fontSize: 18,
     fontWeight: '800',
-    color: '#A78BFA',
-    letterSpacing: 1.2,
-    textShadowColor: 'rgba(255, 255, 255, 0.8)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 4,
-    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif-medium' }),
+    color: '#10B981',
+    letterSpacing: 0.5,
+    lineHeight: 22,
   },
-  fixedVoteButtonLabelNo: {
-    fontSize: 17,
+  compactVoteLabelNo: {
+    fontSize: 18,
     fontWeight: '800',
-    color: '#0891B2',
-    letterSpacing: 1.2,
-    textShadowColor: 'rgba(255, 255, 255, 0.8)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 4,
-    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif-medium' }),
+    color: '#DC2626',
+    letterSpacing: 0.5,
+    lineHeight: 22,
   },
-  fixedVoteButtonOddsYes: {
-    fontSize: 13,
+  compactVoteOddsYes: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#A78BFA',
-    textShadowColor: 'rgba(255, 255, 255, 0.6)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 3,
-    opacity: 0.95,
+    color: '#8B949E',
+    marginTop: 0,
   },
-  fixedVoteButtonOddsNo: {
-    fontSize: 13,
+  compactVoteOddsNo: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#0891B2',
-    textShadowColor: 'rgba(255, 255, 255, 0.6)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 3,
-    opacity: 0.95,
+    color: '#8B949E',
+    marginTop: 0,
   },
   voteButtonGradient: {
     paddingVertical: 20,
@@ -2015,33 +2124,33 @@ const styles = StyleSheet.create({
   relatedTitle: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   seeAllButton: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#A78BFA',
+    color: '#10B981',
   },
   relatedScrollContent: {
     paddingRight: 24,
   },
   relatedCard: {
     width: 280,
-    backgroundColor: '#fff',
+    backgroundColor: '#21262D',
     borderRadius: 24,
-    borderWidth: 2,
-    borderColor: '#F2F3F5',
+    borderWidth: 1,
+    borderColor: '#30363D',
     overflow: 'hidden',
     marginRight: 16,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 4,
+        elevation: 8,
       },
     }),
   },
@@ -2070,7 +2179,7 @@ const styles = StyleSheet.create({
   relatedCardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 8,
     lineHeight: 22,
   },
@@ -2081,7 +2190,7 @@ const styles = StyleSheet.create({
   },
   relatedCardStat: {
     fontSize: 14,
-    color: '#202020B3',
+    color: '#8B949E',
   },
   relatedCardFooter: {
     flexDirection: 'row',
@@ -2096,17 +2205,17 @@ const styles = StyleSheet.create({
   relatedCardRatingText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   relatedCardVotes: {
     fontSize: 12,
-    color: '#20202099',
+    color: '#8B949E',
   },
   relatedCardButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#202020',
+    backgroundColor: '#10B981',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2118,9 +2227,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   commentInputCard: {
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     padding: 16,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   commentInputRow: {
     flexDirection: 'row',
@@ -2135,13 +2246,15 @@ const styles = StyleSheet.create({
   },
   commentInput: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#0D1117',
     borderRadius: 12,
     padding: 12,
     fontSize: 14,
-    color: '#202020',
+    color: '#F0F6FC',
     minHeight: 80,
     textAlignVertical: 'top',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   commentInputFooter: {
     alignItems: 'flex-end',
@@ -2174,17 +2287,19 @@ const styles = StyleSheet.create({
   commentsListTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 12,
   },
   commentCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     padding: 16,
     marginBottom: 10,
     gap: 12,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   commentAvatar: {
     width: 40,
@@ -2203,16 +2318,16 @@ const styles = StyleSheet.create({
   commentUsername: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   commentTime: {
     fontSize: 12,
-    color: '#20202080',
+    color: '#8B949E',
   },
   commentText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#202020CC',
+    color: '#B1BAC4',
     marginBottom: 8,
   },
   commentActions: {
@@ -2228,12 +2343,12 @@ const styles = StyleSheet.create({
   commentLikeCount: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#20202099',
+    color: '#8B949E',
   },
   commentReplyButton: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#20202099',
+    color: '#8B949E',
   },
   totalPoolCard: {
     borderRadius: 24,
@@ -2324,25 +2439,27 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   chartCard: {
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     padding: 20,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   chart: {
     borderRadius: 16,
   },
   chartFooter: {
-    borderTopWidth: 2,
-    borderTopColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#30363D',
     paddingTop: 16,
     marginTop: 16,
   },
   chartFooterText: {
     fontSize: 12,
-    color: '#20202099',
+    color: '#8B949E',
     textAlign: 'center',
   },
   topInvestorsSection: {
@@ -2357,22 +2474,24 @@ const styles = StyleSheet.create({
   topInvestorsTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   investorCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     padding: 16,
     marginBottom: 10,
     gap: 12,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   investorRank: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#0D1117',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2388,7 +2507,7 @@ const styles = StyleSheet.create({
   investorRankText: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   investorRankTextColored: {
     color: '#fff',
@@ -2404,12 +2523,12 @@ const styles = StyleSheet.create({
   investorUsername: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 2,
   },
   investorAmount: {
     fontSize: 12,
-    color: '#20202099',
+    color: '#8B949E',
   },
   investorVoteBadge: {
     paddingHorizontal: 12,
@@ -2417,20 +2536,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   investorVoteBadgeYes: {
-    backgroundColor: '#A78BFA33',
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
   },
   investorVoteBadgeNo: {
-    backgroundColor: '#0891B233',
+    backgroundColor: 'rgba(220, 38, 38, 0.2)',
   },
   investorVoteText: {
     fontSize: 12,
     fontWeight: '700',
   },
   investorVoteTextYes: {
-    color: '#34C759',
+    color: '#10B981',
   },
   investorVoteTextNo: {
-    color: '#FF3B30',
+    color: '#DC2626',
   },
   voteDistributionSection: {
     marginBottom: 8,
@@ -2438,14 +2557,16 @@ const styles = StyleSheet.create({
   voteDistributionTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 16,
   },
   voteDistributionCard: {
     flexDirection: 'row',
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     padding: 20,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   voteDistributionItem: {
     flex: 1,
@@ -2454,29 +2575,29 @@ const styles = StyleSheet.create({
   voteDistributionPercentageYes: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#A78BFA',
+    color: '#10B981',
     marginBottom: 4,
   },
   voteDistributionPercentageNo: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#0891B2',
+    color: '#DC2626',
     marginBottom: 4,
   },
   voteDistributionLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#20202099',
+    color: '#8B949E',
     marginBottom: 4,
   },
   voteDistributionAmount: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   voteDistributionDivider: {
     width: 1,
-    backgroundColor: '#20202033',
+    backgroundColor: '#30363D',
     marginHorizontal: 16,
   },
   
@@ -2490,20 +2611,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   ticketModalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#161B22',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
     paddingBottom: 40,
+    borderTopWidth: 1,
+    borderTopColor: '#30363D',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 20,
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 24,
       },
       android: {
-        elevation: 20,
+        elevation: 24,
       },
     }),
   },
@@ -2512,20 +2635,20 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: '#30363D',
     marginBottom: 20,
   },
   ticketModalHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#484F58',
     borderRadius: 2,
     marginBottom: 16,
   },
   ticketModalTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   ticketModalCloseBtn: {
     position: 'absolute',
@@ -2541,14 +2664,14 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   selectedVoteYes: {
-    backgroundColor: 'rgba(167, 139, 250, 0.1)',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(167, 139, 250, 0.3)',
+    borderColor: 'rgba(16, 185, 129, 0.3)',
   },
   selectedVoteNo: {
-    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    backgroundColor: 'rgba(220, 38, 38, 0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.3)',
+    borderColor: 'rgba(220, 38, 38, 0.3)',
   },
   selectedVoteIcon: {
     marginRight: 12,
@@ -2558,7 +2681,7 @@ const styles = StyleSheet.create({
   },
   selectedVoteLabel: {
     fontSize: 12,
-    color: '#666',
+    color: '#8B949E',
     marginBottom: 2,
   },
   selectedVoteText: {
@@ -2566,14 +2689,14 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   selectedVoteTextYes: {
-    color: '#A78BFA',
+    color: '#10B981',
   },
   selectedVoteTextNo: {
-    color: '#06B6D4',
+    color: '#DC2626',
   },
   selectedVoteOdds: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: '#21262D',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
@@ -2581,11 +2704,11 @@ const styles = StyleSheet.create({
   selectedVoteOddsValue: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   selectedVoteOddsLabel: {
     fontSize: 10,
-    color: '#666',
+    color: '#8B949E',
   },
   amountInputSection: {
     marginBottom: 20,
@@ -2593,29 +2716,29 @@ const styles = StyleSheet.create({
   amountInputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: '#8B949E',
     marginBottom: 12,
   },
   amountInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#0D1117',
     borderRadius: 16,
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   amountInput: {
     flex: 1,
     fontSize: 28,
     fontWeight: '800',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   amountInputCurrency: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666',
+    color: '#8B949E',
   },
   quickAmountButtons: {
     flexDirection: 'row',
@@ -2626,29 +2749,31 @@ const styles = StyleSheet.create({
   quickAmountBtn: {
     flex: 1,
     paddingVertical: 10,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#21262D',
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#30363D',
   },
   quickAmountBtnActive: {
-    backgroundColor: '#A78BFA',
-    borderColor: '#A78BFA',
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
   },
   quickAmountBtnText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#666',
+    color: '#8B949E',
   },
   quickAmountBtnTextActive: {
     color: '#fff',
   },
   potentialWinSection: {
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   potentialWinRow: {
     flexDirection: 'row',
@@ -2658,27 +2783,27 @@ const styles = StyleSheet.create({
   },
   potentialWinLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#8B949E',
   },
   potentialWinValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   potentialWinDivider: {
     height: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#30363D',
     marginVertical: 12,
   },
   potentialWinTotalLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   potentialWinTotalValue: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#A78BFA',
+    color: '#10B981',
   },
   confirmTicketBtn: {
     borderRadius: 16,
@@ -2719,20 +2844,22 @@ const styles = StyleSheet.create({
     top: -20,
   },
   successModalCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#161B22',
     borderRadius: 24,
     padding: 32,
     width: SCREEN_WIDTH - 48,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#30363D',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 24,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.5,
+        shadowRadius: 32,
       },
       android: {
-        elevation: 24,
+        elevation: 32,
       },
     }),
   },
@@ -2749,20 +2876,22 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 8,
   },
   successSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#8B949E',
     marginBottom: 24,
   },
   successTicketDetails: {
     width: '100%',
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   successTicketRow: {
     flexDirection: 'row',
@@ -2772,26 +2901,26 @@ const styles = StyleSheet.create({
   },
   successTicketLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#8B949E',
   },
   successTicketValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   successTicketValueYes: {
-    color: '#A78BFA',
+    color: '#10B981',
   },
   successTicketValueNo: {
-    color: '#06B6D4',
+    color: '#DC2626',
   },
   successTicketValueHighlight: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#A78BFA',
+    color: '#10B981',
   },
   successCloseBtn: {
-    backgroundColor: '#A78BFA',
+    backgroundColor: '#10B981',
     paddingVertical: 16,
     paddingHorizontal: 48,
     borderRadius: 16,

@@ -32,7 +32,7 @@ export function WriteQuestionPage({ onBack, onMenuToggle }: WriteQuestionPagePro
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <StatusBar barStyle="light-content" backgroundColor="#0D1117" />
       
       <WriteQuestionHeader onBack={onBack} onMenuToggle={onMenuToggle} />
       
@@ -67,10 +67,11 @@ export function WriteQuestionPage({ onBack, onMenuToggle }: WriteQuestionPagePro
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#0D1117',
   },
   content: {
     flex: 1,
+    backgroundColor: '#0D1117',
   },
   scrollContent: {
     paddingHorizontal: 20,

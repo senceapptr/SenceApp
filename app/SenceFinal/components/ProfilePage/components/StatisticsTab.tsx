@@ -39,19 +39,19 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({ creditHistory, sta
       {/* Stats Cards */}
       <View style={styles.statsCardsContainer}>
         <LinearGradient
-          colors={['#C9F158', 'rgba(201,241,88,0.8)']}
+          colors={['#059669', 'rgba(16,185,129,0.9)']}
           style={styles.statCard}
         >
-          <Text style={styles.statCardLabel}>En Uzun Seri</Text>
-          <Text style={styles.statCardValue}>{longestStreak}</Text>
+          <Text style={[styles.statCardLabel, { color: 'rgba(255,255,255,0.9)' }]}>En Uzun Seri</Text>
+          <Text style={[styles.statCardValue, { color: '#fff' }]}>{longestStreak}</Text>
         </LinearGradient>
 
         <LinearGradient
-          colors={['#432870', '#B29EFD']}
+          colors={['#059669', '#10B981']}
           style={styles.statCard}
         >
-          <Text style={[styles.statCardLabel, { color: 'rgba(255,255,255,0.8)' }]}>Mevcut Seri</Text>
-          <Text style={[styles.statCardValue, { color: 'white' }]}>{currentStreak}</Text>
+          <Text style={[styles.statCardLabel, { color: 'rgba(255,255,255,0.9)' }]}>Mevcut Seri</Text>
+          <Text style={[styles.statCardValue, { color: '#fff' }]}>{currentStreak}</Text>
         </LinearGradient>
       </View>
 
@@ -60,7 +60,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({ creditHistory, sta
         <Text style={styles.cardTitle}>Genel İstatistikler</Text>
         <View style={styles.statRow}>
           <Text style={styles.statRowLabel}>Toplam Tahmin</Text>
-          <Text style={[styles.statRowValue, { color: '#432870' }]}>{totalPredictions}</Text>
+          <Text style={[styles.statRowValue, { color: '#10B981' }]}>{totalPredictions}</Text>
         </View>
         <View style={styles.statRow}>
           <Text style={styles.statRowLabel}>Doğru Tahmin</Text>
@@ -86,19 +86,16 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   creditHistoryCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#161B22',
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 16,
   },
   creditChart: {
@@ -115,18 +112,18 @@ const styles = StyleSheet.create({
   chartBar: {
     width: 20,
     height: 80,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 10,
     justifyContent: 'flex-end',
   },
   chartBarFill: {
-    backgroundColor: '#432870',
+    backgroundColor: '#10B981',
     borderRadius: 10,
     minHeight: 4,
   },
   chartLabel: {
     fontSize: 12,
-    color: '#202020',
+    color: '#8B949E',
     fontWeight: '600',
   },
   statsCardsContainer: {
@@ -140,23 +137,20 @@ const styles = StyleSheet.create({
   },
   statCardLabel: {
     fontSize: 14,
-    color: '#353831',
+    color: 'rgba(255,255,255,0.9)',
     marginBottom: 4,
   },
   statCardValue: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#353831',
+    color: '#F0F6FC',
   },
   additionalStatsCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#161B22',
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   statRow: {
     flexDirection: 'row',
@@ -166,12 +160,12 @@ const styles = StyleSheet.create({
   },
   statRowLabel: {
     fontSize: 16,
-    color: 'rgba(32,32,32,0.6)',
+    color: '#8B949E',
   },
   statRowValue: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
 });
 

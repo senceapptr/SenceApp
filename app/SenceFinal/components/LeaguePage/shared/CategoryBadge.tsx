@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#202020',
+    color: '#F0F6FC',
   },
 });
 

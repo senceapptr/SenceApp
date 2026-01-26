@@ -96,16 +96,16 @@ export function QuestionCard({ question, onVote }: QuestionCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161B22',
     borderRadius: 24,
     padding: 20,
-    borderWidth: 2,
-    borderColor: '#F2F3F5',
+    borderWidth: 1,
+    borderColor: '#30363D',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
     marginBottom: 16,
   },
   header: {
@@ -123,29 +123,29 @@ const styles = StyleSheet.create({
   categoryBadge: {
     paddingHorizontal: 12,
     paddingVertical: 4,
-    backgroundColor: 'rgba(178, 158, 253, 0.2)',
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
     borderRadius: 12,
   },
   categoryText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#432870',
+    color: '#10B981',
   },
   trendingBadge: {
     paddingHorizontal: 12,
     paddingVertical: 4,
-    backgroundColor: '#C9F158',
+    backgroundColor: '#10B981',
     borderRadius: 12,
   },
   trendingText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#202020',
+    color: '#FFFFFF',
   },
   questionText: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     lineHeight: 22,
   },
   stats: {
@@ -156,11 +156,11 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.7)',
+    color: '#8B949E',
   },
   separator: {
     fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.7)',
+    color: '#8B949E',
   },
   progress: {
     marginBottom: 16,
@@ -173,27 +173,27 @@ const styles = StyleSheet.create({
   progressLabelYes: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#8B5CF6',
+    color: '#10B981',
   },
   progressLabelNo: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#06B6D4',
+    color: '#DC2626',
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#0D1117',
     borderRadius: 4,
     flexDirection: 'row',
     overflow: 'hidden',
   },
   progressYes: {
     height: '100%',
-    backgroundColor: '#8B5CF6',
+    backgroundColor: '#10B981',
   },
   progressNo: {
     height: '100%',
-    backgroundColor: '#06B6D4',
+    backgroundColor: '#DC2626',
   },
   voteResult: {
     flexDirection: 'row',
@@ -203,34 +203,34 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#F2F3F5',
-    backgroundColor: '#F2F3F5',
+    borderWidth: 1,
+    borderColor: '#30363D',
+    backgroundColor: '#21262D',
     alignItems: 'center',
   },
   resultButtonYes: {
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-    borderColor: '#8B5CF6',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderColor: '#10B981',
   },
   resultButtonNo: {
-    backgroundColor: 'rgba(6, 182, 212, 0.1)',
-    borderColor: '#06B6D4',
+    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    borderColor: '#DC2626',
   },
   resultText: {
     fontSize: 16,
     fontWeight: '900',
-    color: 'rgba(32, 32, 32, 0.4)',
+    color: '#484F58',
     marginBottom: 4,
   },
   resultTextYes: {
-    color: '#8B5CF6',
+    color: '#10B981',
   },
   resultTextNo: {
-    color: '#06B6D4',
+    color: '#DC2626',
   },
   resultOdds: {
     fontSize: 12,
-    color: 'rgba(32, 32, 32, 0.7)',
+    color: '#8B949E',
   },
 });
 

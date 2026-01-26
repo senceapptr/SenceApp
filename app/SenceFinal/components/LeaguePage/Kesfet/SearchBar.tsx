@@ -16,11 +16,11 @@ export function SearchBar({ value, onChangeText }: SearchBarProps) {
         placeholder="Lig adı ve @kullanıcıadı ara"
         value={value}
         onChangeText={onChangeText}
-        placeholderTextColor="rgba(32, 32, 32, 0.5)"
+        placeholderTextColor="#8B949E"
       />
       <View style={styles.icon}>
         <LinearGradient
-          colors={['#432870', '#B29EFD']}
+          colors={['#10B981', '#34D399']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.iconGradient}
@@ -38,15 +38,15 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   input: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#F2F3F5',
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: '#30363D',
     borderRadius: 24,
     paddingVertical: 16,
     paddingHorizontal: 24,
     paddingRight: 56,
     fontSize: 16,
-    color: '#202020',
+    color: '#F0F6FC',
   },
   icon: {
     position: 'absolute',

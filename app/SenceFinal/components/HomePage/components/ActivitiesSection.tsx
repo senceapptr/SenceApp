@@ -199,14 +199,14 @@ export function ActivitiesSection({
       style={[
         styles.section, 
         { 
-          backgroundColor: isDarkMode ? theme.surface : '#FFFFFF',
+          backgroundColor: 'transparent',
           opacity: fadeAnim,
           transform: [{ scale: scaleAnim }]
         }
       ]}
     >
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>Günlük Aktiviteler</Text>
+        <Text style={[styles.title, { color: '#F0F6FC' }]}>Günlük Aktiviteler</Text>
       </View>
       <View style={styles.buttons}>
         <Animated.View style={[
@@ -223,13 +223,13 @@ export function ActivitiesSection({
             style={[
               styles.button,
               { 
-                backgroundColor: isDarkMode ? theme.surfaceCard : '#F1F3F4', 
+                backgroundColor: '#21262D', 
                 borderColor: '#7C3AED', 
                 borderWidth: 2,
-                shadowColor: isDarkMode ? 'transparent' : '#000',
+                shadowColor: '#000',
                 shadowOpacity: glowAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0.04, 0.12]
+                  outputRange: [0.2, 0.4]
                 })
               }
             ]}
@@ -270,13 +270,13 @@ export function ActivitiesSection({
             style={[
               styles.button,
               { 
-                backgroundColor: isDarkMode ? theme.surfaceCard : '#F1F3F4', 
+                backgroundColor: '#21262D', 
                 borderColor: '#F97316', 
                 borderWidth: 2,
-                shadowColor: isDarkMode ? 'transparent' : '#000',
+                shadowColor: '#000',
                 shadowOpacity: glowAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0.04, 0.12]
+                  outputRange: [0.2, 0.4]
                 })
               }
             ]}
@@ -317,13 +317,13 @@ export function ActivitiesSection({
             style={[
               styles.button,
               { 
-                backgroundColor: isDarkMode ? theme.surfaceCard : '#F1F3F4', 
-                borderColor: '#059669', 
+                backgroundColor: '#21262D', 
+                borderColor: '#10B981', 
                 borderWidth: 2,
-                shadowColor: isDarkMode ? 'transparent' : '#000',
+                shadowColor: '#000',
                 shadowOpacity: glowAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0.04, 0.12]
+                  outputRange: [0.2, 0.4]
                 })
               }
             ]}
@@ -344,7 +344,7 @@ export function ActivitiesSection({
                 ]
               }
             ]}>
-              <Ionicons name="color-wand" size={30} color="#059669" />
+              <Ionicons name="color-wand" size={30} color="#10B981" />
             </Animated.View>
             <Text style={[styles.buttonTitle, styles.writeTitle]}>Soru Yaz</Text>
           </TouchableOpacity>
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#432870',
+    color: '#F0F6FC',
   },
   buttons: {
     flexDirection: 'row',
@@ -391,12 +391,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F3F4',
+    backgroundColor: '#21262D',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   iconWrapper: {
     marginBottom: 6,
@@ -404,12 +404,12 @@ const styles = StyleSheet.create({
   buttonTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#111827',
+    color: '#F0F6FC',
     textAlign: 'center',
   },
-  challengeTitle: { color: '#7C3AED' },
-  tasksTitle: { color: '#F97316' },
-  writeTitle: { color: '#059669' },
+  challengeTitle: { color: '#A78BFA' },
+  tasksTitle: { color: '#FB923C' },
+  writeTitle: { color: '#34D399' },
 });
 
 

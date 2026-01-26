@@ -87,10 +87,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   yesBadge: {
-    backgroundColor: '#8B5CF6',
+    backgroundColor: '#10B981',
   },
   noBadge: {
-    backgroundColor: '#06B6D4',
+    backgroundColor: '#EF4444',
   },
   predictionBadgeText: {
     color: 'white',

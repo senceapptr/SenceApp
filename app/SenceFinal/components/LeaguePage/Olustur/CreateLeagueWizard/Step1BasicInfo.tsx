@@ -162,7 +162,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="color-palette" size={18} color="#432870" />
+              <Ionicons name="color-palette" size={18} color="#10B981" />
               <Text style={styles.sectionTitle}>Lig İkonu</Text>
             </View>
           </View>
@@ -230,7 +230,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="text" size={18} color="#432870" />
+              <Ionicons name="text" size={18} color="#10B981" />
               <Text style={styles.sectionTitle}>Lig Adı</Text>
               <View style={styles.requiredBadge}>
                 <Text style={styles.requiredText}>Zorunlu</Text>
@@ -251,7 +251,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
               <Ionicons 
                 name="trophy" 
                 size={20} 
-                color={focusedField === 'name' ? '#432870' : '#9CA3AF'} 
+                color={focusedField === 'name' ? '#10B981' : '#9CA3AF'} 
               />
             </View>
             <TextInput
@@ -296,7 +296,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="document-text" size={18} color="#432870" />
+              <Ionicons name="document-text" size={18} color="#10B981" />
               <Text style={styles.sectionTitle}>Açıklama</Text>
               <View style={styles.requiredBadge}>
                 <Text style={styles.requiredText}>Zorunlu</Text>
@@ -318,7 +318,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
               <Ionicons 
                 name="list" 
                 size={20} 
-                color={focusedField === 'description' ? '#432870' : '#9CA3AF'} 
+                color={focusedField === 'description' ? '#10B981' : '#9CA3AF'} 
               />
               <View style={styles.charCountBadge}>
                 <Text style={[
@@ -371,7 +371,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
             ]}
           >
             <View style={styles.previewHeader}>
-              <Ionicons name="eye" size={18} color="#432870" />
+              <Ionicons name="eye" size={18} color="#10B981" />
               <Text style={styles.previewHeaderText}>Canlı Önizleme</Text>
               <View style={styles.liveBadge}>
                 <View style={styles.liveDot} />
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#F0F6FC',
   },
   requiredBadge: {
     backgroundColor: '#FEE2E2',
@@ -509,12 +509,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
     borderRadius: 16,
     overflow: 'hidden',
   },
   iconButtonActive: {
-    shadowColor: '#432870',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -535,10 +535,10 @@ const styles = StyleSheet.create({
   },
   // Input Container
   inputContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -547,11 +547,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   inputContainerFocused: {
-    borderColor: '#432870',
-    shadowColor: '#432870',
+    borderColor: '#10B981',
+    shadowColor: '#10B981',
     shadowOpacity: 0.2,
     shadowRadius: 12,
-    backgroundColor: '#FEFEFE',
+    backgroundColor: '#161B22',
   },
   inputIconContainer: {
     marginBottom: 12,
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
   textInput: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#F0F6FC',
     padding: 0,
     marginBottom: 12,
   },
@@ -577,7 +577,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   charCountBadge: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#161B22',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
   charCountText: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#6B7280',
+    color: '#8B949E',
   },
   charCountWarning: {
     color: '#F59E0B',
@@ -598,7 +598,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
     padding: 10,
     borderRadius: 10,
   },
@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FFFBEB',
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
     padding: 10,
     borderRadius: 10,
   },
@@ -633,13 +633,13 @@ const styles = StyleSheet.create({
   previewHeaderText: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#432870',
+    color: '#10B981',
   },
   liveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#432870',
+    borderColor: '#10B981',
     borderStyle: 'dashed',
   },
   previewGradient: {
@@ -689,12 +689,12 @@ const styles = StyleSheet.create({
   previewTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#F0F6FC',
     marginBottom: 8,
   },
   previewDescription: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#8B949E',
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -711,12 +711,12 @@ const styles = StyleSheet.create({
   previewStatText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#8B949E',
   },
   previewDivider: {
     width: 1,
     height: 14,
-    backgroundColor: '#D1D5DB',
+    backgroundColor: '#30363D',
   },
   previewAction: {
     flexDirection: 'row',
@@ -725,12 +725,12 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: '#30363D',
   },
   previewActionText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#8B949E',
   },
   // Tips Section
   tipsSection: {
@@ -741,28 +741,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#21262D',
     padding: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
   },
   tipIconContainer: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161B22',
     alignItems: 'center',
     justifyContent: 'center',
   },
   tipText: {
     flex: 1,
     fontSize: 13,
-    color: '#4B5563',
+    color: '#8B949E',
     lineHeight: 20,
   },
   tipBold: {
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#F0F6FC',
   },
 });

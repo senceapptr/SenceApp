@@ -24,7 +24,7 @@ export function JoinConfirmModal({ visible, league, currentUser, onClose, onConf
       <View style={styles.overlay}>
         <View style={styles.content}>
           <LinearGradient
-            colors={['#432870', '#5A3A8B', '#B29EFD']}
+            colors={['#10B981', '#059669', '#34D399']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.header}
@@ -69,7 +69,7 @@ export function JoinConfirmModal({ visible, league, currentUser, onClose, onConf
                 activeOpacity={0.8}
               >
                 <LinearGradient
-                  colors={['#432870', '#B29EFD']}
+                  colors={['#10B981', '#059669']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.confirmGradient}
@@ -88,17 +88,19 @@ export function JoinConfirmModal({ visible, league, currentUser, onClose, onConf
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
   },
   content: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161B22',
     borderRadius: 24,
     width: '100%',
     maxWidth: 400,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   header: {
     padding: 24,
@@ -120,12 +122,15 @@ const styles = StyleSheet.create({
   },
   body: {
     padding: 24,
+    backgroundColor: '#0D1117',
   },
   details: {
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     padding: 16,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   detailRow: {
     flexDirection: 'row',
@@ -136,31 +141,31 @@ const styles = StyleSheet.create({
   detailRowBorder: {
     paddingTop: 12,
     borderTopWidth: 2,
-    borderTopColor: '#FFFFFF',
+    borderTopColor: '#30363D',
   },
   detailLabel: {
     fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.7)',
+    color: '#8B949E',
   },
   detailValue: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#432870',
+    color: '#10B981',
   },
   detailValueMain: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   detailLabelBold: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   detailValueRemaining: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#34C759',
+    color: '#10B981',
   },
   actions: {
     flexDirection: 'row',
@@ -169,14 +174,16 @@ const styles = StyleSheet.create({
   cancelButton: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   cancelText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   confirmButton: {
     flex: 1,

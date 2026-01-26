@@ -15,7 +15,7 @@ export function JoinSuccessAnimation({ visible }: JoinSuccessAnimationProps) {
     >
       <View style={styles.container}>
         <LinearGradient
-          colors={['#432870', '#5A3A8B', '#B29EFD']}
+          colors={['#10B981', '#059669', '#34D399']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradient}

@@ -11,10 +11,10 @@ export const ANIMATION_CONSTANTS: AnimationConstants = {
 // Color utilities
 export const getStatusColor = (status: string): string => {
   switch (status) {
-    case 'won': return '#8B5CF6';
-    case 'lost': return '#06B6D4';
-    case 'pending': return '#C9F158';
-    default: return '#F2F3F5';
+    case 'won': return '#10B981';
+    case 'lost': return '#EF4444';
+    case 'pending': return '#F59E0B';
+    default: return '#8B949E';
   }
 };
 

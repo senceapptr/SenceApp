@@ -7,60 +7,76 @@ interface ProfileInfoProps {
   profileData: ProfileData;
   isFollowing: boolean;
   followButtonScale: Animated.Value;
+  isOwnProfile?: boolean;
   onFollow: () => void;
   onPressIn: () => void;
   onPressOut: () => void;
+  onPressFollowers?: () => void;
+  onPressFollowing?: () => void;
 }
 
 export const ProfileInfo: React.FC<ProfileInfoProps> = ({
   profileData,
   isFollowing,
   followButtonScale,
+  isOwnProfile = true,
   onFollow,
   onPressIn,
   onPressOut,
+  onPressFollowers,
+  onPressFollowing,
 }) => {
   return (
     <View style={styles.profileInfoSection}>
-      {/* User Details */}
       <View style={styles.userDetails}>
         <Text style={styles.userName}>{profileData.name}</Text>
         <Text style={styles.userHandle}>{profileData.username}</Text>
-        
-        {/* Stats */}
+
+        {/* Stats - tıklanabilir */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{profileData.predictions}</Text>
             <Text style={styles.statLabel}>tahmin</Text>
           </View>
-          <View style={styles.statItem}>
+          <TouchableOpacity
+            style={styles.statItem}
+            onPress={onPressFollowers}
+            activeOpacity={onPressFollowers ? 0.6 : 1}
+            disabled={!onPressFollowers}
+          >
             <Text style={styles.statValue}>{profileData.followers}</Text>
             <Text style={styles.statLabel}>takipçi</Text>
-          </View>
-          <View style={styles.statItem}>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.statItem}
+            onPress={onPressFollowing}
+            activeOpacity={onPressFollowing ? 0.6 : 1}
+            disabled={!onPressFollowing}
+          >
             <Text style={styles.statValue}>{profileData.following}</Text>
             <Text style={styles.statLabel}>takip</Text>
-          </View>
+          </TouchableOpacity>
         </View>
       </View>
-      
-      {/* Follow Button */}
-      <Animated.View style={{ transform: [{ scale: followButtonScale }] }}>
-        <TouchableOpacity 
-          onPress={onFollow}
-          onPressIn={onPressIn}
-          onPressOut={onPressOut}
-          style={[styles.followButton, isFollowing && styles.followingButton]}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="person-add" size={16} color={isFollowing ? '#202020' : 'white'} />
-          <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
-            {isFollowing ? 'Takip Ediliyor' : 'Takip Et'}
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
 
-      {/* Bio */}
+      {/* Follow Button - sadece başkasının profilinde */}
+      {!isOwnProfile && (
+        <Animated.View style={{ transform: [{ scale: followButtonScale }] }}>
+          <TouchableOpacity
+            onPress={onFollow}
+            onPressIn={onPressIn}
+            onPressOut={onPressOut}
+            style={[styles.followButton, isFollowing && styles.followingButton]}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="person-add" size={16} color={isFollowing ? '#8B949E' : '#fff'} />
+            <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
+              {isFollowing ? 'Takip Ediliyor' : 'Takip Et'}
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
       <Text style={styles.bio}>{profileData.bio}</Text>
     </View>
   );
@@ -68,18 +84,15 @@ export const ProfileInfo: React.FC<ProfileInfoProps> = ({
 
 const styles = StyleSheet.create({
   profileInfoSection: {
-    backgroundColor: 'white',
+    backgroundColor: '#161B22',
     paddingHorizontal: 24,
     paddingTop: 80,
     paddingBottom: 24,
     marginHorizontal: 16,
     marginTop: 16,
     borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#30363D',
     alignItems: 'center',
   },
   userDetails: {
@@ -89,13 +102,13 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
     marginBottom: 4,
     textAlign: 'center',
   },
   userHandle: {
     fontSize: 16,
-    color: 'rgba(32,32,32,0.6)',
+    color: '#8B949E',
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -110,14 +123,14 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#202020',
+    color: '#F0F6FC',
   },
   statLabel: {
     fontSize: 12,
-    color: 'rgba(32,32,32,0.6)',
+    color: '#8B949E',
   },
   followButton: {
-    backgroundColor: '#432870',
+    backgroundColor: '#10B981',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
@@ -127,25 +140,23 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   followingButton: {
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderWidth: 1,
-    borderColor: 'rgba(32,32,32,0.2)',
+    borderColor: '#30363D',
   },
   followButtonText: {
-    color: 'white',
+    color: '#fff',
     fontSize: 14,
     fontWeight: '700',
   },
   followingButtonText: {
-    color: '#202020',
+    color: '#8B949E',
   },
   bio: {
     fontSize: 16,
-    color: 'rgba(32,32,32,0.8)',
+    color: '#8B949E',
     lineHeight: 24,
     textAlign: 'center',
     marginTop: 4,
   },
 });
-
-

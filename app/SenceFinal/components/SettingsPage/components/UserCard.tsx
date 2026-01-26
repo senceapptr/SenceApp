@@ -16,8 +16,8 @@ export function UserCard({ username, avatarUrl, onPress }: UserCardProps) {
     >
       <LinearGradient
         colors={isDarkMode 
-          ? ['rgba(124, 94, 244, 0.15)', 'rgba(79, 147, 255, 0.15)']
-          : ['rgba(147, 51, 234, 0.1)', 'rgba(59, 130, 246, 0.1)']
+          ? ['rgba(16, 185, 129, 0.15)', 'rgba(5, 150, 105, 0.15)']
+          : ['rgba(16, 185, 129, 0.1)', 'rgba(5, 150, 105, 0.1)']
         }
         style={[styles.card, { borderColor: theme.border }]}
       >
@@ -49,7 +49,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(147, 51, 234, 0.2)',
   },
   content: {
     flexDirection: 'row',

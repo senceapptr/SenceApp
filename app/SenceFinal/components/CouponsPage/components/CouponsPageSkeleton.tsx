@@ -38,7 +38,7 @@ function ShimmerPlaceholder({
           width,
           height,
           borderRadius,
-          backgroundColor: '#E5E7EB',
+          backgroundColor: '#21262D',
           overflow: 'hidden',
         },
         style,
@@ -52,7 +52,7 @@ function ShimmerPlaceholder({
         }}
       >
         <LinearGradient
-          colors={['#E5E7EB', '#F3F4F6', '#E5E7EB']}
+          colors={['#21262D', '#30363D', '#21262D']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={{ flex: 1, width: 350 }}
@@ -142,7 +142,9 @@ const styles = StyleSheet.create({
     minHeight: 80,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#21262D',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
 
   // Category Tabs - CategoryTabs.tsx ile birebir eşleşiyor
@@ -158,9 +160,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     minWidth: 80,
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#21262D',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
   },
 
   // Empty State
@@ -170,15 +172,17 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
   emptyStateCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161B22',
     borderRadius: 24,
     padding: 40,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#30363D',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
 
 });

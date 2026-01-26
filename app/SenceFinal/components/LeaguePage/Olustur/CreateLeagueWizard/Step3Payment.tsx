@@ -91,7 +91,7 @@ export function Step3Payment({
       {/* Header Info */}
       <View style={styles.headerInfo}>
         <View style={styles.infoIconContainer}>
-          <Ionicons name="wallet" size={32} color="#432870" />
+          <Ionicons name="wallet" size={32} color="#10B981" />
         </View>
         <Text style={styles.headerTitle}>Ödeme Yöntemi Seç</Text>
         <Text style={styles.headerSubtitle}>
@@ -120,7 +120,7 @@ export function Step3Payment({
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={hasEnoughCredits ? ['#10B981', '#059669'] : ['#E5E7EB', '#D1D5DB']}
+              colors={hasEnoughCredits ? ['#10B981', '#059669'] : ['#30363D', '#D1D5DB']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.paymentCardGradient}
@@ -138,7 +138,7 @@ export function Step3Payment({
                 <Ionicons
                   name="diamond"
                   size={48}
-                  color={hasEnoughCredits ? '#FFFFFF' : '#9CA3AF'}
+                  color={hasEnoughCredits ? '#21262D' : '#9CA3AF'}
                 />
               </View>
 
@@ -187,7 +187,7 @@ export function Step3Payment({
               {/* Status */}
               {hasEnoughCredits ? (
                 <View style={styles.statusContainer}>
-                  <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                  <Ionicons name="checkmark-circle" size={20} color="#21262D" />
                   <Text style={styles.statusText}>Kredi kullanıma hazır</Text>
                 </View>
               ) : (
@@ -242,7 +242,7 @@ export function Step3Payment({
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={hasTickets ? ['#8B5CF6', '#7C3AED'] : ['#E5E7EB', '#D1D5DB']}
+              colors={hasTickets ? ['#8B5CF6', '#7C3AED'] : ['#30363D', '#D1D5DB']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.paymentCardGradient}
@@ -260,7 +260,7 @@ export function Step3Payment({
                 <Ionicons
                   name="ticket"
                   size={48}
-                  color={hasTickets ? '#FFFFFF' : '#9CA3AF'}
+                  color={hasTickets ? '#21262D' : '#9CA3AF'}
                 />
               </View>
 
@@ -309,7 +309,7 @@ export function Step3Payment({
               {/* Status */}
               {hasTickets ? (
                 <View style={styles.statusContainer}>
-                  <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                  <Ionicons name="checkmark-circle" size={20} color="#21262D" />
                   <Text style={styles.statusText}>Bilet kullanıma hazır</Text>
                 </View>
               ) : (
@@ -390,13 +390,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#1F2937',
+    color: '#F0F6FC',
     marginBottom: 8,
     textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#8B949E',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   paymentTitle: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: '#21262D',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -481,11 +481,11 @@ const styles = StyleSheet.create({
   balanceValue: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: '#21262D',
     textAlign: 'center',
   },
   balanceValueDisabled: {
-    color: '#6B7280',
+    color: '#8B949E',
   },
   costInfoContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -509,10 +509,10 @@ const styles = StyleSheet.create({
   costValue: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#21262D',
   },
   costValueDisabled: {
-    color: '#6B7280',
+    color: '#8B949E',
   },
   statusContainer: {
     flexDirection: 'row',
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#21262D',
   },
   statusTextWarning: {
     fontSize: 13,
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#21262D',
   },
   infoCards: {
     gap: 12,
@@ -552,16 +552,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#21262D',
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
   },
   infoCardText: {
     flex: 1,
     fontSize: 13,
-    color: '#6B7280',
+    color: '#8B949E',
     lineHeight: 18,
   },
 });

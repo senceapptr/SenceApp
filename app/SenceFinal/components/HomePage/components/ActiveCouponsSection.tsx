@@ -26,17 +26,17 @@ export function ActiveCouponsSection({ coupons, isDarkMode, theme, onCouponPress
   // Empty state göster
   if (safeCoupons.length === 0) {
     return (
-      <View style={[styles.section, { backgroundColor: isDarkMode ? (theme.surface || '#FFFFFF') : '#FFFFFF' }]}>
+      <View style={[styles.section, { backgroundColor: 'transparent' }]}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.textPrimary || '#000000' }]}>Aktif Ticketlar</Text>
+          <Text style={[styles.title, { color: '#F0F6FC' }]}>Aktif Ticketlar</Text>
         </View>
         
         <View style={styles.emptyStateContainer}>
           <View
-            style={[styles.emptyStateGradient, { backgroundColor: '#432870' }]}
+            style={[styles.emptyStateGradient, { backgroundColor: '#21262D' }]}
           >
             <View style={styles.emptyStateIconContainer}>
-              <Ionicons name="ticket-outline" size={48} color="#FFFFFF" />
+              <Ionicons name="ticket-outline" size={48} color="#10B981" />
             </View>
             
             <Text style={styles.emptyStateTitle}>
@@ -48,7 +48,7 @@ export function ActiveCouponsSection({ coupons, isDarkMode, theme, onCouponPress
               onPress={onCreateCouponPress}
               activeOpacity={0.8}
             >
-              <Ionicons name="add-circle" size={20} color="#432870" />
+              <Ionicons name="add-circle" size={20} color="#10B981" />
               <Text style={styles.createCouponButtonText}>
                 Ticket Oluştur
               </Text>
@@ -60,11 +60,11 @@ export function ActiveCouponsSection({ coupons, isDarkMode, theme, onCouponPress
   }
   
   return (
-    <View style={[styles.section, { backgroundColor: isDarkMode ? (theme.surface || '#FFFFFF') : '#FFFFFF' }]}>
+    <View style={[styles.section, { backgroundColor: 'transparent' }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.textPrimary || '#000000' }]}>Aktif Ticketlar</Text>
+        <Text style={[styles.title, { color: '#F0F6FC' }]}>Aktif Ticketlar</Text>
         <TouchableOpacity onPress={onSeeAllPress}>
-          <Text style={[styles.seeAll, { color: theme.primary || '#432870' }]}>Tümünü gör</Text>
+          <Text style={[styles.seeAll, { color: '#10B981' }]}>Tümünü gör</Text>
         </TouchableOpacity>
       </View>
       
@@ -115,12 +115,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#432870',
+    color: '#F0F6FC',
   },
   seeAll: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#432870',
+    color: '#10B981',
   },
   list: {
     paddingLeft: 16,
@@ -134,11 +134,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 32,
     alignItems: 'center',
-    shadowColor: '#432870',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 8,
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   emptyStateIconContainer: {
     width: 80,
@@ -159,21 +161,18 @@ const styles = StyleSheet.create({
   createCouponButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 12,
     gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#10B981',
   },
   createCouponButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#432870',
+    color: '#10B981',
   },
 });
 

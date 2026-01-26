@@ -24,7 +24,6 @@ import { SupportPage } from './components/SupportPage';
 import { FAQPage } from './components/FAQPage';
 import { FeedbackPage } from './components/FeedbackPage';
 import { AboutPage } from './components/AboutPage';
-import { NewDiscoverPage } from './components/NewDiscoverPage';
 import { CategoryQuestionsPage } from './components/CategoryQuestionsPage';
 import { CouponDrawer } from './components/CouponDrawer';
 import { ConfettiAnimation } from './components/ConfettiAnimation';
@@ -39,7 +38,7 @@ import { verificationService } from '@/services/verification.service';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type PageType = 'home' | 'discover' | 'coupons' | 'leagues' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign' | 'editProfile' | 'privacySettings' | 'helpCenter' | 'support' | 'faq' | 'feedback' | 'about' | 'adminPanel' | 'allQuestions' | 'emailVerification';
+type PageType = 'home' | 'coupons' | 'leagues' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign' | 'editProfile' | 'privacySettings' | 'helpCenter' | 'support' | 'faq' | 'feedback' | 'about' | 'adminPanel' | 'allQuestions' | 'emailVerification';
 
 interface Question {
   id: string;
@@ -409,8 +408,16 @@ function AppContent() {
   };
 
   const handleDiscoverAllNavigate = () => {
-    // Direkt CategoryQuestionsPage'i aç (discover sayfasını atla)
-    setCurrentPage('allQuestions');
+    // Ticket oluşturmak için ana sayfaya git - kullanıcı sorulara oy vererek ticket oluşturur
+    setCurrentPage('home');
+    // Kullanıcıya yönlendirme mesajı göster
+    setTimeout(() => {
+      Alert.alert(
+        'Ticket Oluştur',
+        'Sorulara EVET veya HAYIR oyu vererek ticket oluşturabilirsin. Birden fazla soru ekleyebilirsin!',
+        [{ text: 'Tamam', style: 'default' }]
+      );
+    }, 300);
   };
 
   const handleMenuToggle = () => {
@@ -438,16 +445,6 @@ function AppContent() {
             onMenuToggle={handleMenuToggle}
             onTasksNavigate={handleTasksNavigate}
             onCouponsNavigate={handleCouponsNavigate}
-            onDiscoverAllNavigate={handleDiscoverAllNavigate}
-          />
-        );
-      case 'discover':
-        return (
-          <NewDiscoverPage
-            onBack={handleBack}
-            onMenuToggle={handleMenuToggle}
-            handleQuestionDetail={handleQuestionDetail}
-            handleVote={handleVote}
           />
         );
       case 'allQuestions':
@@ -656,7 +653,7 @@ function AppContent() {
             )}
             {renderCurrentPage()}
             {/* Only show bottom tabs on main pages */}
-            {(['home', 'discover', 'coupons', 'leagues'] as PageType[]).includes(currentPage) && (
+            {(['home', 'coupons', 'leagues'] as PageType[]).includes(currentPage) && (
               <BottomTabs currentPage={currentPage} onPageChange={handlePageChange} />
             )}
           </View>
@@ -1042,7 +1039,7 @@ const styles = StyleSheet.create({
   },
   pageWrapper: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0D1117',
   },
   pageContainer: {
     flex: 1,

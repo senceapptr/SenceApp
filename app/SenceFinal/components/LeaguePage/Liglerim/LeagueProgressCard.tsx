@@ -19,7 +19,7 @@ export function LeagueProgressCard({ currentUser }: LeagueProgressCardProps) {
         </View>
         <View style={styles.circle}>
           <LinearGradient
-            colors={['#432870', '#B29EFD']}
+            colors={['#10B981', '#34D399']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.circleGradient}
@@ -43,17 +43,17 @@ export function LeagueProgressCard({ currentUser }: LeagueProgressCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#161B22',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#30363D',
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   content: {
     flexDirection: 'row',
@@ -67,12 +67,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: '#F0F6FC',
     marginBottom: 2,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#8B949E',
     fontWeight: '500',
   },
   circle: {
@@ -99,13 +99,13 @@ const styles = StyleSheet.create({
   progressBar: {
     width: '100%',
     height: 8,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#0D1117',
     borderRadius: 4,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#432870',
+    backgroundColor: '#10B981',
   },
 });
 

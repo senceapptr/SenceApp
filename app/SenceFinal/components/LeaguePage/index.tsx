@@ -276,7 +276,7 @@ export function LeaguePage({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#0D1117',
   },
   skeletonContainer: {
     position: 'absolute',
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FF3B30',
+    color: '#DC2626',
     textAlign: 'center',
     paddingHorizontal: 32,
   },

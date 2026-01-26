@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 4,
-    borderColor: 'white',
+    borderColor: '#30363D',
   },
   onlineIndicator: {
     position: 'absolute',
@@ -80,10 +80,10 @@ const styles = StyleSheet.create({
     right: 2,
     width: 16,
     height: 16,
-    backgroundColor: '#34C759',
+    backgroundColor: '#10B981',
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: 'white',
+    borderColor: '#161B22',
   },
 });
 

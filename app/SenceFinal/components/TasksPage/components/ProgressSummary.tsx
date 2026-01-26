@@ -9,7 +9,7 @@ export function ProgressSummary({ completed, total, showDailyTimer }: ProgressSu
     <View style={styles.progressSection}>
       <View style={styles.progressBarContainer}>
         <View style={styles.progressBarBg}>
-          <LinearGradient colors={["#c61585", "#432870"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.progressBarFill, { width: `${pct}%` }]} />
+          <LinearGradient colors={["#10B981", "#059669"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.progressBarFill, { width: `${pct}%` }]} />
         </View>
       </View>
       <View style={styles.progressInfo}>
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   progressBarBg: {
     width: '100%',
     height: 8,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#21262D',
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -47,12 +47,12 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#432870',
+    color: '#10B981',
   },
   timeLeftText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#B29EFD',
+    color: '#34D399',
   },
 });
 

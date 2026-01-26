@@ -23,17 +23,17 @@ export function Header({ onMenuToggle, headerTranslateY, isDarkMode, theme }: He
       <View style={styles.content}>
         <TouchableOpacity 
           style={[styles.menuButton, { 
-            backgroundColor: isDarkMode ? theme.surfaceElevated : 'rgba(255,255,255,0.95)',
-            borderColor: isDarkMode ? theme.border : 'rgba(0,0,0,0.05)',
-            shadowColor: isDarkMode ? 'transparent' : '#000'
+            backgroundColor: 'rgba(33, 38, 45, 0.9)',
+            borderColor: 'rgba(48, 54, 61, 0.8)',
+            shadowColor: '#000'
           }]}
           onPress={onMenuToggle}
           activeOpacity={0.8}
         >
           <View style={styles.hamburgerIcon}>
-            <View style={[styles.hamburgerLine, { backgroundColor: isDarkMode ? theme.textPrimary : '#1F2937' }]} />
-            <View style={[styles.hamburgerLine, { backgroundColor: isDarkMode ? theme.textPrimary : '#1F2937' }]} />
-            <View style={[styles.hamburgerLine, { backgroundColor: isDarkMode ? theme.textPrimary : '#1F2937' }]} />
+            <View style={[styles.hamburgerLine, { backgroundColor: '#F0F6FC' }]} />
+            <View style={[styles.hamburgerLine, { backgroundColor: '#F0F6FC' }]} />
+            <View style={[styles.hamburgerLine, { backgroundColor: '#F0F6FC' }]} />
           </View>
           {unreadNotificationsCount > 0 && (
             <NotificationBadge 

@@ -21,7 +21,7 @@ export function TasksPage({ onBack, onMenuToggle }: TasksPageProps) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#0D1117" />
 
       <SafeAreaView edges={['top']}> 
         <PageHeader 
@@ -40,7 +40,7 @@ export function TasksPage({ onBack, onMenuToggle }: TasksPageProps) {
 
       {state.loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#432870" />
+          <ActivityIndicator size="large" color="#10B981" />
           <Text style={styles.loadingText}>Görevler yükleniyor...</Text>
         </View>
       ) : (
@@ -68,7 +68,7 @@ export function TasksPage({ onBack, onMenuToggle }: TasksPageProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#0D1117',
   },
   scrollView: {
     flex: 1,
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     fontWeight: '600',
-    color: '#432870',
+    color: '#10B981',
   },
 });
 

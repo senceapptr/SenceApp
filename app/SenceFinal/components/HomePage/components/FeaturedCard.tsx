@@ -111,13 +111,13 @@ export function FeaturedCard({ question, onQuestionPress, onVote }: FeaturedCard
         <FeaturedVoteButton
           label="EVET"
           odds={question.yesOdds}
-          color="#8B5CF6"
+          color="#10B981"
           onPress={() => onVote(question.id, 'yes', question.yesOdds, question.title)}
         />
         <FeaturedVoteButton
           label="HAYIR"
           odds={question.noOdds}
-          color="#06B6D4"
+          color="#DC2626"
           onPress={() => onVote(question.id, 'no', question.noOdds, question.title)}
         />
       </View>

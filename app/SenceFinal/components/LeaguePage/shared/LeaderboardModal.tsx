@@ -122,7 +122,7 @@ export function LeaderboardModal({ visible, league, onClose }: LeaderboardModalP
       <View style={styles.overlay}>
         <View style={styles.content}>
           <LinearGradient
-            colors={['#432870', '#5A3A8B', '#B29EFD']}
+            colors={['#10B981', '#059669', '#34D399']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.header}
@@ -148,7 +148,7 @@ export function LeaderboardModal({ visible, league, onClose }: LeaderboardModalP
           >
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#432870" />
+                <ActivityIndicator size="large" color="#10B981" />
                 <Text style={styles.loadingText}>Sıralama yükleniyor...</Text>
               </View>
             ) : (
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   },
   itemCurrent: {
     backgroundColor: '#FDF4FF',
-    borderColor: '#432870',
+    borderColor: '#10B981',
     borderWidth: 2,
   },
   rank: {
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   currentLabel: {
-    color: '#432870',
+    color: '#10B981',
     fontWeight: '700',
   },
   userStats: {
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   pointsValue: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#432870',
+    color: '#10B981',
   },
   pointsLabel: {
     fontSize: 12,
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   },
   fixedCurrent: {
     backgroundColor: '#FDF4FF',
-    borderColor: '#432870',
+    borderColor: '#10B981',
     borderWidth: 2,
   },
   fixedStats: {
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
   fixedPointsValue: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#432870',
+    color: '#10B981',
   },
   fixedPointsLabel: {
     fontSize: 10,
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     fontWeight: '600',
-    color: '#432870',
+    color: '#10B981',
   },
 });
 

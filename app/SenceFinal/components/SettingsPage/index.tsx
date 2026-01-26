@@ -120,7 +120,6 @@ export function SettingsPage({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
   },
   content: {
     flex: 1,

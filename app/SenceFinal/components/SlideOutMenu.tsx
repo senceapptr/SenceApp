@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { NotificationBadge } from './ui/NotificationBadge';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -29,6 +30,7 @@ interface SlideOutMenuProps {
 
 export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOutMenuProps) {
   const { user, profile, unreadNotificationsCount } = useAuth();
+  const { theme, isDarkMode } = useTheme();
   const slideAnim = useRef(new Animated.Value(0)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [isAnimating, setIsAnimating] = useState(false);
@@ -189,7 +191,7 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
 
   return (
     <View style={styles.container}>
-      {/* Purple Background Overlay with Fluid Effect - behind everything */}
+      {/* Dark Background Overlay - behind everything */}
       <Animated.View
         style={[
           styles.overlay,
@@ -199,41 +201,18 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
         ]}
         pointerEvents="none">
         <LinearGradient
-          colors={[
-            '#6B21A8', // Deep rich purple
-            '#581C87', // Darker rich purple
-            '#4C1D95', // Even darker
-            '#3B0764', // Deepest rich purple
-            '#2D1B69', // Darkest purple
-          ]}
+          colors={['#0D1117', '#161B22', '#21262D']}
           style={styles.gradientBackground}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         />
-        {/* Fluid overlay effect */}
+        {/* Subtle dark overlay - tema ile uyumlu */}
         <View style={styles.fluidOverlay}>
           <LinearGradient
-            colors={[
-              'rgba(107, 33, 168, 0.4)',
-              'transparent',
-              'rgba(88, 28, 135, 0.3)',
-              'transparent',
-              'rgba(59, 7, 100, 0.5)',
-            ]}
+            colors={['rgba(16, 185, 129, 0.04)', 'transparent', 'rgba(16, 185, 129, 0.02)']}
             style={styles.fluidGradient1}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-          />
-          <LinearGradient
-            colors={[
-              'transparent',
-              'rgba(76, 29, 149, 0.3)',
-              'transparent',
-              'rgba(45, 27, 105, 0.4)',
-            ]}
-            style={styles.fluidGradient2}
-            start={{ x: 1, y: 0 }}
-            end={{ x: 0, y: 1 }}
           />
         </View>
       </Animated.View>
@@ -296,8 +275,11 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
         <SafeAreaView style={styles.menuContent}>
           {/* Close Button - Top Right */}
           <View style={styles.topSection}>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Text style={styles.closeButtonText}>×</Text>
+            <TouchableOpacity 
+              style={styles.closeButton} 
+              onPress={onClose}
+            >
+              <Ionicons name="close" size={22} color="#F0F6FC" />
             </TouchableOpacity>
           </View>
 
@@ -314,9 +296,9 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
               <View style={styles.avatarContainer}>
                 <Image
                   source={{ uri: profile?.profile_image || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face" }}
-                  style={styles.userAvatar}
+                  style={[styles.userAvatar, { borderColor: '#10B981' }]}
                 />
-                <View style={styles.onlineIndicator} />
+                <View style={[styles.onlineIndicator, { backgroundColor: '#10B981', borderColor: '#21262D' }]} />
               </View>
               <View style={styles.userDetails}>
                 <Text style={styles.userName}>
@@ -330,7 +312,7 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
                 </View>
               </View>
               <View style={styles.profileArrow}>
-                <Text style={styles.profileArrowText}>›</Text>
+                <Ionicons name="chevron-forward" size={20} color="#8B949E" />
               </View>
             </View>
           </TouchableOpacity>
@@ -380,7 +362,7 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
                       />
                     )}
                   </View>
-                  <Text style={styles.menuArrow}>›</Text>
+                  <Ionicons name="chevron-forward" size={18} color="#8B949E" />
                 </TouchableOpacity>
               </Animated.View>
             ))}
@@ -399,6 +381,7 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#0D1117',
   },
   movedContentBackground: {
     position: 'absolute',
@@ -406,16 +389,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#000000',
+    backgroundColor: '#0D1117',
     zIndex: 1000,
   },
 
   mainContent: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     borderRadius: 30,
     overflow: 'hidden',
     zIndex: 1002,
+    backgroundColor: '#0D1117',
   },
   contentTouchable: {
     flex: 1,
@@ -430,6 +413,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 1000,
+    backgroundColor: '#0D1117',
   },
   gradientBackground: {
     flex: 1,
@@ -465,12 +449,12 @@ const styles = StyleSheet.create({
     right: 0,
     width: SCREEN_WIDTH * 0.75,
     height: SCREEN_HEIGHT,
-    backgroundColor: 'transparent',
     zIndex: 1003,
+    backgroundColor: '#161B22',
   },
   menuContent: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: '#161B22',
   },
   topSection: {
     paddingTop: 40,
@@ -486,11 +470,16 @@ const styles = StyleSheet.create({
   profileContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: '#21262D',
+    borderColor: '#30363D',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   avatarContainer: {
     position: 'relative',
@@ -500,19 +489,16 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
+    borderWidth: 2,
   },
   onlineIndicator: {
     position: 'absolute',
     bottom: 2,
     right: 2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#00FF88',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
   },
   userDetails: {
     flex: 1,
@@ -520,8 +506,8 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
     marginBottom: 4,
+    color: '#F0F6FC',
   },
   balanceContainer: {
     flexDirection: 'row',
@@ -531,8 +517,8 @@ const styles = StyleSheet.create({
   balanceAmount: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#00FF88',
     marginRight: 4,
+    color: '#10B981',
   },
   diamondIcon: {
     marginLeft: 2,
@@ -540,26 +526,15 @@ const styles = StyleSheet.create({
   profileArrow: {
     marginLeft: 8,
   },
-  profileArrowText: {
-    fontSize: 24,
-    color: 'rgba(255,255,255,0.6)',
-    fontWeight: 'bold',
-  },
   closeButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  closeButtonText: {
-    fontSize: 28,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    marginTop: -2,
+    backgroundColor: '#21262D',
+    borderColor: '#30363D',
   },
   menuItems: {
     flex: 1,
@@ -574,15 +549,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 14,
-    backgroundColor: 'transparent',
     borderRadius: 12,
     marginHorizontal: 12,
     marginVertical: 2,
   },
   menuItemHighlight: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: '#21262D',
+    borderColor: '#30363D',
   },
   menuItemContent: {
     flex: 1,
@@ -591,9 +565,9 @@ const styles = StyleSheet.create({
   },
   menuText: {
     fontSize: 17,
-    color: '#FFFFFF',
     fontWeight: '600',
     flex: 1,
+    color: '#F0F6FC',
   },
   notificationBadge: {
     marginLeft: 8,
@@ -601,16 +575,12 @@ const styles = StyleSheet.create({
   menuTextHighlight: {
     fontWeight: '700',
     fontSize: 18,
-  },
-  menuArrow: {
-    fontSize: 20,
-    color: 'rgba(255,255,255,0.6)',
-    fontWeight: 'bold',
+    color: '#10B981',
   },
   menuFooter: {
     padding: 24,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.2)',
+    borderTopColor: '#30363D',
     alignItems: 'center',
   },
   footerText: {

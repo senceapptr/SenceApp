@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   nameActive: {
-    color: '#432870',
+    color: '#10B981',
   },
 });
 
