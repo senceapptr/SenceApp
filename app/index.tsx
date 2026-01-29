@@ -14,8 +14,8 @@ export default function Index() {
     const inAuthGroup = segments[0] === 'auth';
 
     if (!user && !inAuthGroup) {
-      // Redirect to login if not authenticated
-      router.replace('/auth/login');
+      // Redirect to auth welcome if not authenticated
+      router.replace('/auth');
     } else if (user) {
       // Redirect to SenceFinal if authenticated
       router.replace('/SenceFinal');

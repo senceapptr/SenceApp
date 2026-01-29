@@ -94,7 +94,7 @@ export function useSettings(props: {
           style: 'destructive',
           onPress: async () => {
             await signOut();
-            router.replace('/auth/login');
+            router.replace('/auth');
           }
         }
       ]
@@ -130,7 +130,7 @@ export function useSettings(props: {
               Alert.alert(
                 '✅ Hesap Silindi',
                 'Hesabınız başarıyla silindi. Sence\'i kullandığınız için teşekkürler.',
-                [{ text: 'Tamam', onPress: () => router.replace('/auth/login') }]
+                [{ text: 'Tamam', onPress: () => router.replace('/auth') }]
               );
             } catch (error) {
               console.error('Delete account error:', error);
