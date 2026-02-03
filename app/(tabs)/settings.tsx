@@ -3,7 +3,7 @@ import { useColorScheme } from 'nativewind';
 import { StatusBar } from 'expo-status-bar';
 import { Platform, Text, View, ScrollView, TouchableOpacity, Switch, Alert, ActivityIndicator, TextInput, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '@/app/SenceFinal/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { settingsService, UserSettings, NotificationSettings } from '@/services/settings.service';
 import { profileService, Profile } from '@/services/profile.service';
 import ToggleTheme from '@/components/ToggleTheme';

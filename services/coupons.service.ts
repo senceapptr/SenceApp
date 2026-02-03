@@ -46,94 +46,74 @@ export const couponsService = {
    */
   async getUserCoupons(userId: string) {
     try {
-      console.log('=== STARTING COUPON FETCH ===');
-      console.log('User ID:', userId);
+      // Service role ile RLS bypass - kupon ve seçimler kesin gelsin
+      const client = supabaseService;
 
-      // Önce kuponları çek
-      const { data: couponsData, error: couponsError } = await supabase
+      // 1) Kuponları çek
+      const { data: couponsData, error: couponsError } = await client
         .from('coupons')
-        .select(`
-          *,
-          display_id
-        `)
+        .select('*, display_id')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (couponsError) throw couponsError;
-
-      // Direkt SQL query ile veri çek (RLS bypass)
-      const { data: sqlData, error: sqlError } = await supabaseService
-        .from('coupons')
-        .select(`
-          *,
-          display_id,
-          coupon_selections!left (
-            id,
-            question_id,
-            vote,
-            odds,
-            status,
-            questions (
-              id,
-              title,
-              category_id,
-              status,
-              result,
-              end_date,
-              categories!questions_category_id_fkey (
-                id,
-                name
-              )
-            )
-          )
-        `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (sqlError) {
-        console.error('SQL Query Error:', sqlError);
-        // Fallback: Normal query ile dene
-        const couponsWithSelections = await Promise.all(
-          couponsData.map(async (coupon) => {
-            console.log(`Checking selections for coupon: ${coupon.id}`);
-            
-            const { data: selectionsData, error: selectionsError } = await supabaseService
-              .from('coupon_selections')
-              .select(`
-                id,
-                question_id,
-                vote,
-                odds,
-                status,
-                questions (
-                  id,
-                  title,
-                  category_id,
-                  status,
-                  result,
-                  end_date,
-                  categories!questions_category_id_fkey (
-                    id,
-                    name
-                  )
-                )
-              `)
-              .eq('coupon_id', coupon.id);
-
-            console.log(`Selections for ${coupon.id}:`, selectionsData);
-            console.log(`Selection count: ${selectionsData?.length || 0}`);
-
-            return { 
-              ...coupon, 
-              coupon_selections: selectionsData || [] 
-            };
-          })
-        );
-        return { data: couponsWithSelections, error: null };
+      if (!couponsData || couponsData.length === 0) {
+        return { data: [], error: null };
       }
 
-      console.log('SQL Query Result:', sqlData);
-      return { data: sqlData || [], error: null };
+      // 2) Her kupon için coupon_selections (düz kolonlar)
+      const couponsWithSelections = await Promise.all(
+        couponsData.map(async (coupon) => {
+          const { data: selectionsData, error: selectionsError } = await client
+            .from('coupon_selections')
+            .select('id, question_id, vote, odds, status')
+            .eq('coupon_id', coupon.id);
+
+          if (selectionsError) {
+            console.warn('Coupon selections fetch error for coupon', coupon.id, selectionsError);
+            return { ...coupon, coupon_selections: [] };
+          }
+
+          const rawSelections: Array<{ id: string; question_id: string; vote: string; odds: number; status: string }> = Array.isArray(selectionsData) ? selectionsData : [];
+
+          // 3) Her selection için question bilgisini ayrı çek
+          const selectionsWithQuestions = await Promise.all(
+            rawSelections.map(async (sel) => {
+              const { data: questionData, error: qError } = await client
+                .from('questions')
+                .select('id, title, category_id, status, result, end_date')
+                .eq('id', sel.question_id)
+                .maybeSingle();
+
+              if (qError || !questionData) {
+                return { id: sel.id, question_id: sel.question_id, vote: sel.vote, odds: sel.odds, status: sel.status, questions: null };
+              }
+
+              let categoryName = 'Genel';
+              if (questionData.category_id) {
+                const { data: catData } = await client.from('categories').select('name').eq('id', questionData.category_id).maybeSingle();
+                if (catData?.name) categoryName = catData.name;
+              }
+
+              return {
+                id: sel.id,
+                question_id: sel.question_id,
+                vote: sel.vote,
+                odds: sel.odds,
+                status: sel.status,
+                questions: { ...questionData, categories: { name: categoryName } },
+              };
+            })
+          );
+
+          return {
+            ...coupon,
+            coupon_selections: selectionsWithQuestions,
+          };
+        })
+      );
+
+      return { data: couponsWithSelections, error: null };
     } catch (error) {
       console.error('Get user coupons error:', error);
       return { data: null, error: error as Error };
@@ -145,9 +125,6 @@ export const couponsService = {
    */
   async getActiveCoupons(userId: string) {
     try {
-      console.log('=== GETTING ACTIVE COUPONS ===');
-      console.log('User ID:', userId);
-
       // Service role ile RLS bypass
       const { data, error } = await supabaseService
         .from('coupons')
@@ -183,7 +160,6 @@ export const couponsService = {
         throw error;
       }
 
-      console.log('Active coupons result:', data);
       return { data, error: null };
     } catch (error) {
       console.error('Get active coupons error:', error);
@@ -313,11 +289,7 @@ export const couponsService = {
 
             if (insertError) {
               console.error('Prediction insert error for question:', sel.question_id, insertError);
-            } else {
-              console.log('Prediction created for question:', sel.question_id);
             }
-          } else {
-            console.log('Prediction already exists for question:', sel.question_id, '- skipping');
           }
         } catch (error) {
           console.error('Error processing prediction:', error);
@@ -326,10 +298,6 @@ export const couponsService = {
       }
 
       // Kullanıcının kredisini düş (Service role ile RLS bypass)
-      console.log('=== CREDIT DECREASE ATTEMPT ===');
-      console.log('User ID:', user.id);
-      console.log('Stake Amount:', stake_amount);
-      
       const { error: creditError } = await supabaseService.rpc('decrease_user_credits', {
         user_id_param: user.id,
         amount_param: stake_amount,
@@ -339,8 +307,6 @@ export const couponsService = {
         console.error('Credit decrease error:', creditError);
         throw creditError;
       }
-      
-      console.log('Credit decrease successful');
 
       return { data: coupon, error: null };
     } catch (error) {

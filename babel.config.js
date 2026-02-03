@@ -1,7 +1,32 @@
+const path = require('path');
+
+const projectRoot = path.resolve(__dirname);
+
 module.exports = function (api) {
   api.cache(true);
   return {
     presets: [['babel-preset-expo', { jsxImportSource: 'nativewind' }], 'nativewind/babel'],
-    plugins: ['react-native-reanimated/plugin'],
+    plugins: [
+      [
+        'module-resolver',
+        {
+          root: [projectRoot],
+          alias: {
+            '@': projectRoot,
+          },
+          resolvePath(sourcePath, currentFile) {
+            if (sourcePath.startsWith('@/')) {
+              const targetPath = path.join(projectRoot, sourcePath.slice(2));
+              const currentDir = path.dirname(currentFile);
+              let relative = path.relative(currentDir, targetPath);
+              if (!relative.startsWith('.')) relative = './' + relative;
+              return path.normalize(relative);
+            }
+            return sourcePath;
+          },
+        },
+      ],
+      'react-native-reanimated/plugin', // must be last
+    ],
   };
 };

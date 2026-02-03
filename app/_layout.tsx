@@ -11,7 +11,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar, Platform } from 'react-native';
-import { AuthProvider } from './SenceFinal/contexts/AuthContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 import '../global.css';
 
@@ -70,13 +70,6 @@ function RootLayoutNav() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="SenceHome/index" options={{ headerShown: false }} />
-        <Stack.Screen name="SenceHome/SenceTransitionScreen" options={{ headerShown: false }} />
-        <Stack.Screen name="SenceHome2/index" options={{ headerShown: false }} />
-        <Stack.Screen name="SenceReal/index" options={{ headerShown: false }} />
-        <Stack.Screen name="SonumuzHayrolsun/index" options={{ headerShown: false }} />
-        <Stack.Screen name="SENCEBUDUR/index" options={{ headerShown: false }} />
-        <Stack.Screen name="SonumuzHayrolacak/index" options={{ headerShown: false }} />
         <Stack.Screen name="SenceFinal/index" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>

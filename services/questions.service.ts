@@ -23,6 +23,12 @@ export interface Question {
   is_trending: boolean;
   created_at: string;
   updated_at: string;
+  /** RSS/AI önerisi (soru sonuçlanma akışı) */
+  suggested_result?: 'yes' | 'no' | null;
+  suggested_result_source?: 'rss' | 'ai' | null;
+  suggested_result_source_detail?: string | null;
+  resolution_admin_note?: string | null;
+  resolution_source_display?: string | null;
 }
 
 export interface CreateQuestionData {
@@ -609,12 +615,14 @@ export const questionsService = {
   },
 
   /**
-   * Tüm aktif soruları getir (filtrelerle)
+   * Tüm aktif soruları getir (filtrelerle).
+   * includeExpired: true ise süresi bitmiş (closed/resolved) sorular da dahil edilir (test için).
    */
   async getAllQuestions(filters: {
     trending?: boolean;
     highOdds?: boolean;
     endingSoon?: boolean;
+    includeExpired?: boolean;
     limit?: number;
     offset?: number;
   } = {}) {
@@ -644,8 +652,13 @@ export const questionsService = {
             icon,
             color
           )
-        `)
-        .eq('status', 'active');
+        `);
+
+      if (filters.includeExpired) {
+        query = query.in('status', ['active', 'closed', 'resolved']);
+      } else {
+        query = query.eq('status', 'active');
+      }
 
       // Trending filter
       if (filters.trending) {

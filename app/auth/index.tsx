@@ -22,7 +22,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth } from '../SenceFinal/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 

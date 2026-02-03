@@ -17,7 +17,6 @@ export const categoriesService = {
    */
   async getActiveCategories(): Promise<{ data: Category[] | null; error: Error | null }> {
     try {
-      console.log('Fetching categories from database...');
       const { data, error } = await supabase
         .from('categories')
         .select('*')
@@ -41,7 +40,6 @@ export const categoriesService = {
         return { data: null, error };
       }
 
-      console.log('Categories fetched successfully:', data);
       return { data, error: null };
     } catch (error) {
       console.error('Get categories error:', error);

@@ -1,6 +1,7 @@
 /**
  * Smart Image Color Analyzer - Modern & Adaptive
- * Görselden dominant renkleri extract eder ve dinamik gradient oluşturur
+ * Görsel URL'lerinden keyword analizi ile renk paleti oluşturur.
+ * (react-native-image-colors native modülü kullanılmıyor - native build gerekir)
  */
 
 export interface ColorPalette {
@@ -81,58 +82,68 @@ const MODERN_PALETTES = {
 };
 
 /**
+ * Görsel URL'sinden accent rengi döndürür.
+ * react-native-image-colors native modülü şu an devre dışı (native build gerekli).
+ * URL keyword analizi ile palette döner.
+ */
+export const getSecondColorFromImage = async (imageUri: string): Promise<string> => {
+  const palette = await analyzeImageColors(imageUri);
+  return palette.secondary;
+};
+
+/**
  * URL ve keyword bazlı akıllı renk analizi
  */
 export const analyzeImageColors = async (imageUrl: string): Promise<ColorPalette> => {
   const url = imageUrl.toLowerCase();
-  
+
   // Futbol sahası, yeşil çim, doğa
-  if (url.includes('grass') || url.includes('field') || url.includes('soccer') || 
+  if (url.includes('grass') || url.includes('field') || url.includes('soccer') ||
       url.includes('football') || url.includes('green') || url.includes('nature') ||
       url.includes('forest') || url.includes('park') || url.includes('golf') ||
       url.includes('tennis') || url.includes('çim') || url.includes('saha')) {
     return MODERN_PALETTES.green;
   }
-  
+
   // Gökyüzü, bina, mavi tonlar
-  if (url.includes('sky') || url.includes('building') || url.includes('blue') || 
+  if (url.includes('sky') || url.includes('building') || url.includes('blue') ||
       url.includes('ocean') || url.includes('sea') || url.includes('water') ||
       url.includes('cloud') || url.includes('gök') || url.includes('deniz')) {
     return MODERN_PALETTES.blue;
   }
-  
+
   // Stadyum, kırmızı, basketbol
   if (url.includes('stadium') || url.includes('red') || url.includes('basketball') ||
       url.includes('boxing') || url.includes('fight') || url.includes('mma') ||
       url.includes('blood') || url.includes('kırmızı')) {
     return MODERN_PALETTES.red;
   }
-  
+
   // Gece, teknoloji, oyun, mor tonlar
   if (url.includes('night') || url.includes('tech') || url.includes('game') ||
       url.includes('gaming') || url.includes('esport') || url.includes('neon') ||
       url.includes('purple') || url.includes('cyber') || url.includes('mor')) {
     return MODERN_PALETTES.purple;
   }
-  
+
   // Günbatımı, turuncu, ateş
   if (url.includes('sunset') || url.includes('orange') || url.includes('fire') ||
       url.includes('autumn') || url.includes('turuncu') || url.includes('güneş')) {
     return MODERN_PALETTES.orange;
   }
-  
+
   // Su, havuz, turkuaz
   if (url.includes('pool') || url.includes('swim') || url.includes('teal') ||
       url.includes('turquoise') || url.includes('aqua') || url.includes('havuz')) {
     return MODERN_PALETTES.teal;
   }
-  
+
   // Pembe, kadın, moda
   if (url.includes('pink') || url.includes('fashion') || url.includes('beauty') ||
       url.includes('rose') || url.includes('pembe')) {
     return MODERN_PALETTES.pink;
   }
-  
+
   // Varsayılan: Modern mor (mevcut tasarıma uygun)
   return MODERN_PALETTES.purple;
 };
@@ -156,7 +167,7 @@ export const getGradientByCategory = (category: string): string[] => {
     'Genel': 'purple',
     'Global': 'purple',
   };
-  
+
   const paletteKey = categoryMap[category] || 'purple';
   return MODERN_PALETTES[paletteKey].gradient;
 };
@@ -180,7 +191,7 @@ export const getPaletteByCategory = (category: string): ColorPalette => {
     'Genel': 'purple',
     'Global': 'purple',
   };
-  
+
   const paletteKey = categoryMap[category] || 'purple';
   return MODERN_PALETTES[paletteKey];
 };
@@ -206,6 +217,7 @@ export const getTextColor = (backgroundColor: string): string => {
 
 export default {
   analyzeImageColors,
+  getSecondColorFromImage,
   getGradientByCategory,
   getPaletteByCategory,
   getBrightness,

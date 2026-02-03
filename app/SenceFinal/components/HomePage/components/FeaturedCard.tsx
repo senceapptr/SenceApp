@@ -85,8 +85,16 @@ export function FeaturedCard({ question, onQuestionPress, onVote }: FeaturedCard
         resizeMode="cover"
       />
       <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.7)']}
+        colors={[
+          'transparent',
+          'rgba(0,0,0,0.2)',
+          'rgba(0,0,0,0.5)',
+          'rgba(0,0,0,0.82)',
+          'rgba(0,0,0,0.95)',
+        ]}
         style={styles.gradient}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
       />
       
       <View style={styles.content}>
@@ -141,7 +149,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '60%',
+    height: '100%',
   },
   content: {
     position: 'absolute',

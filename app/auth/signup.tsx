@@ -16,7 +16,7 @@ import {
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../SenceFinal/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignUpScreen() {
   const router = useRouter();

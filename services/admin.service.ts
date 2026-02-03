@@ -32,6 +32,23 @@ export interface PendingQuestion {
   no_odds?: number;
 }
 
+/** Sonuç onayı / ön onay bekleyen soru (closed + result null veya active + bitmesine 15dk veya az kala) */
+export interface PendingResolutionQuestion {
+  id: string;
+  title: string;
+  description: string | null;
+  end_date: string;
+  /** active = süre dolmadı (ön onay verilebilir), closed = süre doldu (sonuç verilmeli) */
+  status: 'active' | 'closed';
+  suggested_result: 'yes' | 'no' | null;
+  suggested_result_source: 'rss' | 'ai' | null;
+  suggested_result_source_detail: string | null;
+  /** Admin belirlediği sonuç (süre bitmeden yazılırsa kullanıcıya süre bitene kadar gösterilmez) */
+  result: 'yes' | 'no' | null;
+  category_name?: string;
+  image_url?: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -135,15 +152,15 @@ export class AdminService {
         q.secondary_category_id,
         q.third_category_id
       ]).filter(Boolean) || [];
-      
+
       let categoryNames: { [key: string]: string } = {};
-      
+
       if (allCategoryIds.length > 0) {
         const { data: categories } = await supabase
           .from('categories')
           .select('id, name')
           .in('id', allCategoryIds);
-        
+
         categoryNames = categories?.reduce((acc, cat) => {
           acc[cat.id] = cat.name;
           return acc;
@@ -179,6 +196,137 @@ export class AdminService {
   }
 
   /**
+   * Sonuç onayı / ön onay bekleyen soruları getir:
+   * (1) Süresi dolmuş veya dolmak üzere olan active sorular (status = active, end_date <= now+30min)
+   * (2) Süresi dolmuş ama sonuçlanmamış veya final onayı bekleyen sorular (status = closed)
+   */
+  async getPendingResolutionQuestions(): Promise<{
+    data: PendingResolutionQuestion[] | null;
+    error: Error | null;
+  }> {
+    try {
+      const now = new Date();
+      // 30 dakikalık bir pencere kullanıyoruz (Edge function ile uyumlu)
+      const windowEnd = new Date(now.getTime() + 30 * 60 * 1000);
+      const windowEndIso = windowEnd.toISOString();
+
+      const selectFields = `
+        id,
+        title,
+        description,
+        end_date,
+        status,
+        suggested_result,
+        suggested_result_source,
+        suggested_result_source_detail,
+        result,
+        image_url,
+        category_id,
+        categories!questions_category_id_fkey ( name )
+      `;
+
+      const mapRow = (q: any): PendingResolutionQuestion => ({
+        id: q.id,
+        title: q.title,
+        description: q.description ?? null,
+        end_date: q.end_date,
+        status: (q.status === 'active' ? 'active' : 'closed') as 'active' | 'closed',
+        suggested_result: q.suggested_result ?? null,
+        suggested_result_source: q.suggested_result_source ?? null,
+        suggested_result_source_detail: q.suggested_result_source_detail ?? null,
+        result: q.result ?? null,
+        category_name: q.categories?.name,
+        image_url: q.image_url,
+      });
+
+      // 1. Durumu 'closed' olan TÜM sorular (Sonuç verilmiş olsa bile sistemce resolve edilecek/edilmeyi bekleyen)
+      const { data: closedData, error: closedErr } = await supabase
+        .from('questions')
+        .select(selectFields)
+        .eq('status', 'closed')
+        .order('end_date', { ascending: false })
+        .limit(50);
+
+      if (closedErr) throw closedErr;
+
+      // 2. Durumu 'active' olup süresi geçmiş VEYA dolmasına az kalmış sorular
+      const { data: activeData, error: activeErr } = await supabase
+        .from('questions')
+        .select(selectFields)
+        .eq('status', 'active')
+        .lte('end_date', windowEndIso) // Gelecekteki 30dk ve tüm geçmişi kapsar
+        .order('end_date', { ascending: true })
+        .limit(50);
+
+      if (activeErr) throw activeErr;
+
+      const closedList = (closedData || []).map(mapRow);
+      const activeList = (activeData || []).map(mapRow);
+
+      // Tekilleştirme (id bazlı) ve birleştirme
+      const combined = [...activeList, ...closedList];
+      const uniqueMap = new Map();
+      combined.forEach(q => uniqueMap.set(q.id, q));
+      const list = Array.from(uniqueMap.values());
+
+      return { data: list, error: null };
+    } catch (error) {
+      console.error('Get pending resolution questions error:', error);
+      return { data: null, error: error as Error };
+    }
+  }
+
+  /**
+   * Soru sonucunu onayla.
+   * - Süre bitmemişse (endDate > now): Sadece result kaydedilir; kullanıcıya süre bitene kadar gösterilmez. Süre bitince cron status=resolved yapar.
+   * - Süre bitmişse: result + status=resolved hemen uygulanır.
+   */
+  async approveQuestionResult(
+    questionId: string,
+    result: 'yes' | 'no',
+    adminNote?: string,
+    endDate?: string
+  ): Promise<{ error: Error | null }> {
+    try {
+      const now = new Date();
+      const end = endDate ? new Date(endDate) : null;
+      const notYetEnded = end != null && end.getTime() > now.getTime();
+      const iso = now.toISOString();
+
+      if (notYetEnded) {
+        const { error } = await supabase
+          .from('questions')
+          .update({
+            result,
+            resolution_admin_note: adminNote?.trim() || null,
+            updated_at: iso,
+          })
+          .eq('id', questionId);
+        if (error) throw error;
+        return { error: null };
+      }
+
+      const { error } = await supabase
+        .from('questions')
+        .update({
+          result,
+          status: 'resolved',
+          resolved_at: iso,
+          resolution_admin_note: adminNote?.trim() || null,
+          updated_at: iso,
+        })
+        .eq('id', questionId);
+
+      if (error) throw error;
+
+      return { error: null };
+    } catch (error) {
+      console.error('Approve question result error:', error);
+      return { error: error as Error };
+    }
+  }
+
+  /**
    * Soruyu onayla
    */
   async approveQuestion(questionId: string): Promise<{ error: Error | null }> {
@@ -204,9 +352,9 @@ export class AdminService {
     try {
       const { error } = await supabase
         .from('questions')
-        .update({ 
+        .update({
           status: 'rejected',
-          rejection_reason: reason 
+          rejection_reason: reason
         })
         .eq('id', questionId);
 
@@ -311,22 +459,22 @@ export class AdminService {
       if (error) {
         // Parse error message for better user experience
         let userMessage = 'Soru güncellenirken bir hata oluştu';
-        
+
         // Status transition hatası
         if (error.message?.includes('Only admins can approve questions')) {
           userMessage = 'Sadece yöneticiler soruları onaylayabilir.';
-        } 
+        }
         else if (error.message?.includes('Only admins can change status')) {
           userMessage = 'Sadece yöneticiler soru durumunu değiştirebilir.';
-        } 
+        }
         else if (error.message?.includes('Cannot revert closed/resolved questions')) {
           userMessage = 'Kapatılmış veya sonuçlanmış sorular geri alınamaz.';
-        } 
+        }
         // End date hatası
         else if (error.message?.includes('End date must be in the future')) {
           userMessage = 'Bitiş tarihi gelecekte olmalıdır. (Yöneticiler için özel durumlar hariç)';
         }
-        
+
         return { error: new Error(userMessage) };
       }
 

@@ -2,43 +2,46 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, StatusBar, Animated, Dimensions, Modal, Alert, ActivityIndicator, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { ThemeTransition } from './components/ThemeTransition';
-import { HomePage } from './components/HomePage';
-import { AlternativeSearchPage } from './components/AlternativeSearchPage';
-import { CouponsPage } from './components/CouponsPage';
-import { LeaguePage } from './components/LeaguePage';
-import { WriteQuestionPage } from './components/WriteQuestionPage';
-import { TasksPage } from './components/TasksPage';
-import { SettingsPage } from './components/SettingsPage';
-import { MarketPage } from './components/MarketPage';
-import { NotificationsPage } from './components/NotificationsPage';
-import { ProfilePage } from './components/ProfilePage';
-import { QuestionDetailPage } from './components/QuestionDetailPage';
-import { QuestionCardDesignPage } from './components/QuestionCardDesignPage';
-import { EditProfilePage } from './components/EditProfilePage';
-import { PrivacySettingsPage } from './components/PrivacySettingsPage';
-import { HelpCenterPage } from './components/HelpCenterPage';
-import { SupportPage } from './components/SupportPage';
-import { FAQPage } from './components/FAQPage';
-import { FeedbackPage } from './components/FeedbackPage';
-import { AboutPage } from './components/AboutPage';
-import { CategoryQuestionsPage } from './components/CategoryQuestionsPage';
-import { CouponDrawer } from './components/CouponDrawer';
-import { ConfettiAnimation } from './components/ConfettiAnimation';
-import { BottomTabs } from './components/BottomTabs';
-import { SlideOutMenu } from './components/SlideOutMenu';
-import { LoginPage } from './components/LoginPage';
-import { AdminPanel } from './components/AdminPanel';
-import { QuestionDetailSkeleton } from './components/QuestionDetailSkeleton';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ThemeTransition } from '@/components/SenceFinal/ThemeTransition';
+import { HomePage } from '@/components/SenceFinal/HomePage';
+import { AlternativeSearchPage } from '@/components/SenceFinal/AlternativeSearchPage';
+import { CouponsPage } from '@/components/SenceFinal/CouponsPage';
+import { LeaguePage } from '@/components/SenceFinal/LeaguePage';
+import { WriteQuestionPage } from '@/components/SenceFinal/WriteQuestionPage';
+import { TasksPage } from '@/components/SenceFinal/TasksPage';
+import { SettingsPage } from '@/components/SenceFinal/SettingsPage';
+import { MarketPage } from '@/components/SenceFinal/MarketPage';
+import { NotificationsPage } from '@/components/SenceFinal/NotificationsPage';
+import { ProfilePage } from '@/components/SenceFinal/ProfilePage';
+import { QuestionDetailPage } from '@/components/SenceFinal/QuestionDetailPage';
+import { QuestionCardDesignPage } from '@/components/SenceFinal/QuestionCardDesignPage';
+import { EditProfilePage } from '@/components/SenceFinal/EditProfilePage';
+import { PrivacySettingsPage } from '@/components/SenceFinal/PrivacySettingsPage';
+import { HelpCenterPage } from '@/components/SenceFinal/HelpCenterPage';
+import { SupportPage } from '@/components/SenceFinal/SupportPage';
+import { FAQPage } from '@/components/SenceFinal/FAQPage';
+import { FeedbackPage } from '@/components/SenceFinal/FeedbackPage';
+import { AboutPage } from '@/components/SenceFinal/AboutPage';
+import { CategoryQuestionsPage } from '@/components/SenceFinal/CategoryQuestionsPage';
+import { NewDiscoverPage } from '@/components/SenceFinal/NewDiscoverPage';
+import { DiscoverPage } from '@/components/SenceFinal/DiscoverPage';
+import { CouponDrawer } from '@/components/SenceFinal/CouponDrawer';
+import { ConfettiAnimation } from '@/components/SenceFinal/ConfettiAnimation';
+import { BottomTabs } from '@/components/SenceFinal/BottomTabs';
+import { SlideOutMenu } from '@/components/SenceFinal/SlideOutMenu';
+import { LoginPage } from '@/components/SenceFinal/LoginPage';
+import { AdminPanel } from '@/components/SenceFinal/AdminPanel';
+import { QuestionDetailSkeleton } from '@/components/SenceFinal/QuestionDetailSkeleton';
+import { GameHubPage } from '@/components/SenceFinal/GameHubPage';
 // EmailVerificationPage is defined inline in this file
 import { InputOTP } from '@/components/PremiumSence/ui/input-otp';
 import { verificationService } from '@/services/verification.service';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type PageType = 'home' | 'coupons' | 'leagues' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign' | 'editProfile' | 'privacySettings' | 'helpCenter' | 'support' | 'faq' | 'feedback' | 'about' | 'adminPanel' | 'allQuestions' | 'emailVerification';
+type PageType = 'home' | 'coupons' | 'leagues' | 'gameHub' | 'newDiscover' | 'discoverNew' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign' | 'editProfile' | 'privacySettings' | 'helpCenter' | 'support' | 'faq' | 'feedback' | 'about' | 'adminPanel' | 'allQuestions' | 'emailVerification';
 
 interface Question {
   id: string;
@@ -76,11 +79,11 @@ interface UserProfile {
 }
 
 // AllQuestionsModal - CategoryQuestionsPage'i slide animasyonu ile açar
-function AllQuestionsModal({ 
-  onBack, 
-  handleQuestionDetail, 
-  handleVote 
-}: { 
+function AllQuestionsModal({
+  onBack,
+  handleQuestionDetail,
+  handleVote
+}: {
   onBack: () => void;
   handleQuestionDetail: (questionId: string, sourceCategory?: any) => void;
   handleVote: (questionId: string, vote: 'yes' | 'no', odds: number) => void;
@@ -137,7 +140,7 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [showEmailVerificationBanner, setShowEmailVerificationBanner] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  
+
   // Question Detail and Coupon states
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [sourceCategory, setSourceCategory] = useState<any>(null);
@@ -209,20 +212,20 @@ function AppContent() {
 
   // Question Detail slide animation
   const questionDetailSlideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
-  
+
   // Animasyon state'i kaldırıldı - kullanıcı deneyimi için kritik
 
   const handleQuestionDetail = async (questionId: number | string, sourceCategory?: any) => {
     // ID'yi string'e çevir (UUID formatında olmalı)
     const questionIdString = questionId.toString();
-    
+
     // Source category'yi set et
     setSourceCategory(sourceCategory);
-    
+
     // HEMEN AÇ - kategori sayfası gibi anında açılsın
     setIsQuestionDetailOpen(true);
     setIsQuestionDetailLoading(false);
-    
+
     // Mock question ile anında göster
     const mockQuestion: Question = {
       id: questionIdString,
@@ -241,7 +244,7 @@ function AppContent() {
       totalAmount: 0
     };
     setSelectedQuestion(mockQuestion);
-    
+
     // Sağdan açılış animasyonu - hızlı timing
     questionDetailSlideAnim.setValue(SCREEN_WIDTH);
     Animated.timing(questionDetailSlideAnim, {
@@ -249,13 +252,13 @@ function AppContent() {
       duration: 250, // Hızlı - 250ms
       useNativeDriver: true,
     }).start();
-    
+
     // Arka planda veri yükle - cache yok, direkt backend
     try {
       // Direkt backend'den çek
       const { questionsService } = await import('@/services/questions.service');
       const result = await (questionsService as any).getQuestionById(questionIdString);
-      
+
       if (result.data) {
         // Backend'den gelen veriyi Question formatına dönüştür
         const question: Question = {
@@ -274,7 +277,7 @@ function AppContent() {
           noPercentage: result.data.no_percentage || 50,
           totalAmount: result.data.total_amount || 0
         };
-        
+
         setSelectedQuestion(question);
       } else {
         // Backend'den veri gelmezse mock data kullan
@@ -298,7 +301,7 @@ function AppContent() {
       }
     } catch (error) {
       console.error('Question detail load error:', error);
-      
+
       // Hata durumunda mock data kullan
       const mockQuestion: Question = {
         id: questionId.toString(),
@@ -445,6 +448,7 @@ function AppContent() {
             onMenuToggle={handleMenuToggle}
             onTasksNavigate={handleTasksNavigate}
             onCouponsNavigate={handleCouponsNavigate}
+            onSearchNavigate={() => setCurrentPage('newDiscover')}
           />
         );
       case 'allQuestions':
@@ -457,7 +461,7 @@ function AppContent() {
         );
       case 'coupons':
         return (
-          <CouponsPage 
+          <CouponsPage
             onMenuToggle={handleMenuToggle}
             onQuestionDetail={handleQuestionDetail}
             refreshTrigger={couponsRefreshTrigger}
@@ -466,30 +470,55 @@ function AppContent() {
         );
       case 'leagues':
         return (
-          <LeaguePage 
+          <LeaguePage
             onBack={() => setCurrentPage('home')}
             handleQuestionDetail={handleQuestionDetail}
             handleVote={handleVote}
             onMenuToggle={handleMenuToggle}
           />
         );
+      case 'gameHub':
+        return (
+          <GameHubPage
+            onBack={() => setCurrentPage('home')}
+            onMenuToggle={handleMenuToggle}
+          />
+        );
+      case 'newDiscover':
+        return (
+          <NewDiscoverPage
+            onBack={handleBack}
+            onMenuToggle={handleMenuToggle}
+            handleQuestionDetail={handleQuestionDetail}
+            handleVote={handleVote}
+          />
+        );
+      case 'discoverNew':
+        return (
+          <DiscoverPage
+            onBack={handleBack}
+            onMenuToggle={handleMenuToggle}
+            handleQuestionDetail={handleQuestionDetail}
+            handleVote={handleVote}
+          />
+        );
       case 'writeQuestion':
         return (
-          <WriteQuestionPage 
+          <WriteQuestionPage
             onBack={handleBack}
             onMenuToggle={handleMenuToggle}
           />
         );
       case 'tasks':
         return (
-          <TasksPage 
+          <TasksPage
             onBack={handleBack}
             onMenuToggle={handleMenuToggle}
           />
         );
       case 'settings':
         return (
-          <SettingsPage 
+          <SettingsPage
             onBack={handleBack}
             onMenuToggle={handleMenuToggle}
             onEditProfile={() => setCurrentPage('editProfile')}
@@ -525,7 +554,7 @@ function AppContent() {
         return null;
       case 'editProfile':
         return (
-          <EditProfilePage 
+          <EditProfilePage
             onBack={handleBack}
             userProfile={userProfile}
             onUpdateProfile={handleUpdateProfile}
@@ -533,13 +562,13 @@ function AppContent() {
         );
       case 'privacySettings':
         return (
-          <PrivacySettingsPage 
+          <PrivacySettingsPage
             onBack={handleBack}
           />
         );
       case 'helpCenter':
         return (
-          <HelpCenterPage 
+          <HelpCenterPage
             onBack={handleBack}
             onSupport={() => setCurrentPage('support')}
             onFAQ={() => setCurrentPage('faq')}
@@ -548,37 +577,37 @@ function AppContent() {
         );
       case 'support':
         return (
-          <SupportPage 
+          <SupportPage
             onBack={handleBack}
           />
         );
       case 'faq':
         return (
-          <FAQPage 
+          <FAQPage
             onBack={handleBack}
           />
         );
       case 'feedback':
         return (
-          <FeedbackPage 
+          <FeedbackPage
             onBack={handleBack}
           />
         );
       case 'about':
         return (
-          <AboutPage 
+          <AboutPage
             onBack={handleBack}
           />
         );
       case 'adminPanel':
         return (
-          <AdminPanel 
+          <AdminPanel
             onBack={handleBack}
           />
         );
       case 'market':
         return (
-          <MarketPage 
+          <MarketPage
             onBack={handleBack}
             onMenuToggle={handleMenuToggle}
             userCredits={userCredits}
@@ -586,14 +615,14 @@ function AppContent() {
         );
       case 'notifications':
         return (
-          <NotificationsPage 
+          <NotificationsPage
             onBack={handleBack}
             onMenuToggle={handleMenuToggle}
           />
         );
       case 'profile':
         return (
-          <ProfilePage 
+          <ProfilePage
             onBack={handleBack}
             onMenuToggle={handleMenuToggle}
             userProfile={userProfile}
@@ -613,6 +642,7 @@ function AppContent() {
             handleQuestionDetail={handleQuestionDetail}
             handleVote={handleVote}
             onMenuToggle={handleMenuToggle}
+            onSearchNavigate={() => setCurrentPage('newDiscover')}
           />
         );
     }
@@ -620,10 +650,10 @@ function AppContent() {
 
   return (
     <View style={styles.container}>
-      <StatusBar 
-        barStyle="light-content" 
-        backgroundColor="transparent" 
-        translucent 
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
         hidden={false}
       />
       <ThemeTransition>
@@ -653,26 +683,24 @@ function AppContent() {
             )}
             {renderCurrentPage()}
             {/* Only show bottom tabs on main pages */}
-            {(['home', 'coupons', 'leagues'] as PageType[]).includes(currentPage) && (
+            {(['home', 'coupons', 'gameHub', 'leagues'] as PageType[]).includes(currentPage) && (
               <BottomTabs currentPage={currentPage} onPageChange={handlePageChange} />
             )}
+            {/* Coupon Drawer – sayfa içeriğiyle aynı view ağacında (iOS dokunma blokajı önlenir) */}
+            <CouponDrawer
+              isOpen={isCouponDrawerOpen}
+              onClose={() => setIsCouponDrawerOpen(false)}
+              selections={couponSelections}
+              onRemoveSelection={handleRemoveSelection}
+              onClearAll={handleClearAll}
+              onCouponSuccess={handleCouponSuccess}
+              userCredits={userCredits}
+              onCouponCreated={() => {
+                setCouponsRefreshTrigger(prev => prev + 1);
+              }}
+            />
           </View>
         </SlideOutMenu>
-
-        {/* Coupon Drawer */}
-        <CouponDrawer
-          isOpen={isCouponDrawerOpen}
-          onClose={() => setIsCouponDrawerOpen(false)}
-          selections={couponSelections}
-          onRemoveSelection={handleRemoveSelection}
-          onClearAll={handleClearAll}
-          onCouponSuccess={handleCouponSuccess}
-          userCredits={userCredits}
-          onCouponCreated={() => {
-            // Kupon oluşturulduğunda kuponlarım sayfasını yenile
-            setCouponsRefreshTrigger(prev => prev + 1);
-          }}
-        />
 
         {/* Confetti Animation */}
         <ConfettiAnimation
@@ -688,24 +716,26 @@ function AppContent() {
           onRequestClose={handleCloseQuestionDetail}
           statusBarTranslucent={false}
         >
-          <Animated.View
-            style={[
-              styles.questionDetailContainer,
-              {
-                transform: [{ translateX: questionDetailSlideAnim }],
-              },
-            ]}
-          >
-            {selectedQuestion ? (
-              <QuestionDetailPage
-                onBack={handleCloseQuestionDetail}
-                onMenuToggle={handleMenuToggle}
-                question={selectedQuestion}
-                onVote={handleVote}
-                sourceCategory={sourceCategory}
-              />
-            ) : null}
-          </Animated.View>
+          <View style={styles.modalFullScreenWrapper}>
+            <Animated.View
+              style={[
+                styles.questionDetailContainer,
+                {
+                  transform: [{ translateX: questionDetailSlideAnim }],
+                },
+              ]}
+            >
+              {selectedQuestion ? (
+                <QuestionDetailPage
+                  onBack={handleCloseQuestionDetail}
+                  onMenuToggle={handleMenuToggle}
+                  question={selectedQuestion}
+                  onVote={handleVote}
+                  sourceCategory={sourceCategory}
+                />
+              ) : null}
+            </Animated.View>
+          </View>
         </Modal>
       </ThemeTransition>
     </View>
@@ -773,7 +803,7 @@ function AppContentWrapper() {
   // EmailVerificationPage'i render et
   if (pendingVerificationUser) {
     return (
-      <EmailVerificationPageWrapper 
+      <EmailVerificationPageWrapper
         userId={pendingVerificationUser.id}
         userEmail={pendingVerificationUser.email}
         onVerified={async () => {
@@ -790,13 +820,13 @@ function AppContentWrapper() {
 }
 
 // EmailVerificationPage wrapper - user bilgilerini prop olarak alır
-function EmailVerificationPageWrapper({ 
-  userId, 
-  userEmail, 
-  onVerified 
-}: { 
-  userId: string; 
-  userEmail: string; 
+function EmailVerificationPageWrapper({
+  userId,
+  userEmail,
+  onVerified
+}: {
+  userId: string;
+  userEmail: string;
   onVerified: () => void;
 }) {
   const [otp, setOtp] = useState('');
@@ -823,7 +853,7 @@ function EmailVerificationPageWrapper({
     setSendingOTP(true);
     try {
       const result = await verificationService.sendOTP(userId, userEmail);
-      
+
       if (result.success) {
         setCountdown(60); // 60 saniye bekle
         if (countdown === 0) {
@@ -850,7 +880,7 @@ function EmailVerificationPageWrapper({
     setLoading(true);
     try {
       const result = await verificationService.verifyOTP(userId, userEmail, otp);
-      
+
       if (result.success) {
         Alert.alert(
           'Başarılı',
@@ -867,14 +897,14 @@ function EmailVerificationPageWrapper({
       } else {
         const errorMessage = result.error || 'Kod hatalı veya süresi dolmuş';
         const remainingAttempts = result.remainingAttempts;
-        
+
         let message = errorMessage;
         if (remainingAttempts !== undefined && remainingAttempts > 0) {
           message += `\n\nKalan deneme hakkı: ${remainingAttempts}`;
         } else if (remainingAttempts === 0) {
           message += '\n\nYeni kod almak için "Kodu Tekrar Gönder" butonuna tıklayın.';
         }
-        
+
         Alert.alert('Hata', message);
         setOtp(''); // OTP'yi temizle
       }
@@ -893,13 +923,13 @@ function EmailVerificationPageWrapper({
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1, backgroundColor: '#FFFFFF' }} 
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: '#FFFFFF' }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <StatusBar barStyle="light-content" backgroundColor="#432870" />
-      
-      <ScrollView 
+
+      <ScrollView
         contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 60, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -909,7 +939,7 @@ function EmailVerificationPageWrapper({
           <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
             <Text style={{ fontSize: 40 }}>✉️</Text>
           </View>
-          
+
           <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#111827', marginBottom: 12, textAlign: 'center' }}>Email Doğrulama</Text>
           <Text style={{ fontSize: 16, color: '#6B7280', textAlign: 'center', lineHeight: 24, paddingHorizontal: 20 }}>
             {userEmail} adresine gönderilen 6 haneli kodu girin
@@ -924,7 +954,7 @@ function EmailVerificationPageWrapper({
             onChange={setOtp}
             style={{ marginVertical: 20 }}
           />
-          
+
           {sendingOTP && (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, gap: 8 }}>
               <ActivityIndicator size="small" color="#432870" />
@@ -960,7 +990,7 @@ function EmailVerificationPageWrapper({
               <ActivityIndicator size="small" color="#432870" />
             ) : (
               <Text style={[countdown > 0 && { color: '#9CA3AF' }]}>
-                {countdown > 0 
+                {countdown > 0
                   ? `Kodu Tekrar Gönder (${formatCountdown(countdown)})`
                   : 'Kodu Tekrar Gönder'
                 }
@@ -1052,10 +1082,16 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontWeight: '600',
   },
+  modalFullScreenWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   questionDetailContainer: {
     flex: 1,
     width: SCREEN_WIDTH,
-    height: '100%',
     backgroundColor: '#FFFFFF',
   },
 });
