@@ -1,4 +1,5 @@
 import { supabase, supabaseService } from '@/lib/supabase';
+import { notificationsService } from './notifications.service'; // Import notification service
 
 export interface Coupon {
   id: string;
@@ -256,7 +257,7 @@ export const couponsService = {
       // Her selection için predictions tablosuna da ekle (vote counts için)
       // Her soru için kullanıcının payını hesapla (stake_amount / selections.length)
       const amountPerQuestion = Math.floor(stake_amount / selections.length);
-      
+
       // Her soruyu tek tek kontrol et ve ekle
       for (const sel of selections) {
         try {
@@ -302,7 +303,7 @@ export const couponsService = {
         user_id_param: user.id,
         amount_param: stake_amount,
       });
-      
+
       if (creditError) {
         console.error('Credit decrease error:', creditError);
         throw creditError;
@@ -317,18 +318,82 @@ export const couponsService = {
 
   /**
    * Kupon sonuçlandır ve kazanma durumunda kredi artır
+   * + Bildirim oluştur
    */
   async resolveCoupon(couponId: string) {
     try {
+      // 1. Durumu güncelle
       const { error } = await supabaseService.rpc('resolve_coupon', {
         coupon_id_param: couponId
       });
 
       if (error) throw error;
+
+      // 2. Kuponu tekrar çek
+      const { data: coupon, error: fetchError } = await supabaseService
+        .from('coupons')
+        .select('*')
+        .eq('id', couponId)
+        .single();
+
+      if (fetchError || !coupon) {
+        console.warn('Could not fetch resolved coupon for notification', couponId);
+        return { data: true, error: null };
+      }
+
+      // 3. Duruma göre bildirim at
+      // Coupon Won
+      if (coupon.status === 'won') {
+        await notificationsService.createCouponWonNotification(coupon.user_id, {
+          matchCount: coupon.selections_count,
+          reward: coupon.potential_win,
+          couponId: coupon.id
+        });
+        console.log('Coupon won notification sent for', coupon.id);
+      }
+      // Partially Won (Future feature?)
+      else if (coupon.status === 'partially_won') {
+        // ...
+      }
+
       return { data: true, error: null };
     } catch (error) {
       console.error('Resolve coupon error:', error);
       return { data: null, error: error as Error };
+    }
+  },
+
+  /**
+   * Kupon durumunu kontrol et (1 maç kaldı bildirimi için)
+   * Bu fonksiyon periyodik olarak veya soru sonuçlandığında çağrılabilir.
+   */
+  async checkCouponStatus(couponId: string) {
+    try {
+      const { data: coupon, error } = await supabaseService
+        .from('coupons')
+        .select('*, coupon_selections(status)')
+        .eq('id', couponId)
+        .single();
+
+      if (error || !coupon) return;
+
+      if (coupon.status !== 'pending') return;
+
+      const selections = coupon.coupon_selections || [];
+      const pendingCount = selections.filter((s: any) => s.status === 'pending').length;
+
+      // Sadece 1 maç kaldıysa bildirim at
+      if (pendingCount === 1) {
+        // Daha önce bildirim atılmış mı kontrol etmek gerekebilir (Redis cache vs. ile)
+        // Şimdilik doğrudan atıyoruz (basit logic)
+        await notificationsService.createCouponStatusNotification(coupon.user_id, {
+          couponId: coupon.id,
+          remainingQuestions: 1
+        });
+      }
+
+    } catch (err) {
+      console.error('Check coupon status error:', err);
     }
   },
 
@@ -350,9 +415,22 @@ export const couponsService = {
       return { data: null, error: error as Error };
     }
   },
+
+  /**
+   * Kazanan kuponun ödülünü al
+   * Tek seferlik - is_claimed flag'i ile kontrol edilir
+   */
+  async claimCouponReward(couponId: string) {
+    try {
+      const { data, error } = await supabaseService.rpc('claim_coupon_reward', {
+        coupon_id_param: couponId
+      });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Claim coupon reward error:', error);
+      return { data: null, error: error as Error };
+    }
+  },
 };
-
-
-
-
-

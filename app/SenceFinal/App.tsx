@@ -35,13 +35,14 @@ import { LoginPage } from '@/components/SenceFinal/LoginPage';
 import { AdminPanel } from '@/components/SenceFinal/AdminPanel';
 import { QuestionDetailSkeleton } from '@/components/SenceFinal/QuestionDetailSkeleton';
 import { GameHubPage } from '@/components/SenceFinal/GameHubPage';
+import { LeaderboardPage } from '@/components/SenceFinal/LeaderboardPage';
 // EmailVerificationPage is defined inline in this file
 import { InputOTP } from '@/components/PremiumSence/ui/input-otp';
 import { verificationService } from '@/services/verification.service';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type PageType = 'home' | 'coupons' | 'leagues' | 'gameHub' | 'newDiscover' | 'discoverNew' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign' | 'editProfile' | 'privacySettings' | 'helpCenter' | 'support' | 'faq' | 'feedback' | 'about' | 'adminPanel' | 'allQuestions' | 'emailVerification';
+type PageType = 'home' | 'coupons' | 'leagues' | 'gameHub' | 'newDiscover' | 'discoverNew' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign' | 'editProfile' | 'privacySettings' | 'helpCenter' | 'support' | 'faq' | 'feedback' | 'about' | 'adminPanel' | 'allQuestions' | 'emailVerification' | 'leaderboard';
 
 interface Question {
   id: string;
@@ -631,6 +632,13 @@ function AppContent() {
       case 'questionCardDesign':
         return (
           <QuestionCardDesignPage
+            onBack={handleBack}
+            onMenuToggle={handleMenuToggle}
+          />
+        );
+      case 'leaderboard':
+        return (
+          <LeaderboardPage
             onBack={handleBack}
             onMenuToggle={handleMenuToggle}
           />

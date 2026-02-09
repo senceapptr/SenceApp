@@ -5,48 +5,107 @@ export interface Task {
   title: string;
   description: string | null;
   type: 'daily' | 'monthly';
-  target_value: number;
+  requirement_type: string;
+  requirement_value: number;
   reward_credits: number;
+  reward_experience: number;
+  icon: string;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  reset_period: string;
 }
 
 export interface UserTaskProgress {
   id: string;
   user_id: string;
   task_id: string;
-  current_progress: number;
-  completed: boolean;
+  progress: number;
+  is_completed: boolean;
+  is_claimed: boolean;
   completed_at: string | null;
-  created_at: string;
-  updated_at: string;
+  claimed_at: string | null;
+  reset_at: string | null;
   tasks?: Task;
 }
 
-export interface CompleteTaskData {
-  task_id: string;
-  user_id: string;
-  progress_increment?: number;
+export interface TaskWithProgress extends Task {
+  progress: number;
+  is_completed: boolean;
+  is_claimed: boolean;
+  actionType: 'navigate' | 'claim';
+  navigationTarget?: '/home' | '/leagues' | '/gamehub' | null;
 }
 
 /**
- * Tasks Service
- * Görev işlemleri
+ * Tasks Service - Görev işlemleri
+ * Real-time progress calculation (Option B)
  */
 export const tasksService = {
   /**
+   * Kullanıcı girişini kaydet (session tracking)
+   */
+  async recordUserSession(userId: string) {
+    try {
+      const { error } = await supabase
+        .from('user_sessions')
+        .upsert({
+          user_id: userId,
+          session_date: new Date().toISOString().split('T')[0],
+        }, {
+          onConflict: 'user_id,session_date',
+          ignoreDuplicates: true
+        });
+
+      if (error && error.code !== '23505') { // Ignore unique violation
+        console.error('Record session error:', error);
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Record user session error:', error);
+      return { success: false };
+    }
+  },
+
+  /**
+   * Kullanıcının giriş günlerini getir (takvim için)
+   */
+  async getUserLoginDays(userId: string, year: number, month: number) {
+    try {
+      const startDate = new Date(year, month, 1).toISOString().split('T')[0];
+      const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+
+      const { data, error } = await supabase
+        .from('user_sessions')
+        .select('session_date')
+        .eq('user_id', userId)
+        .gte('session_date', startDate)
+        .lte('session_date', endDate);
+
+      if (error) throw error;
+
+      const loginDays = data?.map(s => new Date(s.session_date).getDate()) || [];
+      return { data: loginDays, error: null };
+    } catch (error) {
+      console.error('Get user login days error:', error);
+      return { data: [], error: error as Error };
+    }
+  },
+
+  /**
    * Tüm aktif görevleri getir
    */
-  async getTasks() {
+  async getTasks(type?: 'daily' | 'monthly') {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('tasks')
         .select('*')
         .eq('is_active', true)
-        .order('type', { ascending: true })
         .order('created_at', { ascending: true });
 
+      if (type) {
+        query = query.eq('type', type);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
@@ -56,88 +115,51 @@ export const tasksService = {
   },
 
   /**
-   * Kullanıcının görev ilerlemesini getir
+   * Günlük görevleri real-time progress ile getir
    */
-  async getUserTaskProgress(userId: string) {
+  async getDailyTasks(userId: string): Promise<{ data: TaskWithProgress[] | null; error: Error | null }> {
     try {
-      const { data, error } = await supabase
-        .from('user_tasks')
-        .select(`
-          *,
-          tasks (
-            id,
-            title,
-            description,
-            type,
-            requirement_value,
-            reward_credits,
-            is_active
-          )
-        `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      // Görevleri ve mevcut user_tasks kayıtlarını paralel getir
+      const [tasksResult, userTasksResult] = await Promise.all([
+        this.getTasks('daily'),
+        supabase
+          .from('user_tasks')
+          .select('*')
+          .eq('user_id', userId)
+      ]);
 
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error) {
-      console.error('Get user task progress error:', error);
-      return { data: null, error: error as Error };
-    }
-  },
+      if (tasksResult.error) throw tasksResult.error;
+      const tasks = tasksResult.data || [];
 
-  /**
-   * Kullanıcının günlük görevlerini getir
-   */
-  async getDailyTasks(userId: string) {
-    try {
-      console.log('Getting daily tasks for user:', userId);
-      
-      // Önce tüm aktif günlük görevleri getir
-      const { data: allDailyTasks, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('type', 'daily')
-        .eq('is_active', true);
+      // Bugünün başlangıcı (UTC)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString();
 
-      if (tasksError) throw tasksError;
-      console.log('All daily tasks:', allDailyTasks);
+      // Her görev için gerçek ilerlemeyi hesapla
+      const tasksWithProgress: TaskWithProgress[] = await Promise.all(
+        tasks.map(async (task) => {
+          const progress = await this.calculateTaskProgress(userId, task, todayStr, 'daily');
+          const userTask = userTasksResult.data?.find(ut => ut.task_id === task.id);
 
-      // Kullanıcının mevcut görev ilerlemelerini getir
-      const { data: userProgress, error: progressError } = await supabase
-        .from('user_tasks')
-        .select('*')
-        .eq('user_id', userId);
+          // Reset kontrolü - günlük görev ve resetlenmesi gerekiyorsa
+          const needsReset = userTask && userTask.reset_at && new Date(userTask.reset_at) < today;
 
-      if (progressError) throw progressError;
-      console.log('User progress:', userProgress);
+          const is_completed = progress >= task.requirement_value;
+          const is_claimed = needsReset ? false : (userTask?.is_claimed || false);
 
-      // RLS sorunları nedeniyle doğrudan fallback mekanizmasını kullanıyoruz
-      console.log('Using direct fallback mechanism to avoid RLS issues');
-      
-      // Doğrudan tasks tablosundan veri çek
-      const { data: directTasks, error: directError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('type', 'daily')
-        .eq('is_active', true);
+          return {
+            ...task,
+            progress: Math.min(progress, task.requirement_value),
+            is_completed,
+            is_claimed,
+            actionType: (is_completed && !is_claimed) ? 'claim' : 'navigate',
+            navigationTarget: this.getNavigationTarget(task.requirement_type),
+          } as TaskWithProgress;
+        })
+      );
 
-      if (directError) throw directError;
-      
-      console.log('Direct daily tasks from database:', directTasks?.length || 0);
-      
-      // Tasks verilerini user_tasks formatına dönüştür
-      const mockUserTasks = directTasks?.map(task => ({
-        id: `mock-${task.id}`,
-        user_id: userId,
-        task_id: task.id,
-        progress: 0,
-        is_completed: false,
-        is_claimed: false,
-        tasks: task
-      })) || [];
-      
-      console.log('Daily tasks created:', mockUserTasks.length);
-      return { data: mockUserTasks, error: null };
+      return { data: tasksWithProgress, error: null };
     } catch (error) {
       console.error('Get daily tasks error:', error);
       return { data: null, error: error as Error };
@@ -145,59 +167,52 @@ export const tasksService = {
   },
 
   /**
-   * Kullanıcının aylık görevlerini getir
+   * Aylık görevleri real-time progress ile getir
    */
-  async getMonthlyTasks(userId: string) {
+  async getMonthlyTasks(userId: string): Promise<{ data: TaskWithProgress[] | null; error: Error | null }> {
     try {
-      console.log('Getting monthly tasks for user:', userId);
-      
-      // Önce tüm aktif aylık görevleri getir
-      const { data: allMonthlyTasks, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('type', 'monthly')
-        .eq('is_active', true);
+      const [tasksResult, userTasksResult] = await Promise.all([
+        this.getTasks('monthly'),
+        supabase
+          .from('user_tasks')
+          .select('*')
+          .eq('user_id', userId)
+      ]);
 
-      if (tasksError) throw tasksError;
-      console.log('All monthly tasks found:', allMonthlyTasks?.length || 0);
-      console.log('Monthly tasks details:', allMonthlyTasks);
+      if (tasksResult.error) throw tasksResult.error;
+      const tasks = tasksResult.data || [];
 
-      // Kullanıcının mevcut görev ilerlemelerini getir
-      const { data: userProgress, error: progressError } = await supabase
-        .from('user_tasks')
-        .select('*')
-        .eq('user_id', userId);
+      // Ayın başlangıcı
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      const monthStartStr = monthStart.toISOString();
 
-      if (progressError) throw progressError;
-      console.log('User progress for monthly:', userProgress);
+      const tasksWithProgress: TaskWithProgress[] = await Promise.all(
+        tasks.map(async (task) => {
+          const progress = await this.calculateTaskProgress(userId, task, monthStartStr, 'monthly');
+          const userTask = userTasksResult.data?.find(ut => ut.task_id === task.id);
 
-      // RLS sorunları nedeniyle doğrudan fallback mekanizmasını kullanıyoruz
-      console.log('Using direct fallback mechanism for monthly tasks to avoid RLS issues');
-      
-      // Doğrudan tasks tablosundan veri çek
-      const { data: directTasks, error: directError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('type', 'monthly')
-        .eq('is_active', true);
+          // Reset kontrolü - aylık görev ve ay değişmişse
+          const currentMonth = new Date().getMonth();
+          const resetMonth = userTask?.reset_at ? new Date(userTask.reset_at).getMonth() : null;
+          const needsReset = userTask && resetMonth !== null && resetMonth !== currentMonth;
 
-      if (directError) throw directError;
-      
-      console.log('Direct monthly tasks from database:', directTasks?.length || 0);
-      
-      // Tasks verilerini user_tasks formatına dönüştür
-      const mockUserTasks = directTasks?.map(task => ({
-        id: `mock-${task.id}`,
-        user_id: userId,
-        task_id: task.id,
-        progress: 0,
-        is_completed: false,
-        is_claimed: false,
-        tasks: task
-      })) || [];
-      
-      console.log('Monthly tasks created:', mockUserTasks.length);
-      return { data: mockUserTasks, error: null };
+          const is_completed = progress >= task.requirement_value;
+          const is_claimed = needsReset ? false : (userTask?.is_claimed || false);
+
+          return {
+            ...task,
+            progress: Math.min(progress, task.requirement_value),
+            is_completed,
+            is_claimed,
+            actionType: (is_completed && !is_claimed) ? 'claim' : 'navigate',
+            navigationTarget: this.getNavigationTarget(task.requirement_type),
+          } as TaskWithProgress;
+        })
+      );
+
+      return { data: tasksWithProgress, error: null };
     } catch (error) {
       console.error('Get monthly tasks error:', error);
       return { data: null, error: error as Error };
@@ -205,99 +220,223 @@ export const tasksService = {
   },
 
   /**
-   * Görev ilerlemesini güncelle
+   * Görev tipine göre ilerlemeyi hesapla
    */
-  async updateTaskProgress(progressData: CompleteTaskData) {
+  async calculateTaskProgress(userId: string, task: Task, startDate: string, period: 'daily' | 'monthly'): Promise<number> {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      switch (task.requirement_type) {
+        case 'prediction_count':
+          return await this.countPredictions(userId, startDate);
 
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
+        case 'correct_predictions':
+          return await this.countCorrectPredictions(userId, startDate);
 
-      // Mevcut ilerlemeyi kontrol et
-      const { data: existingProgress, error: progressError } = await supabase
-        .from('user_tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('task_id', progressData.task_id)
-        .single();
+        case 'coupon_count':
+          return await this.countCoupons(userId, startDate);
 
-      if (progressError && progressError.code !== 'PGRST116') {
-        throw progressError;
-      }
+        case 'login_streak':
+          return await this.countLoginDays(userId, period);
 
-      // Görev detaylarını al
-      const { data: task, error: taskError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('id', progressData.task_id)
-        .single();
+        case 'daily_games':
+          return await this.countDailyGamesCompleted(userId, startDate);
 
-      if (taskError) throw taskError;
+        case 'league_prediction':
+          return await this.countLeaguePredictions(userId, startDate);
 
-      const increment = progressData.progress_increment || 1;
-      const newProgress = (existingProgress?.progress || 0) + increment;
-      const isCompleted = newProgress >= task.requirement_value;
+        case 'league_complete':
+          return await this.countCompletedLeagues(userId, startDate);
 
-      if (existingProgress) {
-        // Mevcut ilerlemeyi güncelle
-        const { data, error } = await supabase
-          .from('user_tasks')
-          .update({
-            progress: newProgress,
-            is_completed: isCompleted,
-            completed_at: isCompleted ? new Date().toISOString() : null,
-          })
-          .eq('id', existingProgress.id)
-          .select()
-          .single();
+        case 'daily_games_bonus':
+          return await this.countDailyGamesBonuses(userId, startDate);
 
-        if (error) throw error;
-
-        // Eğer görev tamamlandıysa kredi ver
-        if (isCompleted && !existingProgress.is_completed) {
-          await this.rewardUserCredits(user.id, task.reward_credits);
-        }
-
-        return { data, error: null };
-      } else {
-        // Yeni ilerleme kaydı oluştur
-        const { data, error } = await supabase
-          .from('user_tasks')
-          .insert({
-            user_id: user.id,
-            task_id: progressData.task_id,
-            progress: newProgress,
-            is_completed: isCompleted,
-            completed_at: isCompleted ? new Date().toISOString() : null,
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        // Eğer görev tamamlandıysa kredi ver
-        if (isCompleted) {
-          await this.rewardUserCredits(user.id, task.reward_credits);
-        }
-
-        return { data, error: null };
+        default:
+          return 0;
       }
     } catch (error) {
-      console.error('Update task progress error:', error);
-      return { data: null, error: error as Error };
+      console.error(`Calculate progress error for ${task.requirement_type}:`, error);
+      return 0;
     }
   },
 
   /**
-   * Kullanıcıya kredi ver
+   * Navigasyon hedefini belirle
    */
-  async rewardUserCredits(userId: string, credits: number) {
+  getNavigationTarget(requirementType: string): '/home' | '/leagues' | '/gamehub' | null {
+    switch (requirementType) {
+      case 'coupon_count':
+      case 'prediction_count':
+      case 'correct_predictions':
+        return '/home';
+
+      case 'league_prediction':
+      case 'league_complete':
+        return '/leagues';
+
+      case 'daily_games':
+      case 'daily_games_bonus':
+        return '/gamehub';
+
+      case 'login_streak':
+        return null; // Giriş görevi için navigasyon yok
+
+      default:
+        return '/home';
+    }
+  },
+
+  // =====================================================
+  // PROGRESS CALCULATION HELPERS
+  // =====================================================
+
+  async countPredictions(userId: string, startDate: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('predictions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('created_at', startDate);
+
+    return error ? 0 : (count || 0);
+  },
+
+  async countCorrectPredictions(userId: string, startDate: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('predictions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'won')
+      .gte('resolved_at', startDate);
+
+    return error ? 0 : (count || 0);
+  },
+
+  async countCoupons(userId: string, startDate: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('coupons')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('created_at', startDate);
+
+    return error ? 0 : (count || 0);
+  },
+
+  async countLoginDays(userId: string, period: 'daily' | 'monthly'): Promise<number> {
+    const now = new Date();
+    let startDate: string;
+
+    if (period === 'daily') {
+      // Günlük için bugün giriş yapılıp yapılmadığını kontrol et
+      startDate = now.toISOString().split('T')[0];
+      const { count, error } = await supabase
+        .from('user_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('session_date', startDate);
+
+      return error ? 0 : (count || 0);
+    } else {
+      // Aylık için bu aydaki giriş günlerini say
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      startDate = monthStart.toISOString().split('T')[0];
+
+      const { count, error } = await supabase
+        .from('user_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('session_date', startDate);
+
+      return error ? 0 : (count || 0);
+    }
+  },
+
+  async countDailyGamesCompleted(userId: string, startDate: string): Promise<number> {
+    // user_daily_games tablosundan tamamlanan oyun sayısını hesapla
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('user_daily_games')
+      .select('daily_progress')
+      .eq('user_id', userId)
+      .eq('date', today)
+      .single();
+
+    return error ? 0 : (data?.daily_progress || 0);
+  },
+
+  async countLeaguePredictions(userId: string, startDate: string): Promise<number> {
+    // league_members tablosundan kullanıcının lig tahminlerini say
+    const { data, error } = await supabase
+      .from('league_members')
+      .select('total_predictions')
+      .eq('user_id', userId)
+      .gte('joined_at', startDate);
+
+    if (error || !data) return 0;
+
+    // Bugünkü tahminleri say (basit yaklaşım: aktif liglerdeki tahminler)
+    const total = data.reduce((sum, m) => sum + (m.total_predictions || 0), 0);
+    return total > 0 ? 1 : 0; // En az 1 tahmin varsa görev tamamlanır
+  },
+
+  async countCompletedLeagues(userId: string, startDate: string): Promise<number> {
+    // Tamamlanan liglerdeki üyelikleri say
+    const { count, error } = await supabase
+      .from('league_members')
+      .select(`
+        *,
+        leagues!inner (status)
+      `, { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('leagues.status', 'completed')
+      .gte('joined_at', startDate);
+
+    return error ? 0 : (count || 0);
+  },
+
+  async countDailyGamesBonuses(userId: string, startDate: string): Promise<number> {
+    // Günlük bonus alınan gün sayısını say
+    const { count, error } = await supabase
+      .from('user_daily_games')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('daily_bonus_claimed', true)
+      .gte('date', startDate.split('T')[0]);
+
+    return error ? 0 : (count || 0);
+  },
+
+  // =====================================================
+  // CLAIM REWARD
+  // =====================================================
+
+  /**
+   * Tamamlanan görevin ödülünü al
+   */
+  async claimTaskReward(userId: string, taskId: string) {
     try {
-      // Mevcut krediyi al
+      // Görevi getir
+      const { data: task, error: taskError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('id', taskId)
+        .single();
+
+      if (taskError || !task) {
+        throw new Error('Görev bulunamadı');
+      }
+
+      // user_tasks kaydını kontrol et veya oluştur
+      const { data: existingUserTask } = await supabase
+        .from('user_tasks')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('task_id', taskId)
+        .single();
+
+      if (existingUserTask?.is_claimed) {
+        throw new Error('Ödül zaten alındı');
+      }
+
+      // Krediyi ekle
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('credits')
@@ -306,55 +445,109 @@ export const tasksService = {
 
       if (profileError) throw profileError;
 
-      // Krediyi güncelle
-      const { error } = await supabase
+      await supabase
         .from('profiles')
-        .update({ 
-          credits: profile.credits + credits 
-        })
+        .update({ credits: (profile?.credits || 0) + task.reward_credits })
         .eq('id', userId);
 
-      if (error) throw error;
-      return { data: { credits: profile.credits + credits }, error: null };
+      // user_tasks güncelle veya oluştur
+      const now = new Date().toISOString();
+      const resetAt = task.type === 'daily'
+        ? new Date(new Date().setDate(new Date().getDate() + 1)).toISOString()
+        : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString();
+
+      if (existingUserTask) {
+        await supabase
+          .from('user_tasks')
+          .update({
+            is_completed: true,
+            is_claimed: true,
+            completed_at: now,
+            claimed_at: now,
+            reset_at: resetAt,
+          })
+          .eq('id', existingUserTask.id);
+      } else {
+        await supabase
+          .from('user_tasks')
+          .insert({
+            user_id: userId,
+            task_id: taskId,
+            progress: task.requirement_value,
+            is_completed: true,
+            is_claimed: true,
+            completed_at: now,
+            claimed_at: now,
+            reset_at: resetAt,
+          });
+      }
+
+      return {
+        data: {
+          credits: task.reward_credits,
+          experience: task.reward_experience
+        },
+        error: null
+      };
     } catch (error) {
-      console.error('Reward user credits error:', error);
+      console.error('Claim task reward error:', error);
       return { data: null, error: error as Error };
     }
   },
 
   /**
-   * Günlük görevleri sıfırla (günlük görevler için)
+   * Günlük görevleri sıfırla (gece 12'de çağrılmalı)
    */
   async resetDailyTasks(userId: string) {
     try {
-      const { error } = await supabase
-        .from('user_tasks')
-        .delete()
-        .eq('user_id', userId)
-        .eq('tasks.type', 'daily');
+      const { data: dailyTasks } = await this.getTasks('daily');
+      if (!dailyTasks) return;
 
-      if (error) throw error;
-      return { data: { success: true }, error: null };
+      const taskIds = dailyTasks.map(t => t.id);
+
+      await supabase
+        .from('user_tasks')
+        .update({
+          progress: 0,
+          is_completed: false,
+          is_claimed: false,
+          reset_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+        .in('task_id', taskIds);
+
+      return { success: true };
     } catch (error) {
       console.error('Reset daily tasks error:', error);
-      return { data: null, error: error as Error };
+      return { success: false };
     }
   },
 
   /**
-   * Kullanıcının giriş günlerini getir (takvim için)
-   * Şimdilik mock data döndürüyor, ileride user_activities tablosu eklenebilir
+   * Aylık görevleri sıfırla (ay başında çağrılmalı)
    */
-  async getUserLoginDays(userId: string, year: number, month: number) {
+  async resetMonthlyTasks(userId: string) {
     try {
-      // Şimdilik mock data döndürüyor
-      // İleride user_activities tablosu eklenip bu fonksiyon güncellenebilir
-      const mockLoginDays = [3, 5, 7, 10, 12, 15, 18, 20, 22, 25, 28];
-      
-      return { data: mockLoginDays, error: null };
+      const { data: monthlyTasks } = await this.getTasks('monthly');
+      if (!monthlyTasks) return;
+
+      const taskIds = monthlyTasks.map(t => t.id);
+
+      await supabase
+        .from('user_tasks')
+        .update({
+          progress: 0,
+          is_completed: false,
+          is_claimed: false,
+          reset_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+        .in('task_id', taskIds);
+
+      return { success: true };
     } catch (error) {
-      console.error('Get user login days error:', error);
-      return { data: [], error: error as Error };
+      console.error('Reset monthly tasks error:', error);
+      return { success: false };
     }
   },
 };

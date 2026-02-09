@@ -10,7 +10,7 @@ import { TabBar } from './shared/TabBar';
 import { KesfetTab } from './Kesfet';
 import { LiglerimTab } from './Liglerim';
 import { OlusturTab } from './Olustur';
-import { LeagueQuestionsPage } from './LeagueQuestionsPage';
+import { RaceArena } from './Arena';
 import { LeaderboardModal } from './shared/LeaderboardModal';
 import { LeaguePageSkeleton } from './LeaguePageSkeleton';
 
@@ -21,7 +21,7 @@ interface LeaguePageProps {
   onMenuToggle: () => void;
 }
 
-export function LeaguePage({ 
+export function LeaguePage({
   onBack,
   handleQuestionDetail,
   handleVote,
@@ -31,7 +31,7 @@ export function LeaguePage({
   const [activeTab, setActiveTab] = useState<TabType>('discover');
   const [leagues, setLeagues] = useState<League[]>([]);
   const [userLeagues, setUserLeagues] = useState<League[]>([]);
-  const [showLeagueQuestions, setShowLeagueQuestions] = useState(false);
+  const [showRaceArena, setShowRaceArena] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
@@ -49,7 +49,7 @@ export function LeaguePage({
     try {
       setLoading(true);
       setShowSkeleton(true);
-      
+
       // Paralel olarak public ligler ve kullanıcının liglerini yükle
       const [publicLeaguesResult, userLeaguesResult] = await Promise.all([
         leaguesService.getPublicLeagues(),
@@ -130,11 +130,11 @@ export function LeaguePage({
 
     try {
       const result = await leaguesService.joinLeague(league.id);
-      
+
       if (result.data) {
         // Başarılı katılım
-        setLeagues(prev => prev.map(l => 
-          l.id === league.id 
+        setLeagues(prev => prev.map(l =>
+          l.id === league.id
             ? { ...l, isJoined: true, participants: l.participants + 1, position: Math.floor(Math.random() * 50) + 1 }
             : l
         ));
@@ -157,13 +157,13 @@ export function LeaguePage({
     setActiveTab('discover');
   };
 
-  const handleShowLeagueQuestions = (league: League) => {
+  const handleShowRaceArena = (league: League) => {
     setSelectedLeague(league);
-    setShowLeagueQuestions(true);
+    setShowRaceArena(true);
   };
 
-  const handleCloseLeagueQuestions = () => {
-    setShowLeagueQuestions(false);
+  const handleCloseRaceArena = () => {
+    setShowRaceArena(false);
     setSelectedLeague(null);
   };
 
@@ -191,14 +191,12 @@ export function LeaguePage({
     );
   }
 
-  // Show League Questions Page
-  if (showLeagueQuestions && selectedLeague) {
+  // Show Race Arena
+  if (showRaceArena && selectedLeague) {
     return (
-      <LeagueQuestionsPage
+      <RaceArena
         league={selectedLeague}
-        onClose={handleCloseLeagueQuestions}
-        handleQuestionDetail={handleQuestionDetail}
-        handleVote={handleVote}
+        onClose={handleCloseRaceArena}
       />
     );
   }
@@ -227,8 +225,8 @@ export function LeaguePage({
         </View>
       ) : (
         /* Tab Content */
-        <ScrollView 
-          style={styles.content} 
+        <ScrollView
+          style={styles.content}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
@@ -236,7 +234,7 @@ export function LeaguePage({
         >
           <View style={styles.tabContent}>
             {activeTab === 'discover' && (
-              <KesfetTab 
+              <KesfetTab
                 leagues={leagues}
                 currentUser={currentUser}
                 onJoinLeague={handleJoinLeague}
@@ -245,16 +243,16 @@ export function LeaguePage({
             )}
 
             {activeTab === 'my-leagues' && (
-              <LiglerimTab 
+              <LiglerimTab
                 leagues={userLeagues}
                 currentUser={currentUser}
                 onDiscoverTab={handleDiscoverTab}
-                onShowLeagueQuestions={handleShowLeagueQuestions}
+                onShowRaceArena={handleShowRaceArena}
               />
             )}
 
             {activeTab === 'create' && (
-              <OlusturTab 
+              <OlusturTab
                 currentUser={currentUser}
                 onSuccess={handleCreateSuccess}
               />

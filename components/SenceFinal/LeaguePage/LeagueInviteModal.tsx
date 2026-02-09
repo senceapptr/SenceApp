@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   ScrollView,
   Share,
-  Alert,
-  Clipboard,
   Image,
+  Platform,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -50,16 +51,17 @@ export function LeagueInviteModal({
   onApproveRequest,
   onRejectRequest
 }: LeagueInviteModalProps) {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'invite' | 'pending'>('invite');
   const [copied, setCopied] = useState(false);
   const [qrGenerated, setQrGenerated] = useState(false);
 
   const leagueLink = `https://sence.app/league/${leagueId}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(leagueLink)}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(leagueLink)}&bgcolor=0D1117&color=FFFFFF`;
 
   const handleCopyLink = async () => {
     try {
-      await Clipboard.setString(leagueLink);
+      await Clipboard.setStringAsync(leagueLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -68,13 +70,13 @@ export function LeagueInviteModal({
   };
 
   const handleShare = async () => {
-      try {
+    try {
       await Share.share({
-          title: `${leagueName} - Sence`,
+        title: `${leagueName} - Sence`,
         message: `${leagueName} ligine katıl! ${leagueDescription}\n\n${leagueLink}`,
-        });
-      } catch (err) {
-        console.error('Share failed:', err);
+      });
+    } catch (err) {
+      console.error('Share failed:', err);
     }
   };
 
@@ -82,322 +84,220 @@ export function LeagueInviteModal({
     setQrGenerated(true);
   };
 
+  const hasPendingRequests = isAdmin && pendingRequests.length > 0;
+
   return (
     <Modal
       visible={visible}
-      transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
+      transparent={false}
+      presentationStyle="fullScreen"
     >
-      <View style={styles.overlay}>
-        <View style={styles.content}>
+      <View style={styles.modalBackground}>
+        <View style={styles.container}>
           {/* Header */}
-          <LinearGradient
-            colors={['#10B981', '#5a3a8f', '#DC2626']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.header}
-          >
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={onClose}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="close" size={24} color="white" />
+          <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) + 8 }]}>
+            <TouchableOpacity style={styles.backButton} onPress={onClose} activeOpacity={0.7}>
+              <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
             </TouchableOpacity>
 
-            <View style={styles.leagueIcon}>
+            <View style={styles.headerCenter}>
+              <Text style={styles.headerTitle}>Davet Et</Text>
+              <Text style={styles.headerSubtitle}>{leagueName}</Text>
+            </View>
+
+            <View style={{ width: 44 }} />
+          </View>
+
+          {/* League Info Card */}
+          <View style={styles.leagueCard}>
+            <View style={styles.leagueIconContainer}>
               <Text style={styles.leagueIconText}>🏆</Text>
             </View>
-
-            <Text style={styles.leagueTitle}>{leagueName}</Text>
-
-            <View style={styles.leagueStats}>
-              <View style={styles.statBadge}>
-                <Text style={styles.statBadgeText}>👥 {memberCount} Üye</Text>
-              </View>
-                  {isPrivate && (
-                <View style={styles.statBadge}>
-                  <Text style={styles.statBadgeText}>🔒 Özel</Text>
+            <View style={styles.leagueInfo}>
+              <Text style={styles.leagueName} numberOfLines={1}>{leagueName}</Text>
+              <View style={styles.leagueBadges}>
+                <View style={styles.badge}>
+                  <Ionicons name="people" size={14} color="#10B981" />
+                  <Text style={styles.badgeText}>{memberCount} Üye</Text>
                 </View>
-              )}
+                {isPrivate && (
+                  <View style={[styles.badge, styles.privateBadge]}>
+                    <Ionicons name="lock-closed" size={12} color="#F59E0B" />
+                    <Text style={[styles.badgeText, { color: '#F59E0B' }]}>Özel</Text>
+                  </View>
+                )}
+              </View>
             </View>
-          </LinearGradient>
+          </View>
 
-              {/* Tabs (if admin) */}
-              {isAdmin && pendingRequests.length > 0 && (
+          {/* Tabs (if admin with pending requests) */}
+          {hasPendingRequests && (
             <View style={styles.tabsContainer}>
               <TouchableOpacity
-                style={[styles.tab, activeTab === 'invite' && styles.activeTab]}
+                style={[styles.tab, activeTab === 'invite' && styles.tabActive]}
                 onPress={() => setActiveTab('invite')}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.tabText, activeTab === 'invite' && styles.activeTabText]}>
-                    Davet Et
+                <Ionicons
+                  name="share-social"
+                  size={18}
+                  color={activeTab === 'invite' ? '#10B981' : 'rgba(255,255,255,0.5)'}
+                />
+                <Text style={[styles.tabText, activeTab === 'invite' && styles.tabTextActive]}>
+                  Davet
                 </Text>
-                    {activeTab === 'invite' && (
-                  <LinearGradient
-                    colors={['#10B981', '#DC2626']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.tabIndicator}
-                  />
-                )}
               </TouchableOpacity>
+
               <TouchableOpacity
-                style={[styles.tab, activeTab === 'pending' && styles.activeTab]}
+                style={[styles.tab, activeTab === 'pending' && styles.tabActive]}
                 onPress={() => setActiveTab('pending')}
                 activeOpacity={0.7}
               >
-                <View style={styles.tabContent}>
-                  <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>
-                    Bekleyen İstekler
-                  </Text>
-                    {pendingRequests.length > 0 && (
-                    <View style={styles.tabBadge}>
-                      <Text style={styles.tabBadgeText}>{pendingRequests.length}</Text>
-                    </View>
-                  )}
+                <Ionicons
+                  name="time"
+                  size={18}
+                  color={activeTab === 'pending' ? '#10B981' : 'rgba(255,255,255,0.5)'}
+                />
+                <Text style={[styles.tabText, activeTab === 'pending' && styles.tabTextActive]}>
+                  Bekleyen
+                </Text>
+                <View style={styles.tabBadge}>
+                  <Text style={styles.tabBadgeText}>{pendingRequests.length}</Text>
                 </View>
-                    {activeTab === 'pending' && (
-                  <LinearGradient
-                    colors={['#10B981', '#DC2626']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.tabIndicator}
-                  />
-                )}
               </TouchableOpacity>
             </View>
-              )}
+          )}
 
-              {/* Content */}
-          <ScrollView 
+          {/* Content */}
+          <ScrollView
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
-            nestedScrollEnabled={true}
+            contentContainerStyle={styles.scrollContent}
           >
-            <View style={styles.body}>
-              {(isAdmin && pendingRequests.length > 0) ? (
-                activeTab === 'invite' ? (
-                <View style={styles.inviteTab}>
-                      {/* QR Code Section */}
-                  <View style={styles.qrSection}>
-                    <Text style={styles.sectionTitle}>QR Kod ile Davet Et</Text>
-                        
-                        {!qrGenerated ? (
-                      <TouchableOpacity
-                        style={styles.qrGenerateButton}
-                        onPress={handleGenerateQR}
-                        activeOpacity={0.8}
-                      >
-                        <LinearGradient
-                          colors={['#10B981', '#DC2626']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={styles.qrGenerateGradient}
-                        >
-                          <Ionicons name="qr-code" size={24} color="white" />
-                          <Text style={styles.qrGenerateText}>QR Kod Oluştur</Text>
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    ) : (
-                      <View style={styles.qrCodeContainer}>
-                        <View style={styles.qrCodeWrapper}>
-                          <Image 
-                            source={{ uri: qrCodeUrl }} 
-                            style={styles.qrCodeImage}
-                            resizeMode="contain"
-                          />
-                        </View>
-                        <Text style={styles.qrCodeSubtext}>
-                              QR kodu taratarak ligine katılabilirler
-                        </Text>
-                      </View>
-                        )}
+            {(!hasPendingRequests || activeTab === 'invite') ? (
+              <>
+                {/* QR Code Section */}
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Ionicons name="qr-code" size={20} color="#10B981" />
+                    <Text style={styles.sectionTitle}>QR Kod</Text>
                   </View>
 
-                      {/* Link Section */}
-                  <View style={styles.linkSection}>
-                    <Text style={styles.sectionTitle}>Link ile Davet Et</Text>
-                    
-                    <View style={styles.linkDisplay}>
-                      <View style={styles.linkTextContainer}>
-                        <Text style={styles.linkText} numberOfLines={1}>
-                              {leagueLink}
-                        </Text>
-                      </View>
-                      <TouchableOpacity
-                        style={[styles.copyButton, copied && styles.copiedButton]}
-                        onPress={handleCopyLink}
-                        activeOpacity={0.8}
-                          >
-                            {copied ? (
-                          <>
-                            <Ionicons name="checkmark" size={16} color="white" />
-                            <Text style={styles.copyButtonText}>Kopyalandı</Text>
-                          </>
-                        ) : (
-                          <Text style={styles.copyButtonText}>Kopyala</Text>
-                        )}
-                      </TouchableOpacity>
-                    </View>
-
+                  {!qrGenerated ? (
                     <TouchableOpacity
-                      style={styles.shareButton}
-                      onPress={handleShare}
+                      style={styles.generateQrButton}
+                      onPress={handleGenerateQR}
                       activeOpacity={0.8}
                     >
                       <LinearGradient
-                        colors={['#DC2626', '#ff1a8c']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.shareGradient}
+                        colors={['#10B981', '#059669']}
+                        style={styles.generateQrGradient}
                       >
-                        <Ionicons name="share-social" size={20} color="white" />
-                        <Text style={styles.shareText}>Paylaş</Text>
+                        <Ionicons name="add-circle" size={24} color="#FFFFFF" />
+                        <Text style={styles.generateQrText}>QR Kod Oluştur</Text>
                       </LinearGradient>
                     </TouchableOpacity>
-                  </View>
-                </View>
-              ) : (
-                <View style={styles.pendingTab}>
-                      {pendingRequests.length === 0 ? (
-                    <View style={styles.emptyState}>
-                      <Text style={styles.emptyStateIcon}>📭</Text>
-                      <Text style={styles.emptyStateText}>Bekleyen istek yok</Text>
+                  ) : (
+                    <View style={styles.qrContainer}>
+                      <Image
+                        source={{ uri: qrCodeUrl }}
+                        style={styles.qrImage}
+                        resizeMode="contain"
+                      />
+                      <Text style={styles.qrHint}>QR kodu taratarak lige katılabilirler</Text>
                     </View>
-                      ) : (
-                        pendingRequests.map((request, index) => (
-                      <View key={request.userId} style={styles.requestCard}>
-                        <View style={styles.requestHeader}>
-                          <Image
-                            source={{ uri: request.avatar }}
-                            style={styles.requestAvatar}
-                          />
-                          <View style={styles.requestInfo}>
-                            <Text style={styles.requestUsername}>{request.username}</Text>
-                            <Text style={styles.requestDate}>{request.requestDate}</Text>
-                            <View style={styles.requestStats}>
-                              <View style={styles.requestStatBadge}>
-                                <Text style={styles.requestStatText}>
-                                  🎯 {request.predictionCount} tahmin
-                                </Text>
-                              </View>
-                              <View style={[styles.requestStatBadge, styles.requestStatBadgeSuccess]}>
-                                <Text style={[styles.requestStatText, styles.requestStatTextSuccess]}>
-                                  ✅ %{request.accuracy} başarı
-                                </Text>
-                              </View>
-                            </View>
-                          </View>
-                        </View>
-
-                        <View style={styles.requestActions}>
-                          <TouchableOpacity
-                            style={styles.approveButton}
-                            onPress={() => onApproveRequest?.(request.userId)}
-                            activeOpacity={0.8}
-                          >
-                            <Text style={styles.approveButtonText}>✓ Onayla</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.rejectButton}
-                            onPress={() => onRejectRequest?.(request.userId)}
-                            activeOpacity={0.8}
-                          >
-                            <Text style={styles.rejectButtonText}>✕ Reddet</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    ))
                   )}
                 </View>
-                )
-              ) : (
-                // No tabs, just show invite content
-                <View style={styles.inviteTab}>
-                  {/* QR Code Section */}
-                  <View style={styles.qrSection}>
-                    <Text style={styles.sectionTitle}>QR Kod ile Davet Et</Text>
-                    
-                    {!qrGenerated ? (
-                      <TouchableOpacity
-                        style={styles.qrGenerateButton}
-                        onPress={handleGenerateQR}
-                        activeOpacity={0.8}
-                      >
-                        <LinearGradient
-                          colors={['#10B981', '#DC2626']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={styles.qrGenerateGradient}
-                        >
-                          <Ionicons name="qr-code" size={24} color="white" />
-                          <Text style={styles.qrGenerateText}>QR Kod Oluştur</Text>
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    ) : (
-                      <View style={styles.qrCodeContainer}>
-                        <View style={styles.qrCodeWrapper}>
-                          <Image 
-                            source={{ uri: qrCodeUrl }} 
-                            style={styles.qrCodeImage}
-                            resizeMode="contain"
-                          />
-                        </View>
-                        <Text style={styles.qrCodeSubtext}>
-                          QR kodu taratarak ligine katılabilirler
-                        </Text>
-                      </View>
-                    )}
+
+                {/* Link Section */}
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Ionicons name="link" size={20} color="#10B981" />
+                    <Text style={styles.sectionTitle}>Davet Linki</Text>
                   </View>
 
-                  {/* Link Section */}
-                  <View style={styles.linkSection}>
-                    <Text style={styles.sectionTitle}>Link ile Davet Et</Text>
-                    
-                    <View style={styles.linkDisplay}>
-                      <View style={styles.linkTextContainer}>
-                        <Text style={styles.linkText} numberOfLines={1}>
-                          {leagueLink}
-                        </Text>
-                      </View>
-                      <TouchableOpacity
-                        style={[styles.copyButton, copied && styles.copiedButton]}
-                        onPress={handleCopyLink}
-                        activeOpacity={0.8}
-                      >
-                        {copied ? (
-                          <>
-                            <Ionicons name="checkmark" size={16} color="white" />
-                            <Text style={styles.copyButtonText}>Kopyalandı</Text>
-                          </>
-                        ) : (
-                          <Text style={styles.copyButtonText}>Kopyala</Text>
-                        )}
-                      </TouchableOpacity>
-                    </View>
-
+                  <View style={styles.linkContainer}>
+                    <Text style={styles.linkText} numberOfLines={1}>{leagueLink}</Text>
                     <TouchableOpacity
-                      style={styles.shareButton}
-                      onPress={handleShare}
+                      style={[styles.copyButton, copied && styles.copyButtonSuccess]}
+                      onPress={handleCopyLink}
                       activeOpacity={0.8}
                     >
-                      <LinearGradient
-                        colors={['#DC2626', '#ff1a8c']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.shareGradient}
-                      >
-                        <Ionicons name="share-social" size={20} color="white" />
-                        <Text style={styles.shareText}>Paylaş</Text>
-                      </LinearGradient>
+                      <Ionicons
+                        name={copied ? "checkmark" : "copy"}
+                        size={18}
+                        color="#FFFFFF"
+                      />
                     </TouchableOpacity>
                   </View>
                 </View>
-              )}
-            </View>
+
+                {/* Share Button */}
+                <TouchableOpacity
+                  style={styles.shareButton}
+                  onPress={handleShare}
+                  activeOpacity={0.8}
+                >
+                  <LinearGradient
+                    colors={['#10B981', '#059669']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.shareGradient}
+                  >
+                    <Ionicons name="share-social" size={22} color="#FFFFFF" />
+                    <Text style={styles.shareText}>Paylaş</Text>
+                    <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
+                  </LinearGradient>
+                </TouchableOpacity>
+              </>
+            ) : (
+              /* Pending Requests Tab */
+              <View style={styles.pendingContainer}>
+                {pendingRequests.length === 0 ? (
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyIcon}>📭</Text>
+                    <Text style={styles.emptyText}>Bekleyen istek yok</Text>
+                  </View>
+                ) : (
+                  pendingRequests.map((request) => (
+                    <View key={request.userId} style={styles.requestCard}>
+                      <Image
+                        source={{ uri: request.avatar }}
+                        style={styles.requestAvatar}
+                      />
+                      <View style={styles.requestInfo}>
+                        <Text style={styles.requestName}>{request.username}</Text>
+                        <Text style={styles.requestDate}>{request.requestDate}</Text>
+                        <View style={styles.requestStats}>
+                          <Text style={styles.requestStat}>🎯 {request.predictionCount}</Text>
+                          <Text style={[styles.requestStat, { color: '#10B981' }]}>
+                            ✓ %{request.accuracy}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.requestActions}>
+                        <TouchableOpacity
+                          style={styles.approveBtn}
+                          onPress={() => onApproveRequest?.(request.userId)}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.rejectBtn}
+                          onPress={() => onRejectRequest?.(request.userId)}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="close" size={20} color="#FFFFFF" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </View>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -406,386 +306,309 @@ export function LeagueInviteModal({
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  modalBackground: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    backgroundColor: '#0D1117',
   },
-  content: {
-    backgroundColor: 'white',
-    borderRadius: 24,
-    width: '100%',
-    height: '76%',
-    overflow: 'hidden',
+  container: {
+    flex: 1,
+    backgroundColor: '#0D1117',
   },
   header: {
-    padding: 24,
-    paddingTop: 24,
-    position: 'relative',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
-  closeButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    width: 32,
-    height: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 2,
+  },
+  leagueCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: 16,
+    padding: 16,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  leagueIcon: {
-    width: 80,
-    height: 80,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 24,
+  leagueIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: 'rgba(16,185,129,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    alignSelf: 'center',
+    marginRight: 14,
   },
   leagueIconText: {
-    fontSize: 40,
+    fontSize: 28,
   },
-  leagueTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: 'white',
-    marginBottom: 8,
-    textAlign: 'center',
+  leagueInfo: {
+    flex: 1,
   },
-  leagueStats: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  statBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  statBadgeText: {
-    color: 'white',
-    fontSize: 14,
+  leagueName: {
+    fontSize: 17,
     fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 6,
+  },
+  leagueBadges: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(16,185,129,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  privateBadge: {
+    backgroundColor: 'rgba(245,158,11,0.15)',
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#10B981',
   },
   tabsContainer: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F3F5',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 4,
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    position: 'relative',
-  },
-  activeTab: {},
-  tabContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  tabActive: {
+    backgroundColor: 'rgba(16,185,129,0.15)',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: 'rgba(32, 32, 32, 0.6)',
-    textAlign: 'center',
+    color: 'rgba(255,255,255,0.5)',
   },
-  activeTabText: {
+  tabTextActive: {
     color: '#10B981',
-    fontWeight: '700',
   },
   tabBadge: {
-    backgroundColor: '#DC2626',
-    borderRadius: 12,
-    paddingHorizontal: 8,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    paddingHorizontal: 7,
     paddingVertical: 2,
   },
   tabBadgeText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 2,
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
   },
-  body: {
-    padding: 24,
+  scrollContent: {
+    padding: 16,
+    paddingTop: 8,
   },
-  inviteTab: {},
-  description: {
-    textAlign: 'center',
-    color: 'rgba(32, 32, 32, 0.7)',
-    fontSize: 14,
-    marginBottom: 24,
-  },
-  qrSection: {
-    backgroundColor: '#F2F3F5',
+  section: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 16,
-    padding: 24,
+    padding: 16,
     marginBottom: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(67, 40, 112, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 14,
   },
   sectionTitle: {
-    color: '#10B981',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    marginBottom: 16,
-    textAlign: 'center',
+    color: '#FFFFFF',
   },
-  qrGenerateButton: {
-    borderRadius: 16,
+  generateQrButton: {
+    borderRadius: 12,
     overflow: 'hidden',
   },
-  qrGenerateGradient: {
-    paddingVertical: 32,
+  generateQrGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    paddingVertical: 16,
   },
-  qrGenerateText: {
-    color: 'white',
-    fontSize: 18,
+  generateQrText: {
+    fontSize: 16,
     fontWeight: '700',
+    color: '#FFFFFF',
   },
-  qrCodeContainer: {
+  qrContainer: {
     alignItems: 'center',
   },
-  qrCodeWrapper: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 16,
+  qrImage: {
+    width: 180,
+    height: 180,
+    borderRadius: 12,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  qrCodeImage: {
-    width: 192,
-    height: 192,
-  },
-  qrCodeSubtext: {
-    color: 'rgba(32, 32, 32, 0.6)',
+  qrHint: {
     fontSize: 12,
-    textAlign: 'center',
+    color: 'rgba(255,255,255,0.5)',
   },
-  linkSection: {
-    backgroundColor: '#F2F3F5',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(67, 40, 112, 0.1)',
-  },
-  linkDisplay: {
+  linkContainer: {
     flexDirection: 'row',
-    backgroundColor: 'white',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
     borderRadius: 12,
     padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#F2F3F5',
-    gap: 8,
-  },
-  linkTextContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    gap: 10,
   },
   linkText: {
-    color: '#202020',
-    fontSize: 14,
-    fontWeight: '500',
+    flex: 1,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
+    fontFamily: 'monospace',
   },
   copyButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     backgroundColor: '#10B981',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
   },
-  copiedButton: {
-    backgroundColor: '#34C759',
-  },
-  copyButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '700',
+  copyButtonSuccess: {
+    backgroundColor: '#059669',
   },
   shareButton: {
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
+    marginTop: 8,
   },
   shareGradient: {
-    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 10,
+    paddingVertical: 16,
   },
   shareText: {
-    color: 'white',
-    fontSize: 16,
+    flex: 1,
+    fontSize: 17,
     fontWeight: '700',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
-  leagueInfo: {
-    backgroundColor: 'rgba(67, 40, 112, 0.05)',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(198, 21, 133, 0.1)',
+  pendingContainer: {
+    flex: 1,
   },
-  infoHeader: {
-    flexDirection: 'row',
+  emptyState: {
     alignItems: 'center',
-    gap: 8,
+    paddingVertical: 60,
+  },
+  emptyIcon: {
+    fontSize: 48,
     marginBottom: 12,
   },
-  infoIcon: {
-    fontSize: 18,
-  },
-  infoTitle: {
-    color: '#10B981',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  infoContent: {},
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  infoLabel: {
-    color: 'rgba(32, 32, 32, 0.6)',
-    fontSize: 14,
-  },
-  infoValue: {
-    color: '#202020',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  infoNote: {
-    color: 'rgba(32, 32, 32, 0.6)',
-    fontSize: 12,
-    fontStyle: 'italic',
-    marginTop: 8,
-  },
-  pendingTab: {},
-  emptyState: {
-    paddingVertical: 80,
-    alignItems: 'center',
-  },
-  emptyStateIcon: {
-    fontSize: 60,
-    marginBottom: 16,
-  },
-  emptyStateText: {
-    color: 'rgba(32, 32, 32, 0.6)',
-    fontSize: 16,
-    fontWeight: '500',
+  emptyText: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.5)',
   },
   requestCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#F2F3F5',
-  },
-  requestHeader: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   requestAvatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
+    marginRight: 12,
     borderWidth: 2,
-    borderColor: '#10B981',
+    borderColor: 'rgba(16,185,129,0.3)',
   },
   requestInfo: {
     flex: 1,
   },
-  requestUsername: {
-    color: '#202020',
-    fontSize: 16,
+  requestName: {
+    fontSize: 15,
     fontWeight: '700',
+    color: '#FFFFFF',
     marginBottom: 2,
   },
   requestDate: {
-    color: 'rgba(32, 32, 32, 0.6)',
     fontSize: 12,
-    marginBottom: 8,
+    color: 'rgba(255,255,255,0.4)',
+    marginBottom: 6,
   },
   requestStats: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
-  requestStatBadge: {
-    backgroundColor: 'rgba(67, 40, 112, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  requestStatBadgeSuccess: {
-    backgroundColor: 'rgba(52, 199, 89, 0.1)',
-  },
-  requestStatText: {
-    color: '#10B981',
+  requestStat: {
     fontSize: 12,
-    fontWeight: '700',
-  },
-  requestStatTextSuccess: {
-    color: '#34C759',
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.6)',
   },
   requestActions: {
     flexDirection: 'row',
     gap: 8,
   },
-  approveButton: {
-    flex: 1,
-    backgroundColor: '#34C759',
-    paddingVertical: 8,
-    borderRadius: 12,
+  approveBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#10B981',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  approveButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  rejectButton: {
-    flex: 1,
-    backgroundColor: '#FF3B30',
-    paddingVertical: 8,
-    borderRadius: 12,
+  rejectBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  rejectButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '700',
   },
 });

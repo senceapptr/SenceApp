@@ -21,6 +21,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import Svg, { Path, Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { LineChart } from 'react-native-chart-kit';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,12 +57,15 @@ interface RelatedQuestion {
 }
 
 interface Comment {
-  id: number;
+  id: string;
+  user_id: string;
   username: string;
   avatar: string;
   text: string;
   timestamp: Date;
   likes: number;
+  parent_id?: string | null;
+  replies?: Comment[];
 }
 
 interface TopInvestor {
@@ -74,6 +78,7 @@ interface TopInvestor {
 export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sourceCategory }: QuestionDetailPageProps) {
   const { user, profile } = useAuth();
   const { theme, isDarkMode } = useTheme();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   // State tanımlamaları
   const [isFavorite, setIsFavorite] = useState(false);
@@ -98,6 +103,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
   // Follow State'leri
   const [isFollowingCreator, setIsFollowingCreator] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; username: string } | null>(null);
 
   // Success modal animation
   const successScaleAnim = useRef(new Animated.Value(0)).current;
@@ -144,15 +150,41 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
 
       // Yorumlar
       if (commentsResult.data) {
-        const mappedComments: Comment[] = commentsResult.data.map((c: any, index: number) => ({
-          id: parseInt(c.id) || index,
+        const rawComments = commentsResult.data.map((c: any, index: number) => ({
+          id: c.id?.toString() || index.toString(),
+          user_id: c.user_id,
           username: c.profiles?.username || 'Anonim',
           avatar: c.profiles?.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
           text: c.content,
           timestamp: new Date(c.created_at),
           likes: c.likes_count || 0,
+          parent_id: c.parent_id,
+          replies: []
         }));
-        setComments(mappedComments);
+
+        // Yorumları hiyerarşik yapıya dönüştür
+        const rootComments: Comment[] = [];
+        const commentMap = new Map();
+
+        // Önce map'e ekle
+        rawComments.forEach(c => {
+          c.replies = [];
+          commentMap.set(c.id, c);
+        });
+
+        // Sonra hiyerarşiyi kur
+        rawComments.forEach(c => {
+          if (c.parent_id && commentMap.has(c.parent_id.toString())) {
+            commentMap.get(c.parent_id.toString()).replies.push(c);
+          } else {
+            rootComments.push(c);
+          }
+        });
+
+        // Tarihe göre sırala (en yeni en üstte)
+        rootComments.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+        setComments(rootComments);
       }
 
       // İlgili sorular
@@ -263,22 +295,25 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
   const canVote = status === 'active' && !isExpired && !showResultToUser;
   const isPendingResolution = !canVote && !showResultToUser && !displayResult;
 
-  // 2. Countdown format calculation
+  // 2. Countdown format calculation - 2'li gösterim
   const formatCountdown = () => {
     if (showResultToUser) return 'Sonuçlandı';
     if (!questionDetails?.end_date) return '...';
     // Eğer süre bittiyse ama sonuç gizli veya yoksa (bekleniyor durumu)
     if (isExpired && !showResultToUser) return 'Sonuç Bekleniyor';
 
-    return formatTimeLeftLong(questionDetails.end_date);
+    // 2'li format: gün+saat, saat+dakika, dakika+saniye
+    if (timeLeft.days > 0) {
+      return `${timeLeft.days} gün ${timeLeft.hours} saat`;
+    } else if (timeLeft.hours > 0) {
+      return `${timeLeft.hours} saat ${timeLeft.minutes} dk`;
+    } else {
+      return `${timeLeft.minutes} dk ${timeLeft.seconds} sn`;
+    }
   };
 
   // 3. Main question object for UI
   const mainQuestion = questionDetails ? {
-    // ... existing properties ...
-    status: status,
-    result: displayResult, // Use Safe Result
-    // ...
     title: questionDetails.title,
     category: sourceCategory?.name || questionDetails.categories?.name || 'Genel',
     categoryIconName: getCategoryIconName(sourceCategory?.name || questionDetails.categories?.name || 'Genel'),
@@ -538,18 +573,34 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         user_id: user.id,
         question_id: question.id.toString(),
         content: commentText.trim(),
+        parent_id: replyingTo?.id || undefined,
       });
 
       if (result.data) {
         const newComment: Comment = {
-          id: parseInt(result.data.id) || 0,
-          username: user.user_metadata?.username || 'Anonim',
-          avatar: user.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
+          id: result.data.id?.toString() || Math.random().toString(),
+          user_id: user.id,
+          username: profile?.username || user.user_metadata?.username || 'Anonim',
+          avatar: profile?.profile_image || user.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
           text: commentText.trim(),
           timestamp: new Date(),
-          likes: 0
+          likes: 0,
+          parent_id: replyingTo?.id || null,
+          replies: []
         };
-        setComments([newComment, ...comments]);
+
+        if (replyingTo) {
+          setComments(prev => prev.map(c => {
+            if (c.id === replyingTo.id) {
+              return { ...c, replies: [newComment, ...(c.replies || [])] };
+            }
+            return c;
+          }));
+          setReplyingTo(null);
+        } else {
+          setComments([newComment, ...comments]);
+        }
+
         setCommentText('');
       }
     } catch (err) {
@@ -563,8 +614,8 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
 
     try {
       await Share.share({
-        message: `${mainQuestion.title}\n\n${mainQuestion.description}`,
-        title: mainQuestion.title,
+        message: `${mainQuestion?.title}\n\n${mainQuestion?.description}`,
+        title: mainQuestion?.title,
       });
     } catch (error) {
       console.log('Share error:', error);
@@ -680,18 +731,28 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         <Text style={styles.descriptionText}>{mainQuestion.fullDescription}</Text>
       </View>
 
-      {/* Creator Info - Apple style */}
+      {/* Creator Info - Apple style with Profile Navigation */}
       <View style={styles.creatorCard}>
-        <View style={styles.creatorAvatarWrapper}>
-          <Image
-            source={{ uri: mainQuestion.creator.avatar }}
-            style={styles.creatorAvatar}
-          />
-        </View>
-        <View style={styles.creatorInfo}>
-          <Text style={styles.creatorLabel}>Soruyu Yazan</Text>
-          <Text style={styles.creatorUsername}>{mainQuestion.creator.username}</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.creatorTouchable}
+          activeOpacity={0.7}
+          onPress={() => {
+            if (mainQuestion.creator?.id) {
+              (navigation as any).navigate('OtherProfilePage', { userId: mainQuestion.creator.id });
+            }
+          }}
+        >
+          <View style={styles.creatorAvatarWrapper}>
+            <Image
+              source={{ uri: mainQuestion.creator.avatar }}
+              style={styles.creatorAvatar}
+            />
+          </View>
+          <View style={styles.creatorInfo}>
+            <Text style={styles.creatorLabel}>Soruyu Yazan</Text>
+            <Text style={styles.creatorUsername}>{mainQuestion.creator.username}</Text>
+          </View>
+        </TouchableOpacity>
         {user?.id !== mainQuestion.creator?.id && (
           <TouchableOpacity
             style={[
@@ -716,117 +777,85 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         )}
       </View>
 
-      {/* Vote Distribution - New Apple-style */}
-      <View style={styles.voteDistributionNew}>
-        <Text style={styles.voteDistributionNewTitle}>Oy Dağılımı</Text>
+      {/* Vote Distribution - Semi-Circle Gauge Apple Vibe */}
+      <View style={styles.semiCircleContainer}>
+        <Text style={styles.semiCircleTitle}>Oy Dağılımı</Text>
 
-        {/* Split bar */}
-        <View style={styles.voteSplitBarContainer}>
-          <View style={styles.voteSplitBarTrack}>
-            <View
-              style={[
-                styles.voteSplitBarYesFill,
-                { width: `${mainQuestion.yesPercentage}%` },
-              ]}
-            >
-              <LinearGradient
-                colors={['#30D158', '#28A745']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.voteSplitBarGradient}
-              />
-            </View>
-            <View
-              style={[
-                styles.voteSplitBarNoFill,
-                { width: `${mainQuestion.noPercentage}%` },
-              ]}
-            >
-              <LinearGradient
-                colors={['#FF453A', '#D32F2F']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.voteSplitBarGradient}
-              />
-            </View>
-          </View>
-        </View>
+        <View style={styles.semiCircleWrapper}>
+          <Svg width={220} height={120} viewBox="0 0 220 120">
+            <Defs>
+              <SvgLinearGradient id="gradYes" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor="#10B981" stopOpacity="1" />
+                <Stop offset="1" stopColor="#34D399" stopOpacity="1" />
+              </SvgLinearGradient>
+              <SvgLinearGradient id="gradNo" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor="#EF4444" stopOpacity="1" />
+                <Stop offset="1" stopColor="#F87171" stopOpacity="1" />
+              </SvgLinearGradient>
+            </Defs>
 
-        {/* Vote cards */}
-        <View style={styles.voteCardsRow}>
-          <View style={[styles.voteCardNew, styles.voteCardYesNew]}>
-            <View style={styles.voteCardIconWrap}>
-              <Ionicons name="checkmark-circle" size={28} color="#30D158" />
-            </View>
-            <Text style={styles.voteCardLabelNew}>EVET</Text>
-            <Text style={styles.voteCardPercentNew}>{mainQuestion.yesPercentage}%</Text>
-            <Text style={styles.voteCardOddsNew}>{mainQuestion.yesOdds}x oran</Text>
-            <Text style={styles.voteCardAmountNew}>{mainQuestion.yesInvestment?.toLocaleString('tr-TR')} ₺</Text>
-          </View>
-          <View style={[styles.voteCardNew, styles.voteCardNoNew]}>
-            <View style={styles.voteCardIconWrap}>
-              <Ionicons name="close-circle" size={28} color="#FF453A" />
-            </View>
-            <Text style={styles.voteCardLabelNew}>HAYIR</Text>
-            <Text style={styles.voteCardPercentNew}>{mainQuestion.noPercentage}%</Text>
-            <Text style={styles.voteCardOddsNew}>{mainQuestion.noOdds}x oran</Text>
-            <Text style={styles.voteCardAmountNew}>{mainQuestion.noInvestment?.toLocaleString('tr-TR')} ₺</Text>
-          </View>
-        </View>
-      </View>
+            {/* Background Arc (Gray) */}
+            <Path
+              d={`M 10 110 A 100 100 0 0 1 210 110`}
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth="12"
+              fill="none"
+              strokeLinecap="round"
+            />
 
-      {/* Vote Stats - Original (detailed breakdown) */}
-      <View style={styles.voteStatsSection}>
-        <Text style={styles.sectionTitle}>Oy Dağılımı</Text>
+            {/* Yes Arc */}
+            <Path
+              d={`M 10 110 A 100 100 0 0 1 ${110 - 100 * Math.cos(Math.PI * (mainQuestion.yesPercentage / 100))} ${110 - 100 * Math.sin(Math.PI * (mainQuestion.yesPercentage / 100))}`}
+              stroke="url(#gradYes)"
+              strokeWidth="12"
+              fill="none"
+              strokeLinecap="round"
+            />
 
-        <View style={styles.voteStatsVerticalContainer}>
-          {/* Yes Votes */}
-          <View style={styles.voteStatVerticalRow}>
-            <View style={styles.voteStatHeader}>
-              <Text style={styles.voteStatLabelYes}>EVET</Text>
-              <Text style={styles.voteStatPercentageYes}>{mainQuestion.yesPercentage}%</Text>
-            </View>
-            <View style={styles.progressBarContainer}>
-              <Animated.View
-                style={[
-                  styles.progressBarYes,
-                  {
-                    width: yesProgressAnim.interpolate({
-                      inputRange: [0, 100],
-                      outputRange: ['0%', '100%'],
-                    }),
-                  }
-                ]}
-              />
-            </View>
-            <View style={styles.voteStatFooter}>
-              <Text style={styles.voteStatInfo}>{mainQuestion.yesOdds}x oran</Text>
-              <Text style={styles.voteStatInfo}>{mainQuestion.yesInvestment.toLocaleString('tr-TR')} ₺</Text>
-            </View>
+            {/* No Arc (starts where Yes ends generally, but for simple gauge we can just draw from right if we want, or better: separate them slightly) */}
+            {/* Actually, let's draw No arc from the end? Or just draw two separate arcs meeting? */}
+            {/* For exact percentage: Yes arc from 180 deg to (180 - yesAngle), No arc from (180 - yesAngle) to 0. */}
+            {/* Let's simplify: Green arc from left, Red arc from right? No, they should meet. */}
+
+            <Path
+              d={`M ${110 - 100 * Math.cos(Math.PI * (mainQuestion.yesPercentage / 100))} ${110 - 100 * Math.sin(Math.PI * (mainQuestion.yesPercentage / 100))} A 100 100 0 0 1 210 110`}
+              stroke="url(#gradNo)"
+              strokeWidth="12"
+              fill="none"
+              strokeLinecap="round"
+            />
+
+          </Svg>
+
+          <View style={styles.semiCircleCenterContent}>
+            <Text style={styles.semiCircleTotalVotes}>{mainQuestion.totalVotes}</Text>
+            <Text style={styles.semiCircleTotalVotesLabel}>toplam oy</Text>
           </View>
 
-          {/* No Votes */}
-          <View style={styles.voteStatVerticalRow}>
-            <View style={styles.voteStatHeader}>
-              <Text style={styles.voteStatLabelNo}>HAYIR</Text>
-              <Text style={styles.voteStatPercentageNo}>{mainQuestion.noPercentage}%</Text>
+          {/* Labels below */}
+          <View style={styles.semiCircleLabels}>
+            <View style={styles.semiCircleLabelItem}>
+              <View style={[styles.semiCircleLabelDot, { backgroundColor: '#10B981' }]} />
+              <View>
+                <Text style={styles.semiCircleLabelPercent}>%{mainQuestion.yesPercentage}</Text>
+                <Text style={styles.semiCircleLabelText}>Evet</Text>
+                <Text style={styles.semiCircleLabelOdds}>
+                  x{mainQuestion.yesOdds.toFixed(2)}
+                </Text>
+              </View>
             </View>
-            <View style={styles.progressBarContainer}>
-              <Animated.View
-                style={[
-                  styles.progressBarNo,
-                  {
-                    width: noProgressAnim.interpolate({
-                      inputRange: [0, 100],
-                      outputRange: ['0%', '100%'],
-                    }),
-                  }
-                ]}
-              />
-            </View>
-            <View style={styles.voteStatFooter}>
-              <Text style={styles.voteStatInfo}>{mainQuestion.noOdds}x oran</Text>
-              <Text style={styles.voteStatInfo}>{mainQuestion.noInvestment.toLocaleString('tr-TR')} ₺</Text>
+
+            <View style={styles.semiCircleLabelDivider} />
+
+            <View style={styles.semiCircleLabelItem}>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={[styles.semiCircleLabelPercent, { color: '#EF4444' }]}>%{mainQuestion.noPercentage}</Text>
+                <Text style={styles.semiCircleLabelText}>Hayır</Text>
+                <Text style={styles.semiCircleLabelOdds}>
+                  x{mainQuestion.noOdds.toFixed(2)}
+                </Text>
+              </View>
+              <View style={[styles.semiCircleLabelDot, { backgroundColor: '#EF4444' }]} />
             </View>
           </View>
         </View>
@@ -834,60 +863,58 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
 
       {/* Vote Buttons moved to fixed bottom */}
 
-      {/* Related Questions */}
+      {/* Related Questions - Compact TrendQuestionCard Style */}
       <View style={styles.relatedSection}>
-        <View style={styles.relatedHeader}>
-          <Text style={styles.relatedTitle}>Benzer Sorular</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeAllButton}>Tümünü Gör</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.relatedTitle}>Benzer Sorular</Text>
 
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.relatedScrollContent}
         >
-          {relatedQuestions.map((question, index) => (
-            <View key={`related-${question.id}-${index}`} style={styles.relatedCard}>
-              <View style={styles.relatedImageContainer}>
-                <Image
-                  source={{ uri: question.image }}
-                  style={styles.relatedImage}
-                />
-                <TouchableOpacity
-                  style={styles.relatedFavoriteButton}
-                  onPress={() => toggleRelatedFavorite(question.id)}
-                >
-                  <Ionicons
-                    name={question.isFavorite ? "heart" : "heart-outline"}
-                    size={20}
-                    color={question.isFavorite ? theme.error : theme.textPrimary}
-                  />
-                </TouchableOpacity>
-              </View>
+          {relatedQuestions.map((rq, index) => (
+            <TouchableOpacity
+              key={`related-${rq.id}-${index}`}
+              style={styles.compactQuestionCard}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={{ uri: rq.image }}
+                style={styles.compactQuestionImage}
+              />
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.85)']}
+                style={styles.compactQuestionGradient}
+              />
 
-              <View style={styles.relatedCardContent}>
-                <Text style={styles.relatedCardTitle} numberOfLines={2}>
-                  {question.title}
-                </Text>
-                <View style={styles.relatedCardStats}>
-                  <Text style={styles.relatedCardStat}>{question.daysLeft} gün</Text>
-                  <Text style={styles.relatedCardStat}>₺{question.odds}/kişi</Text>
-                </View>
-
-                <View style={styles.relatedCardFooter}>
-                  <View style={styles.relatedCardRating}>
-                    <Ionicons name="star" size={16} color="#C9F158" />
-                    <Text style={styles.relatedCardRatingText}>{question.rating}</Text>
-                    <Text style={styles.relatedCardVotes}>{question.votes} oy</Text>
+              {/* Stats row */}
+              <View style={styles.compactQuestionContent}>
+                <View style={styles.compactQuestionStats}>
+                  <View style={styles.compactQuestionStatItem}>
+                    <Ionicons name="people" size={12} color="rgba(255,255,255,0.9)" />
+                    <Text style={styles.compactQuestionStatText}>{rq.votes}</Text>
                   </View>
-                  <TouchableOpacity style={styles.relatedCardButton}>
-                    <Ionicons name="arrow-forward" size={20} color="#fff" />
-                  </TouchableOpacity>
+                  <View style={styles.compactQuestionStatItem}>
+                    <Ionicons name="time" size={12} color="rgba(255,255,255,0.9)" />
+                    <Text style={styles.compactQuestionStatText}>{rq.daysLeft}g</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.compactQuestionTitle} numberOfLines={2}>
+                  {rq.title}
+                </Text>
+
+                {/* Percentage bar */}
+                <View style={styles.compactQuestionPercentBar}>
+                  <View style={[styles.compactQuestionPercentYes, { flex: 65 }]} />
+                  <View style={[styles.compactQuestionPercentNo, { flex: 35 }]} />
+                </View>
+                <View style={styles.compactQuestionPercentLabels}>
+                  <Text style={styles.compactQuestionYesLabel}>Evet 65%</Text>
+                  <Text style={styles.compactQuestionNoLabel}>Hayır 35%</Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
@@ -897,17 +924,26 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
   const renderCommentsTab = () => (
     <View style={styles.detailsTabContainer}>
       {/* Comment Input - Instagram/Apple style */}
+      {/* Comment Input - Instagram/Apple style */}
       <View style={styles.commentInputSectionNoPadding}>
+        {replyingTo && (
+          <View style={styles.replyIndicator}>
+            <Text style={styles.replyIndicatorText}>Yanıtlanıyor: <Text style={{ fontWeight: '700', color: '#FFF' }}>{replyingTo.username}</Text></Text>
+            <TouchableOpacity onPress={() => setReplyingTo(null)}>
+              <Ionicons name="close-circle" size={20} color="#EF4444" />
+            </TouchableOpacity>
+          </View>
+        )}
         <View style={styles.commentInputCardModern}>
           <Image
-            source={{ uri: user?.user_metadata?.avatar_url || profile?.profile_image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face" }}
+            source={{ uri: profile?.profile_image || user?.user_metadata?.avatar_url || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face" }}
             style={styles.commentUserAvatarModern}
           />
           <View style={styles.commentInputWrapper}>
             <TextInput
               value={commentText}
               onChangeText={setCommentText}
-              placeholder="Yorum ekle..."
+              placeholder={replyingTo ? `@${replyingTo.username} yanıtla...` : "Yorum ekle..."}
               placeholderTextColor={theme.textMuted + '99'}
               style={styles.commentInputModern}
               multiline
@@ -939,21 +975,77 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         ) : (
           comments.map((comment, index) => (
             <View key={`comment-${comment.id}-${index}`} style={styles.commentCardModern}>
-              <Image source={{ uri: comment.avatar }} style={styles.commentAvatarModern} />
-              <View style={styles.commentContentModern}>
-                <View style={styles.commentHeaderModern}>
-                  <Text style={styles.commentUsernameModern}>{comment.username}</Text>
-                  <Text style={styles.commentTimeModern}>{formatTimeAgo(comment.timestamp)}</Text>
-                </View>
-                <Text style={styles.commentTextModern}>{comment.text}</Text>
-                <View style={styles.commentActionsModern}>
-                  <TouchableOpacity style={styles.commentLikeButton}>
-                    <Ionicons name="heart-outline" size={14} color={theme.textMuted + '99'} />
-                    <Text style={styles.commentLikeCount}>{comment.likes}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <Text style={styles.commentReplyButton}>Yanıtla</Text>
-                  </TouchableOpacity>
+              <View style={{ flexDirection: 'row' }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (comment.user_id) {
+                      (navigation as any).navigate('OtherProfilePage', { userId: comment.user_id });
+                    }
+                  }}
+                >
+                  <Image source={{ uri: comment.avatar }} style={styles.commentAvatarModern} />
+                </TouchableOpacity>
+                <View style={styles.commentContentModern}>
+                  <View style={styles.commentHeaderModern}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (comment.user_id) {
+                          (navigation as any).navigate('OtherProfilePage', { userId: comment.user_id });
+                        }
+                      }}
+                    >
+                      <Text style={styles.commentUsernameModern}>{comment.username}</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.commentTimeModern}>{formatTimeAgo(comment.timestamp)}</Text>
+                  </View>
+                  <Text style={styles.commentTextModern}>{comment.text}</Text>
+                  <View style={styles.commentActionsModern}>
+                    <TouchableOpacity
+                      style={styles.commentLikeButton}
+                      onPress={() => {
+                        // Toggle like functionality
+                        setComments(prev => prev.map(c =>
+                          c.id === comment.id
+                            ? { ...c, likes: c.likes + 1 }
+                            : c
+                        ));
+                      }}
+                    >
+                      <Ionicons name="heart-outline" size={14} color={theme.textMuted + '99'} />
+                      <Text style={styles.commentLikeCount}>{comment.likes}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setReplyingTo({ id: comment.id, username: comment.username });
+                        setCommentText(`@${comment.username} `);
+                      }}
+                    >
+                      <Text style={styles.commentReplyButton}>Yanıtla</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Nested Replies */}
+                  {comment.replies && comment.replies.length > 0 && (
+                    <View style={styles.repliesContainer}>
+                      <View style={styles.replyLine} />
+                      <View style={{ flex: 1 }}>
+                        {comment.replies.map((reply, rIndex) => (
+                          <View key={`reply-${reply.id}-${rIndex}`} style={styles.nestedReplyCard}>
+                            <TouchableOpacity onPress={() => (navigation as any).navigate('OtherProfilePage', { userId: reply.user_id })}>
+                              <Image source={{ uri: reply.avatar }} style={styles.nestedReplyAvatar} />
+                            </TouchableOpacity>
+                            <View style={{ flex: 1 }}>
+                              <View style={styles.commentHeaderModern}>
+                                <Text style={styles.commentUsernameModern}>{reply.username}</Text>
+                                <Text style={styles.commentTimeModern}>{formatTimeAgo(reply.timestamp)}</Text>
+                              </View>
+                              <Text style={styles.commentTextModern}>{reply.text}</Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
                 </View>
               </View>
             </View>
@@ -965,9 +1057,9 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
 
   const renderStatsTab = () => (
     <View style={styles.detailsTabContainer}>
-      {/* Total Pool Card */}
+      {/* Total Pool Card - Modern Dark Theme (Polymarket Blue) */}
       <LinearGradient
-        colors={['#10B981', '#059669', '#047857']}
+        colors={['#1e3a8a', '#2563eb', '#1d4ed8']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.totalPoolCard}
@@ -1056,44 +1148,62 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         </View>
       </View>
 
-      {/* Top Investors */}
+      {/* Top Investors - Premium Redesign */}
       <View style={styles.topInvestorsSection}>
         <View style={styles.topInvestorsHeader}>
-          <Ionicons name="trophy" size={20} color="#C9F158" />
+          <LinearGradient
+            colors={['#1e3a8a', '#3b82f6']} // Polymarket blue icon bg
+            style={{ padding: 6, borderRadius: 8, marginRight: 10 }}
+          >
+            <Ionicons name="trophy" size={16} color="#FFF" />
+          </LinearGradient>
           <Text style={styles.topInvestorsTitle}>En Çok Yatırım Yapanlar</Text>
         </View>
+
         {topInvestors.map((investor, index) => (
-          <View key={`investor-${index}-${investor.username}`} style={styles.investorCard}>
-            <View style={[
-              styles.investorRank,
-              index === 0 && styles.investorRankGold,
-              index === 1 && styles.investorRankSilver,
-              index === 2 && styles.investorRankBronze,
-            ]}>
-              <Text style={[
-                styles.investorRankText,
-                index < 3 && styles.investorRankTextColored
-              ]}>
-                #{index + 1}
-              </Text>
+          <View key={`investor-${index}-${investor.username}`} style={[
+            styles.investorCardModern,
+            index === 0 && styles.investorCardGold,
+            index === 1 && styles.investorCardSilver,
+            index === 2 && styles.investorCardBronze,
+          ]}>
+            {/* Rank Badge */}
+            <View style={styles.investorRankModern}>
+              {index < 3 ? (
+                <LinearGradient
+                  colors={
+                    index === 0 ? ['#FFD700', '#FDB931'] :
+                      index === 1 ? ['#E0E0E0', '#BDBDBD'] :
+                        ['#CD7F32', '#A0522D']
+                  }
+                  style={styles.rankBadgeGradient}
+                >
+                  <Text style={[styles.rankTextModern, { color: '#FFF', fontWeight: 'bold' }]}>{index + 1}</Text>
+                </LinearGradient>
+              ) : (
+                <Text style={styles.rankTextModern}>#{index + 1}</Text>
+              )}
             </View>
+
             <Image
               source={{ uri: investor.avatar }}
-              style={styles.investorAvatar}
+              style={styles.investorAvatarModern}
             />
-            <View style={styles.investorInfo}>
-              <Text style={styles.investorUsername}>{investor.username}</Text>
-              <Text style={styles.investorAmount}>
-                {investor.amount.toLocaleString('tr-TR')} ₺ yatırım
+
+            <View style={styles.investorInfoModern}>
+              <Text style={styles.investorUsernameModern}>{investor.username}</Text>
+              <Text style={styles.investorAmountModern}>
+                {investor.amount.toLocaleString('tr-TR')} ₺
               </Text>
             </View>
+
             <View style={[
-              styles.investorVoteBadge,
-              investor.vote === 'yes' ? styles.investorVoteBadgeYes : styles.investorVoteBadgeNo
+              styles.investorVoteBadgeModern,
+              investor.vote === 'yes' ? styles.investorVoteBadgeYesModern : styles.investorVoteBadgeNoModern
             ]}>
               <Text style={[
-                styles.investorVoteText,
-                investor.vote === 'yes' ? styles.investorVoteTextYes : styles.investorVoteTextNo
+                styles.investorVoteTextModern,
+                investor.vote === 'yes' ? styles.investorVoteTextYesModern : styles.investorVoteTextNoModern
               ]}>
                 {investor.vote === 'yes' ? 'EVET' : 'HAYIR'}
               </Text>
@@ -1173,32 +1283,53 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
           colors={['rgba(0,0,0,0.2)', 'transparent']}
           style={styles.headerGradient}
         />
-        {/* Left badge: Vote count */}
+        {/* Left badge: Vote count - Premium Design (Polymarket Blue) */}
         <View style={styles.imageBadgeLeft}>
-          <View style={styles.categoryBadge}>
-            <Ionicons name="people" size={14} color="#F0F6FC" />
-            <Text style={styles.imageBadgeText}>{mainQuestion.totalVotes} oy</Text>
-          </View>
+          <LinearGradient
+            colors={['#1e3a8a', '#3b82f6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.premiumBadge}
+          >
+            <View style={styles.premiumBadgeGlow} />
+            <Ionicons name="people" size={16} color="#FFFFFF" />
+            <Text style={styles.premiumBadgeText}>{mainQuestion.totalVotes} oy</Text>
+          </LinearGradient>
         </View>
-        {/* Right badge: Countdown veya Sonuç durumu (active iken result asla gösterilmez) */}
+        {/* Right badge: Countdown veya Sonuç durumu - Premium Design (Polymarket Blue) */}
         <View style={styles.categoryBadgeContainer}>
           {showResultToUser ? (
-            <View style={[styles.categoryBadge, displayResult === 'yes' ? styles.resolutionBadgeYes : styles.resolutionBadgeNo]}>
-              <Ionicons name={displayResult === 'yes' ? 'checkmark-circle' : 'close-circle'} size={14} color="#F0F6FC" />
-              <Text style={styles.imageBadgeText} numberOfLines={1}>
+            <LinearGradient
+              colors={displayResult === 'yes' ? ['rgba(16, 185, 129, 0.9)', 'rgba(5, 150, 105, 0.9)'] : ['rgba(239, 68, 68, 0.9)', 'rgba(185, 28, 28, 0.9)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.premiumBadge}
+            >
+              <Ionicons name={displayResult === 'yes' ? 'checkmark-circle' : 'close-circle'} size={16} color="#FFFFFF" />
+              <Text style={styles.premiumBadgeText} numberOfLines={1}>
                 Sonuç: {displayResult === 'yes' ? 'Evet' : 'Hayır'}
               </Text>
-            </View>
+            </LinearGradient>
           ) : isPendingResolution || (isExpired && !showResultToUser) ? (
-            <View style={[styles.categoryBadge, styles.resolutionBadgePending]}>
-              <Ionicons name="time-outline" size={14} color="#F0F6FC" />
-              <Text style={styles.imageBadgeText} numberOfLines={1}>Sonuç Bekleniyor</Text>
-            </View>
+            <LinearGradient
+              colors={['#1e3a8a', '#3b82f6']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.premiumBadge}
+            >
+              <Ionicons name="hourglass-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.premiumBadgeText} numberOfLines={1}>Sonuç Bekleniyor</Text>
+            </LinearGradient>
           ) : (
-            <View style={styles.categoryBadge}>
-              <Ionicons name="time-outline" size={14} color="#F0F6FC" />
-              <Text style={styles.imageBadgeText} numberOfLines={1}>{formatCountdown()}</Text>
-            </View>
+            <LinearGradient
+              colors={['#1e3a8a', '#2563eb']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.premiumBadge}
+            >
+              <Ionicons name="time" size={16} color="#fbbf24" />
+              <Text style={[styles.premiumBadgeText, { color: '#fbbf24', fontWeight: '900', fontSize: 13 }]}>{formatCountdown()}</Text>
+            </LinearGradient>
           )}
         </View>
       </View>
@@ -1333,9 +1464,6 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         <View style={styles.headerNavRight}>
           <TouchableOpacity style={styles.navButton} onPress={handleShare} activeOpacity={0.8}>
             <Ionicons name="share-social" size={20} color="#F0F6FC" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navButton} onPress={toggleFavorite} activeOpacity={0.8}>
-            <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={22} color={isFavorite ? '#EF4444' : '#F0F6FC'} />
           </TouchableOpacity>
         </View>
       </View>
@@ -1765,6 +1893,46 @@ const styles = StyleSheet.create({
     color: '#F0F6FC',
     maxWidth: 160,
   },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 24,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#8B5CF6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
+  },
+  premiumBadgeGlow: {
+    position: 'absolute',
+    top: -20,
+    left: -20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  premiumBadgeText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
   resolutionBadgeYes: {
     backgroundColor: 'rgba(16, 185, 129, 0.5)',
     borderColor: 'rgba(16, 185, 129, 0.8)',
@@ -2113,6 +2281,12 @@ const styles = StyleSheet.create({
       },
       android: { elevation: 2 },
     }),
+  },
+  creatorTouchable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 14,
   },
   creatorAvatarWrapper: {
     ...Platform.select({
@@ -3540,5 +3714,336 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: '#fff',
+  },
+  // Semi-Circle Gauge Styles
+  semiCircleContainer: {
+    marginBottom: 24,
+  },
+  semiCircleTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#F0F6FC',
+    marginBottom: 20,
+    letterSpacing: 0.3,
+  },
+  semiCircleWrapper: {
+    alignItems: 'center',
+  },
+  semiCircleBackground: {
+    width: 200,
+    height: 100,
+    borderTopLeftRadius: 100,
+    borderTopRightRadius: 100,
+    backgroundColor: 'rgba(48, 54, 61, 0.6)',
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  semiCircleArc: {
+    position: 'absolute',
+    width: 100,
+    height: 200,
+    transformOrigin: 'bottom center',
+  },
+  semiCircleArcYes: {
+    left: 0,
+    bottom: 0,
+    borderTopLeftRadius: 100,
+    borderBottomLeftRadius: 100,
+    overflow: 'hidden',
+  },
+  semiCircleArcNo: {
+    right: 0,
+    bottom: 0,
+    borderTopRightRadius: 100,
+    borderBottomRightRadius: 100,
+    overflow: 'hidden',
+  },
+  semiCircleArcGradient: {
+    width: '100%',
+    height: '100%',
+  },
+  semiCircleCenterContent: {
+    position: 'absolute',
+    bottom: 10,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  semiCircleTotalVotes: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#F0F6FC',
+  },
+  semiCircleTotalVotesLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#8B949E',
+    textTransform: 'lowercase',
+  },
+  semiCircleLabels: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    marginTop: 20,
+    gap: 32,
+  },
+  semiCircleLabelItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  semiCircleLabelDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  semiCircleLabelPercent: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#F0F6FC',
+  },
+  semiCircleLabelText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#8B949E',
+    letterSpacing: 0.5,
+  },
+  semiCircleLabelOdds: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6E7681',
+    marginTop: 2,
+  },
+  semiCircleLabelDivider: {
+    width: 1,
+    height: 50,
+    backgroundColor: 'rgba(48, 54, 61, 0.8)',
+  },
+  // Compact Question Card Styles - Updated Size & Aesthetic
+  compactQuestionCard: {
+    width: 220,
+    height: 280,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginRight: 16,
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  // Modern Investor Styles
+  investorCardModern: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(30, 41, 59, 0.6)',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  investorCardGold: {
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  investorCardSilver: {
+    backgroundColor: 'rgba(192, 192, 192, 0.1)',
+    borderColor: 'rgba(192, 192, 192, 0.3)',
+  },
+  investorCardBronze: {
+    backgroundColor: 'rgba(205, 127, 50, 0.1)',
+    borderColor: 'rgba(205, 127, 50, 0.3)',
+  },
+  investorRankModern: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  rankBadgeGradient: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rankTextModern: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#8B949E',
+  },
+  investorAvatarModern: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  investorInfoModern: {
+    flex: 1,
+  },
+  investorUsernameModern: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFF',
+    marginBottom: 2,
+  },
+  investorAmountModern: {
+    fontSize: 13,
+    color: '#8B949E',
+  },
+  investorVoteBadgeModern: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  investorVoteBadgeYesModern: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+  },
+  investorVoteBadgeNoModern: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  investorVoteTextModern: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  investorVoteTextYesModern: {
+    color: '#10B981',
+  },
+  investorVoteTextNoModern: {
+    color: '#EF4444',
+  },
+  // Reply Styles
+  replyIndicator: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  replyIndicatorText: {
+    color: '#8B949E',
+    fontSize: 13,
+  },
+  repliesContainer: {
+    flexDirection: 'row',
+    marginTop: 12,
+  },
+  replyLine: {
+    width: 2,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    marginRight: 12,
+    borderRadius: 1,
+  },
+  nestedReplyCard: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    gap: 10,
+  },
+  nestedReplyAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#333',
+  },
+  compactQuestionImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
+  compactQuestionGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '70%',
+  },
+  compactQuestionContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 12,
+  },
+  compactQuestionStats: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 6,
+  },
+  compactQuestionStatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  compactQuestionStatText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.9)',
+  },
+  compactQuestionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F0F6FC',
+    lineHeight: 17,
+    marginBottom: 8,
+  },
+  compactQuestionPercentBar: {
+    flexDirection: 'row',
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: 6,
+  },
+  compactQuestionPercentYes: {
+    backgroundColor: '#10B981',
+    borderRadius: 2,
+  },
+  compactQuestionPercentNo: {
+    backgroundColor: '#EF4444',
+    borderRadius: 2,
+  },
+  compactQuestionPercentLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  compactQuestionYesLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#10B981',
+  },
+  compactQuestionNoLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#EF4444',
   },
 });

@@ -36,6 +36,7 @@ export interface LeaderboardUser {
   totalPredictions: number;
   avatar: string;
   isCurrentUser: boolean;
+  isPlaceholder?: boolean;
 }
 
 export interface Question {
@@ -74,4 +75,14 @@ export interface LeagueConfig {
 }
 
 export type TabType = 'discover' | 'my-leagues' | 'create';
+
+export interface LeagueVote {
+  id: string;
+  questionId: string;
+  vote: 'yes' | 'no' | 'skip';
+  odds: number;
+  status: 'pending' | 'won' | 'lost' | 'skipped';
+  pointsEarned: number;
+  createdAt: string;
+}
 

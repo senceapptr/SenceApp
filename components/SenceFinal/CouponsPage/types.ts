@@ -14,6 +14,7 @@ export interface CouponPrediction {
 
 export interface Coupon {
   id: number;
+  rawId: string; // Backend'den gelen gerçek UUID
   predictions: CouponPrediction[];
   totalOdds: number;
   potentialEarnings: number;
@@ -22,10 +23,8 @@ export interface Coupon {
   claimedReward?: boolean;
   username?: string;
   investmentAmount?: number;
+  display_id?: number;
 }
 
+// Tek seçim için - 'all' geri eklendi
 export type CategoryType = 'all' | 'pending' | 'won' | 'lost' | 'cancelled';
-
-
-
-

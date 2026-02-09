@@ -9,7 +9,10 @@ interface ProfileHeaderProps {
   coverImage: string;
   userName: string;
   onBack: () => void;
-  onMenuToggle: () => void;
+  onShare: () => void;
+  onEdit: () => void;
+  onCoverPress: () => void;
+  isOwnProfile?: boolean;
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -17,12 +20,15 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   coverImage,
   userName,
   onBack,
-  onMenuToggle,
+  onShare,
+  onEdit,
+  onCoverPress,
+  isOwnProfile = false,
 }) => {
   const { HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT } = ANIMATION_CONSTANTS;
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.header,
         {
@@ -65,13 +71,20 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         ]}
         resizeMode="cover"
       />
-      
+
       {/* Header Overlay */}
       <LinearGradient
         colors={['transparent', 'rgba(0,0,0,0.4)']}
         style={styles.headerOverlay}
       />
-      
+
+      {/* Cover Click Area */}
+      <TouchableOpacity
+        style={StyleSheet.absoluteFill}
+        onPress={onCoverPress}
+        activeOpacity={0.9}
+      />
+
       {/* Header Content */}
       <View style={styles.headerContent}>
         {/* Top Bar */}
@@ -79,7 +92,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <TouchableOpacity onPress={onBack} style={styles.headerButton} activeOpacity={0.7}>
             <Ionicons name="chevron-back" size={24} color="white" />
           </TouchableOpacity>
-          
+
           {/* Collapsed Title */}
           <Animated.Text
             style={[
@@ -95,14 +108,18 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           >
             {userName}
           </Animated.Text>
-          
-          <TouchableOpacity onPress={onMenuToggle} style={styles.headerButton} activeOpacity={0.7}>
-            <View style={styles.hamburgerIcon}>
-              <View style={styles.hamburgerLine} />
-              <View style={styles.hamburgerLine} />
-              <View style={styles.hamburgerLine} />
-            </View>
-          </TouchableOpacity>
+
+          <View style={styles.rightButtons}>
+            <TouchableOpacity onPress={onShare} style={styles.headerButton} activeOpacity={0.7}>
+              <Ionicons name="share-outline" size={24} color="white" />
+            </TouchableOpacity>
+
+            {isOwnProfile && (
+              <TouchableOpacity onPress={onEdit} style={[styles.headerButton, styles.editButton]} activeOpacity={0.7}>
+                <Ionicons name="settings-outline" size={24} color="white" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
     </Animated.View>
@@ -158,16 +175,12 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
   },
-  hamburgerIcon: {
-    width: 20,
-    height: 16,
-    justifyContent: 'space-between',
+  rightButtons: {
+    flexDirection: 'row',
+    gap: 8,
   },
-  hamburgerLine: {
-    width: 20,
-    height: 2.5,
-    backgroundColor: 'white',
-    borderRadius: 1.25,
+  editButton: {
+    marginLeft: 0,
   },
 });
 

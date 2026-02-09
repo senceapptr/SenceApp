@@ -1,28 +1,44 @@
+// =====================================================
+// NOTIFICATIONS PAGE - Main Component (Dark Theme)
+// =====================================================
+
 import React from 'react';
-import { View, Modal, StyleSheet, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
+import { View, Modal, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { StatusBar } from 'react-native';
 import { NotificationsPageProps } from './types';
 import { useNotifications } from './hooks';
 import { PageHeader } from './components/PageHeader';
 import { ModalHeader } from './components/ModalHeader';
+import { FilterTabs } from './components/FilterTabs';
 import { NotificationsList } from './components/NotificationsList';
+import { LinearGradient } from 'expo-linear-gradient'; // For background
 
-export function NotificationsPage({ 
-  isOpen = true, 
-  onClose, 
-  onBack, 
-  onMenuToggle 
+export function NotificationsPage({
+  isOpen = true,
+  onClose,
+  onBack,
 }: NotificationsPageProps) {
   const {
     notifications,
-    markAsRead,
-    deleteNotification,
-    clearAll,
-    unreadCount,
+    activeFilter,
+    setActiveFilter,
     loading,
-    createTestNotifications,
-    createMockTestNotifications,
+    refreshing,
+    onRefresh,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    unreadCount,
+    createTestNotifications // For testing
   } = useNotifications();
+
+  // Loading state
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color="#432870" />
+      <Text style={styles.loadingText}>Bildirimler yükleniyor...</Text>
+    </View>
+  );
 
   // Modal version
   if (onClose) {
@@ -37,42 +53,27 @@ export function NotificationsPage({
           <View style={styles.modalContent}>
             <ModalHeader
               unreadCount={unreadCount}
-              onClearAll={clearAll}
               onClose={onClose}
+              onMarkAllRead={markAllAsRead}
             />
-            
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#432870" />
-                <Text style={styles.loadingText}>Bildirimler yükleniyor...</Text>
-              </View>
-            ) : (
-              <>
-                {/* Test Butonları */}
-                <View style={styles.testButtonsContainer}>
-                  <TouchableOpacity 
-                    style={styles.testButton}
-                    onPress={createTestNotifications}
-                  >
-                    <Text style={styles.testButtonText}>Backend Test</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={[styles.testButton, styles.mockTestButton]}
-                    onPress={createMockTestNotifications}
-                  >
-                    <Text style={styles.testButtonText}>Mock Test</Text>
-                  </TouchableOpacity>
-                </View>
-                
+
+            <View style={styles.darkBackground}>
+              <FilterTabs
+                activeFilter={activeFilter}
+                onFilterChange={setActiveFilter}
+              />
+
+              {loading ? renderLoading() : (
                 <NotificationsList
                   notifications={notifications}
                   onMarkAsRead={markAsRead}
                   onDelete={deleteNotification}
                   variant="modal"
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
                 />
-              </>
-            )}
+              )}
+            </View>
           </View>
         </View>
       </Modal>
@@ -82,46 +83,31 @@ export function NotificationsPage({
   // Full page version
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
-      
+      <StatusBar barStyle="light-content" backgroundColor="#09090B" />
+
       <PageHeader
         unreadCount={unreadCount}
         onBack={onBack}
-        onMenuToggle={onMenuToggle}
+        onMarkAllRead={markAllAsRead}
       />
-      
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#432870" />
-          <Text style={styles.loadingText}>Bildirimler yükleniyor...</Text>
-        </View>
-      ) : (
-        <>
-          {/* Test Butonları */}
-          <View style={styles.testButtonsContainer}>
-            <TouchableOpacity 
-              style={styles.testButton}
-              onPress={createTestNotifications}
-            >
-              <Text style={styles.testButtonText}>Backend Test</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.testButton, styles.mockTestButton]}
-              onPress={createMockTestNotifications}
-            >
-              <Text style={styles.testButtonText}>Mock Test</Text>
-            </TouchableOpacity>
-          </View>
-          
+
+      <View style={{ flex: 1, backgroundColor: '#09090B' }}>
+        <FilterTabs
+          activeFilter={activeFilter}
+          onFilterChange={setActiveFilter}
+        />
+
+        {loading ? renderLoading() : (
           <NotificationsList
             notifications={notifications}
             onMarkAsRead={markAsRead}
             onDelete={deleteNotification}
             variant="page"
+            refreshing={refreshing}
+            onRefresh={onRefresh}
           />
-        </>
-      )}
+        )}
+      </View>
     </View>
   );
 }
@@ -130,55 +116,40 @@ const styles = StyleSheet.create({
   // Full page styles
   container: {
     flex: 1,
-    backgroundColor: '#F2F3F5',
+    backgroundColor: '#09090B', // Dark background
   },
-  
+
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.6)', // Darker overlay
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: '#09090B',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '90%',
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
+  darkBackground: {
+    flex: 1,
+    backgroundColor: '#09090B',
+  },
+
+  // Loading
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 60,
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#432870',
-  },
-  testButtonsContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-  },
-  testButton: {
-    backgroundColor: '#432870',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    flex: 1,
-  },
-  mockTestButton: {
-    backgroundColor: '#10B981',
-  },
-  testButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+    marginTop: 12,
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#8B949E', // Gray text
   },
 });
-
-

@@ -1,170 +1,207 @@
-import { Notification, NotificationType, NotificationColors } from './types';
+// =====================================================
+// NOTIFICATIONS PAGE - UTILS
+// =====================================================
 
-// Mock notifications data
-export const mockNotifications: Notification[] = [
-  {
-    id: 'mock-1',
-    type: 'prediction',
-    title: 'Tahmin Sonuçlandı',
-    message: '"Galatasaray şampiyonluk yaşayacak mı?" tahminin doğru çıktı!',
-    time: '2 dk önce',
-    read: false,
+import { Notification, NotificationType, NotificationConfig, NotificationCategory } from './types';
+
+// Notification type configurations
+export const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
+  prediction_won: {
     icon: '🎯',
-    color: ['#10B981', '#059669'],
-    reward: '+250 kredi'
+    colors: ['#10B981', '#059669'] as const,
+    category: 'rewards',
   },
-  {
-    id: 'mock-2',
-    type: 'league',
-    title: 'Liga Sıralaması',
-    message: 'Spor liginde 3. sıraya yükseldin!',
-    time: '15 dk önce',
-    read: false,
+  coupon_won: {
+    icon: '🎫',
+    colors: ['#F59E0B', '#D97706'] as const,
+    category: 'rewards',
+  },
+  daily_bonus: {
+    icon: '🎰',
+    colors: ['#8B5CF6', '#7C3AED'] as const,
+    category: 'rewards',
+  },
+  friend_follow: {
+    icon: '👤',
+    colors: ['#3B82F6', '#2563EB'] as const,
+    category: 'social',
+  },
+  league_invite: {
     icon: '🏆',
-    color: ['#432870', '#B29EFD']
+    colors: ['#432870', '#6B21A8'] as const,
+    category: 'social',
   },
-  {
-    id: 'mock-3',
-    type: 'friend',
-    title: 'Yeni Takipçi',
-    message: 'ahmet_bey seni takip etmeye başladı',
-    time: '3 saat önce',
-    read: false,
-    icon: '👥',
-    color: ['#3B82F6', '#06B6D4']
-  },
-  {
-    id: 'mock-4',
-    type: 'prediction',
-    title: 'Tahmin Hatırlatması',
-    message: '"Bitcoin 100K doları geçecek mi?" tahmin süresi bitiyor',
-    time: '5 saat önce',
-    read: true,
+  coupon_status: {
     icon: '⏰',
-    color: ['#F59E0B', '#F97316']
+    colors: ['#F97316', '#EA580C'] as const,
+    category: 'system',
   },
-  {
-    id: 'mock-5',
-    type: 'system',
-    title: 'Günlük Bonus',
-    message: 'Günlük giriş bonusun hazır! 100 kredi kazandın',
-    time: '1 gün önce',
-    read: true,
-    icon: '🎁',
-    color: ['#C9F158', '#84CC16'],
-    reward: '+100 kredi'
+  prediction_added: {
+    icon: '✨',
+    colors: ['#432870', '#7C3AED'] as const,
+    category: 'system',
   },
-  {
-    id: 'mock-6',
-    type: 'league',
-    title: 'Lig Tamamlandı',
-    message: 'Teknoloji liginde 1. oldun! Ödülün hazır',
-    time: '1 gün önce',
-    read: false,
-    icon: '🏆',
-    color: ['#432870', '#B29EFD'],
-    reward: '+500 kredi'
-  },
-  {
-    id: 'mock-7',
-    type: 'prediction',
-    title: 'Tahmin Kaybı',
-    message: '"Tesla hisseleri yükselecek mi?" tahminin yanlış çıktı',
-    time: '3 gün önce',
-    read: true,
-    icon: '❌',
-    color: ['#EF4444', '#DC2626']
-  },
-  {
-    id: 'mock-8',
-    type: 'system',
-    title: 'Hesap Güvenliği',
-    message: 'Şifren 30 günden uzun süredir değiştirilmedi',
-    time: '5 gün önce',
-    read: true,
-    icon: '🔒',
-    color: ['#6B7280', '#4B5563']
-  }
+};
+
+export const FILTER_TABS = [
+  { key: 'all' as NotificationCategory, label: 'Tümü' },
+  { key: 'rewards' as NotificationCategory, label: 'Kazançlar' },
+  { key: 'social' as NotificationCategory, label: 'Sosyal' },
+  { key: 'system' as NotificationCategory, label: 'Sistem' },
 ];
 
-// Get notification colors by type
-export const getNotificationColors = (type: NotificationType): NotificationColors => {
-  const colorMap: Record<NotificationType, NotificationColors> = {
-    prediction: ['#10B981', '#059669'],
-    league: ['#432870', '#B29EFD'],
-    friend: ['#3B82F6', '#06B6D4'],
-    system: ['#C9F158', '#84CC16'],
-  };
-
-  return colorMap[type] || ['#6B7280', '#4B5563'];
+/**
+ * Get notification config by type
+ */
+export const getNotificationConfig = (type: NotificationType): NotificationConfig => {
+  return NOTIFICATION_CONFIGS[type] || NOTIFICATION_CONFIGS.prediction_added;
 };
 
-// Get notification icon by type
-export const getNotificationIcon = (type: NotificationType): string => {
-  const iconMap: Record<NotificationType, string> = {
-    prediction: '🎯',
-    league: '🏆',
-    friend: '👥',
-    system: '🔔',
-  };
-
-  return iconMap[type] || '🔔';
+/**
+ * Filter notifications by category
+ */
+export const filterNotificationsByCategory = (
+  notifications: Notification[],
+  category: NotificationCategory
+): Notification[] => {
+  if (category === 'all') return notifications;
+  return notifications.filter(n => getNotificationConfig(n.type).category === category);
 };
 
-// Format time ago
-export const formatTimeAgo = (dateString: string): string => {
+/**
+ * Group notifications by date sections
+ */
+export const groupNotificationsByDateSection = (notifications: Notification[]) => {
   const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+
+  const sections = {
+    today: [] as Notification[],
+    yesterday: [] as Notification[],
+    thisWeek: [] as Notification[],
+    older: [] as Notification[],
+  };
+
+  notifications.forEach(notification => {
+    const notifDate = new Date(notification.created_at);
+    const notifDay = new Date(notifDate.getFullYear(), notifDate.getMonth(), notifDate.getDate());
+
+    if (notifDay.getTime() === today.getTime()) {
+      sections.today.push(notification);
+    } else if (notifDay.getTime() === yesterday.getTime()) {
+      sections.yesterday.push(notification);
+    } else if (notifDay >= weekAgo) {
+      sections.thisWeek.push(notification);
+    } else {
+      sections.older.push(notification);
+    }
+  });
+
+  return sections;
+};
+
+/**
+ * Format time ago string
+ */
+export const formatTimeAgo = (dateString: string): string => {
   const date = new Date(dateString);
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffInSeconds < 60) {
-    return `${diffInSeconds} saniye önce`;
-  } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} dk önce`;
-  } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} saat önce`;
-  } else {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days} gün önce`;
-  }
+  if (diffMins < 1) return 'Şimdi';
+  if (diffMins < 60) return `${diffMins} dk önce`;
+  if (diffHours < 24) return `${diffHours} saat önce`;
+  if (diffDays < 7) return `${diffDays} gün önce`;
+
+  return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
 };
 
-// Format notification time (can be expanded later)
-export const formatNotificationTime = (time: string): string => {
-  return time;
-};
-
-// Count unread notifications
+/**
+ * Get unread count
+ */
 export const getUnreadCount = (notifications: Notification[]): number => {
   return notifications.filter(n => !n.read).length;
 };
 
-// Group notifications by date
-export const groupNotificationsByDate = (notifications: Notification[]): {
-  today: Notification[];
-  yesterday: Notification[];
-  older: Notification[];
-} => {
-  const today: Notification[] = [];
-  const yesterday: Notification[] = [];
-  const older: Notification[] = [];
-
-  notifications.forEach(notification => {
-    const time = notification.time.toLowerCase();
-    
-    if ((time.includes('dk') || time.includes('dakika') || 
-        time.includes('saat')) && !time.includes('gün')) {
-      today.push(notification);
-    } else if (time.includes('1 gün')) {
-      yesterday.push(notification);
-    } else {
-      older.push(notification);
-    }
-  });
-
-  return { today, yesterday, older };
-};
-
-
+/**
+ * Mock notifications for development
+ */
+export const mockNotifications: Notification[] = [
+  {
+    id: 'mock-1',
+    type: 'prediction_won',
+    title: 'Tahmin Kazandın!',
+    message: '"Galatasaray maçı kazanacak mı?" tahmininden 250 kredi kazandın!',
+    time: '5 dk önce',
+    read: false,
+    data: { reward: 250, questionId: 'q1' },
+    created_at: new Date(Date.now() - 5 * 60000).toISOString(),
+  },
+  {
+    id: 'mock-2',
+    type: 'coupon_won',
+    title: 'Kuponun Tuttu! 🎉',
+    message: '5 maçlık kuponun tuttu! 1,250 kredi kazandın!',
+    time: '1 saat önce',
+    read: false,
+    data: { reward: 1250, couponId: 'c1' },
+    created_at: new Date(Date.now() - 60 * 60000).toISOString(),
+  },
+  {
+    id: 'mock-3',
+    type: 'daily_bonus',
+    title: 'Günlük Ödüller Yenilendi',
+    message: 'Çark çevir ve günlük oyunlar seni bekliyor! Hemen gir, bonusunu kap.',
+    time: '2 saat önce',
+    read: false,
+    data: {},
+    created_at: new Date(Date.now() - 2 * 60 * 60000).toISOString(),
+  },
+  {
+    id: 'mock-4',
+    type: 'friend_follow',
+    title: 'Yeni Takipçi',
+    message: '@ahmet_yilmaz seni takip etmeye başladı',
+    time: '3 saat önce',
+    read: true,
+    data: { userId: 'u1', username: 'ahmet_yilmaz' },
+    created_at: new Date(Date.now() - 3 * 60 * 60000).toISOString(),
+  },
+  {
+    id: 'mock-5',
+    type: 'league_invite',
+    title: 'Lige Davet Edildin',
+    message: '"Spor Severler Ligi" ligine davet edildin. Katılmak ister misin?',
+    time: 'Dün',
+    read: true,
+    data: { leagueId: 'l1', leagueName: 'Spor Severler Ligi' },
+    created_at: new Date(Date.now() - 24 * 60 * 60000).toISOString(),
+  },
+  {
+    id: 'mock-6',
+    type: 'coupon_status',
+    title: 'Kuponunda 1 Maç Kaldı!',
+    message: 'Son maç sonuçlanmak üzere. Kuponunu takip et!',
+    time: 'Dün',
+    read: true,
+    data: { couponId: 'c2' },
+    created_at: new Date(Date.now() - 26 * 60 * 60000).toISOString(),
+  },
+  {
+    id: 'mock-7',
+    type: 'prediction_added',
+    title: 'Yeni Sorular Eklendi',
+    message: 'İlgilenebileceğin 5 yeni soru eklendi. Hemen tahmin yap!',
+    time: '2 gün önce',
+    read: true,
+    data: {},
+    created_at: new Date(Date.now() - 2 * 24 * 60 * 60000).toISOString(),
+  },
+];

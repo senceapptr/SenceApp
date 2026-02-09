@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, FlatList, RefreshControl, Text, Alert, TouchableOpacity, Animated } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, StyleSheet, FlatList, RefreshControl, Text, Alert, TouchableOpacity, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { couponsService } from '@/services/coupons.service';
 import { CategoryType, Coupon } from './types';
-import { calculateStatistics, computeCouponStatus } from './utils';
+import { calculateStatistics } from './utils';
+import { mapBackendCouponsToFrontend } from './couponMapper';
 import { useHeaderAnimation } from './hooks';
 import { Header } from './components/Header';
 import { StatisticsCards } from './components/StatisticsCards';
@@ -17,8 +18,8 @@ import { CouponsPageSkeleton } from './components/CouponsPageSkeleton';
 interface CouponsPageProps {
   onMenuToggle: () => void;
   onQuestionDetail?: (questionId: number) => void;
-  refreshTrigger?: number; // Bu prop değiştiğinde sayfa yenilenecek
-  onCreateCouponPress?: () => void; // Ticket oluşturmaya yönlendir
+  refreshTrigger?: number;
+  onCreateCouponPress?: () => void;
 }
 
 // Empty State Component with animations
@@ -29,7 +30,6 @@ function CouponsEmptyState({ onCreatePress }: { onCreatePress?: () => void }) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Entrance animation
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -44,7 +44,6 @@ function CouponsEmptyState({ onCreatePress }: { onCreatePress?: () => void }) {
       }),
     ]).start();
 
-    // Float animation
     Animated.loop(
       Animated.sequence([
         Animated.timing(floatAnim, {
@@ -60,7 +59,6 @@ function CouponsEmptyState({ onCreatePress }: { onCreatePress?: () => void }) {
       ])
     ).start();
 
-    // Pulse animation for button
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -97,8 +95,6 @@ function CouponsEmptyState({ onCreatePress }: { onCreatePress?: () => void }) {
           <View style={styles.emptyIconCircle}>
             <Ionicons name="ticket" size={64} color="#10B981" />
           </View>
-          
-          {/* Decorative elements */}
           <View style={[styles.decorativeCircle, styles.decorativeCircle1]} />
           <View style={[styles.decorativeCircle, styles.decorativeCircle2]} />
           <View style={[styles.decorativeCircle, styles.decorativeCircle3]} />
@@ -107,7 +103,7 @@ function CouponsEmptyState({ onCreatePress }: { onCreatePress?: () => void }) {
         <Text style={styles.emptyTitle}>Henüz Ticket Yok</Text>
         <Text style={styles.emptyDescription}>
           Sorulara oy vererek heyecan dolu{'\n'}
-          ticketlar oluştur ve kazanmaya başla! 🎯
+          ticketlar oluştur ve kazanmaya başla!
         </Text>
 
         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
@@ -127,6 +123,7 @@ function CouponsEmptyState({ onCreatePress }: { onCreatePress?: () => void }) {
 
 export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, onCreateCouponPress }: CouponsPageProps) {
   const { user } = useAuth();
+  // Tek seçim için state - varsayılan 'all'
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('all');
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [showCouponDetail, setShowCouponDetail] = useState(false);
@@ -136,7 +133,6 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
   const [showSkeleton, setShowSkeleton] = useState(true);
   const { headerTranslateY, handleScroll } = useHeaderAnimation();
 
-  // Backend'den ticket verilerini yükle
   const loadCouponsData = async (isRefresh = false) => {
     if (!user) {
       setLoading(false);
@@ -146,12 +142,11 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
 
     try {
       setLoading(true);
-      // Sadece ilk yüklemede skeleton göster, refresh sırasında gösterme
       if (!isRefresh) {
         setShowSkeleton(true);
       }
       const result = await couponsService.getUserCoupons(user.id);
-      
+
       if (result.error) {
         console.error('Error loading coupons:', result.error);
         Alert.alert('Hata', 'Ticketlar yüklenirken bir hata oluştu');
@@ -159,64 +154,11 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
         setShowSkeleton(false);
         return;
       }
-      
+
       if (result.data) {
-        if (__DEV__ && result.data.length > 0) {
-          const first = result.data[0] as any;
-          console.log('[Ticketlarım] İlk kupon keys:', Object.keys(first));
-          console.log('[Ticketlarım] coupon_selections sayısı:', first.coupon_selections?.length ?? 'yok');
-        }
-        // Backend'den gelen veriyi frontend formatına çevir
-        const mappedCoupons: Coupon[] = result.data.map((coupon: any) => {
-          // coupon_selections bazen farklı key ile gelebilir (coupon_selections / couponSelections)
-          const rawSelections =
-            coupon.coupon_selections ??
-            coupon.couponSelections ??
-            (Array.isArray(coupon.selections) ? coupon.selections : []);
-          const selections = Array.isArray(rawSelections) ? rawSelections : [];
-
-          const predictions = selections.map((selection: any) => {
-            const q = selection.questions ?? selection.question;
-            const questionRow = Array.isArray(q) ? q?.[0] ?? q : q;
-            const categoryName =
-              questionRow?.categories?.name ??
-              questionRow?.category?.name ??
-              (typeof questionRow?.categories === 'string' ? questionRow.categories : null);
-            const result =
-              selection.status === 'won' ? 'won' as const
-              : selection.status === 'lost' ? 'lost' as const
-              : selection.status === 'cancelled' ? 'cancelled' as const
-              : 'pending' as const;
-            return {
-              id: selection.id ?? 0,
-              questionId: selection.question_id ?? 0,
-              question: questionRow?.title ?? 'Soru bulunamadı',
-              choice: selection.vote ?? 'yes',
-              odds: Number(selection.odds) || 1,
-              category: categoryName ?? 'Genel',
-              result,
-              endDate: questionRow?.end_date ? new Date(questionRow.end_date) : null
-            };
-          });
-
-          const status = computeCouponStatus(predictions);
-
-          return {
-            id: coupon.display_id ?? coupon.id ?? 0,
-            predictions,
-            totalOdds: coupon.total_odds || 1,
-            potentialEarnings: coupon.potential_win || 0,
-            status,
-            createdAt: new Date(coupon.created_at),
-            claimedReward: coupon.claimed_reward || false,
-            username: coupon.username || '@kullanici',
-            investmentAmount: coupon.stake_amount || 0,
-          };
-        });
-
+        const mappedCoupons = mapBackendCouponsToFrontend(result.data);
         setCoupons(mappedCoupons);
       } else {
-        console.log('No data received from backend');
         setCoupons([]);
       }
     } catch (err) {
@@ -224,19 +166,16 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
       Alert.alert('Hata', 'Ticketlar yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
-      // Animasyon olmadan direkt geçiş
       if (!isRefresh && showSkeleton) {
         setShowSkeleton(false);
       }
     }
   };
 
-  // Sayfa yüklendiğinde veriyi çek
   useEffect(() => {
     loadCouponsData();
   }, [user]);
 
-  // refreshTrigger değiştiğinde veriyi yenile
   useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
       loadCouponsData();
@@ -245,6 +184,7 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
 
   const stats = calculateStatistics(coupons);
 
+  // Tek seçime göre filtrele
   const filteredCoupons = coupons.filter(coupon => {
     if (selectedCategory === 'all') return true;
     return coupon.status === selectedCategory;
@@ -255,15 +195,70 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
     setShowCouponDetail(true);
   };
 
-  const handleClaimReward = (couponId: number) => {
+  // Karttan direkt claim
+  const handleCouponClaim = async (coupon: Coupon) => {
+    if (!coupon.rawId) {
+      Alert.alert('Hata', 'Kupon bilgisi eksik');
+      return;
+    }
+
+    try {
+      const result = await couponsService.claimCouponReward(coupon.rawId);
+
+      if (result.error) {
+        Alert.alert('Hata', result.error.message || 'Ödül alınırken bir hata oluştu');
+        return;
+      }
+
+      const data = result.data as { success?: boolean; message?: string; error?: string; amount?: number } | null;
+
+      if (data?.success) {
+        Alert.alert('Tebrikler! 🎉', data.message || `${data.amount?.toLocaleString() || coupon.potentialEarnings.toLocaleString()} kredi hesabınıza eklendi!`);
+        // Kupon listesini güncelle
+        setCoupons(prev => prev.map(c =>
+          c.rawId === coupon.rawId ? { ...c, claimedReward: true } : c
+        ));
+      } else {
+        Alert.alert('Hata', data?.error || 'Ödül alınamadı');
+      }
+    } catch (err) {
+      Alert.alert('Hata', 'Ödül alınırken bir hata oluştu');
+    }
+  };
+
+  const handleClaimReward = async (couponId: number) => {
+    const coupon = coupons.find(c => c.id === couponId);
+    if (coupon) {
+      await handleCouponClaim(coupon);
+    }
     setShowCouponDetail(false);
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadCouponsData(true); // true = bu bir refresh işlemi
+    await loadCouponsData(true);
     setRefreshing(false);
   };
+
+  // ListHeaderComponent için memoize
+  const ListHeader = useCallback(() => (
+    <View style={styles.listHeader}>
+      <StatisticsCards
+        totalCoupons={stats.totalCoupons}
+        totalEarnings={stats.totalEarnings}
+        totalLost={stats.totalLost}
+      />
+      <CategoryTabs
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        totalCoupons={stats.totalCoupons}
+        pendingCoupons={stats.pendingCoupons}
+        wonCoupons={stats.wonCoupons}
+        lostCoupons={stats.lostCoupons}
+        cancelledCoupons={stats.cancelledCoupons}
+      />
+    </View>
+  ), [stats, selectedCategory]);
 
   // Giriş yapılmamış
   if (!user) {
@@ -279,22 +274,31 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
     );
   }
 
+  const renderCouponItem = ({ item }: { item: Coupon }) => (
+    <CouponCard
+      coupon={item}
+      onPress={handleCouponClick}
+      onClaim={handleCouponClaim}
+    />
+  );
+
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <Header onMenuToggle={onMenuToggle} headerTranslateY={headerTranslateY} />
 
-        {/* Skeleton Loading */}
         {showSkeleton ? (
           <View style={styles.skeletonContainer} pointerEvents="none">
             <CouponsPageSkeleton />
           </View>
         ) : (
-          /* Actual Content */
-          <View style={styles.contentContainer}>
-            <ScrollView 
-            style={styles.scrollView} 
-            contentContainerStyle={styles.scrollContent}
+          <FlatList
+            data={filteredCoupons}
+            renderItem={renderCouponItem}
+            keyExtractor={(item) => item.rawId || item.id.toString()}
+            ListHeaderComponent={ListHeader}
+            ListEmptyComponent={<CouponsEmptyState onCreatePress={onCreateCouponPress} />}
+            contentContainerStyle={styles.flatListContent}
             showsVerticalScrollIndicator={false}
             onScroll={handleScroll}
             scrollEventThrottle={16}
@@ -309,40 +313,7 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
                 titleColor="#10B981"
               />
             }
-          >
-            <StatisticsCards 
-              totalCoupons={stats.totalCoupons}
-              totalEarnings={stats.totalEarnings}
-              totalLost={stats.totalLost}
-            />
-
-            <CategoryTabs
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-              totalCoupons={stats.totalCoupons}
-              pendingCoupons={stats.pendingCoupons}
-              wonCoupons={stats.wonCoupons}
-              lostCoupons={stats.lostCoupons}
-              cancelledCoupons={stats.cancelledCoupons}
-            />
-
-            <View style={styles.couponsContainer}>
-              <FlatList
-                data={filteredCoupons}
-                renderItem={({ item }) => (
-                  <CouponCard coupon={item} onPress={handleCouponClick} />
-                )}
-                keyExtractor={(item) => item.id.toString()}
-                scrollEnabled={false}
-                contentContainerStyle={styles.couponsList}
-                showsVerticalScrollIndicator={false}
-                ListEmptyComponent={
-                  <CouponsEmptyState onCreatePress={onCreateCouponPress} />
-                }
-              />
-            </View>
-          </ScrollView>
-          </View>
+          />
         )}
 
         <CouponDetailModal
@@ -373,21 +344,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 100,
   },
-  contentContainer: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-    paddingBottom: 100,
-  },
-  scrollContent: {
+  flatListContent: {
     paddingTop: 70,
-  },
-  couponsContainer: {
     paddingHorizontal: 24,
+    paddingBottom: 120,
   },
-  couponsList: {
-    gap: 16,
+  listHeader: {
+    marginBottom: 8,
   },
   loadingContent: {
     flex: 1,
@@ -405,7 +368,6 @@ const styles = StyleSheet.create({
   emptyStateWrapper: {
     paddingTop: 20,
     paddingBottom: 60,
-    paddingHorizontal: 20,
   },
   emptyStateCard: {
     backgroundColor: '#161B22',
@@ -493,6 +455,3 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
-
-
-

@@ -1,28 +1,36 @@
 import { supabase } from '@/lib/supabase';
 
+// =====================================================
+// NOTIFICATIONS SERVICE
+// =====================================================
+
+export type NotificationType =
+  | 'prediction_won'
+  | 'coupon_won'
+  | 'daily_bonus'
+  | 'friend_follow'
+  | 'league_invite'
+  | 'coupon_status'
+  | 'prediction_added';
+
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'prediction' | 'league' | 'friend' | 'system';
+  type: NotificationType;
   title: string;
   message: string;
   is_read: boolean;
   created_at: string;
   updated_at: string;
-  data?: any; // Additional notification data
+  data?: Record<string, any>;
 }
 
 export interface CreateNotificationData {
   user_id: string;
-  type: 'prediction' | 'league' | 'friend' | 'system';
+  type: NotificationType;
   title: string;
   message: string;
-  data?: any;
-}
-
-export interface MarkAsReadData {
-  notification_id: string;
-  user_id: string;
+  data?: Record<string, any>;
 }
 
 /**
@@ -30,6 +38,10 @@ export interface MarkAsReadData {
  * Bildirim işlemleri
  */
 export const notificationsService = {
+  // =====================================================
+  // CRUD OPERATIONS
+  // =====================================================
+
   /**
    * Kullanıcının bildirimlerini getir
    */
@@ -83,9 +95,8 @@ export const notificationsService = {
 
       if (error) {
         console.error('Create notification error:', error);
-        // RLS hatası için özel mesaj
         if (error.code === '42501') {
-          throw new Error('RLS policy hatası: Kullanıcı bildirim oluşturamıyor. Lütfen RLS policy\'lerini kontrol edin.');
+          throw new Error('RLS policy hatası: Kullanıcı bildirim oluşturamıyor.');
         }
         throw error;
       }
@@ -156,24 +167,6 @@ export const notificationsService = {
   },
 
   /**
-   * Tüm bildirimleri sil
-   */
-  async deleteAllNotifications(userId: string) {
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error) {
-      console.error('Delete all notifications error:', error);
-      return { data: null, error: error as Error };
-    }
-  },
-
-  /**
    * Okunmamış bildirim sayısını getir
    */
   async getUnreadCount(userId: string) {
@@ -192,196 +185,206 @@ export const notificationsService = {
     }
   },
 
-  /**
-   * Tahmin sonucu bildirimi oluştur
-   */
-  async createPredictionNotification(userId: string, predictionResult: {
-    questionTitle: string;
-    isCorrect: boolean;
-    reward?: number;
-  }) {
-    const type = 'prediction';
-    const title = predictionResult.isCorrect ? 'Tahmin Sonuçlandı' : 'Tahmin Kaybı';
-    const message = predictionResult.isCorrect 
-      ? `"${predictionResult.questionTitle}" tahminin doğru çıktı!`
-      : `"${predictionResult.questionTitle}" tahminin yanlış çıktı`;
-    
-    const rewardText = predictionResult.reward ? ` +${predictionResult.reward} kredi` : '';
+  // =====================================================
+  // NOTIFICATION TYPE HELPERS
+  // =====================================================
 
+  /**
+   * Tahmin kazandı bildirimi
+   */
+  async createPredictionWonNotification(userId: string, data: {
+    questionTitle: string;
+    reward: number;
+    questionId?: string;
+  }) {
     return this.createNotification({
       user_id: userId,
-      type,
-      title,
-      message: message + rewardText,
+      type: 'prediction_won',
+      title: 'Tahmin Kazandın! 🎯',
+      message: `"${data.questionTitle}" tahmininden ${data.reward} kredi kazandın!`,
       data: {
-        questionTitle: predictionResult.questionTitle,
-        isCorrect: predictionResult.isCorrect,
-        reward: predictionResult.reward,
+        reward: data.reward,
+        questionId: data.questionId,
       },
     });
   },
 
   /**
-   * Lig bildirimi oluştur
+   * Kupon kazandı bildirimi
    */
-  async createLeagueNotification(userId: string, leagueData: {
+  async createCouponWonNotification(userId: string, data: {
+    reward: number;
+    matchCount: number;
+    couponId?: string;
+  }) {
+    return this.createNotification({
+      user_id: userId,
+      type: 'coupon_won',
+      title: 'Kuponun Tuttu! 🎉',
+      message: `${data.matchCount} maçlık kuponun tuttu! ${data.reward} kredi kazandın!`,
+      data: {
+        reward: data.reward,
+        matchCount: data.matchCount,
+        couponId: data.couponId,
+      },
+    });
+  },
+
+  /**
+   * Günlük bonus bildirimi
+   */
+  async createDailyBonusNotification(userId: string) {
+    return this.createNotification({
+      user_id: userId,
+      type: 'daily_bonus',
+      title: 'Günlük Ödüller Yenilendi',
+      message: 'Çark çevir ve günlük oyunlar seni bekliyor! Hemen gir, bonusunu kap.',
+      data: {},
+    });
+  },
+
+  /**
+   * Yeni takipçi bildirimi
+   */
+  async createFriendFollowNotification(userId: string, data: {
+    followerUsername: string;
+    followerId: string;
+    followerAvatar?: string;
+  }) {
+    return this.createNotification({
+      user_id: userId,
+      type: 'friend_follow',
+      title: 'Yeni Takipçi',
+      message: `@${data.followerUsername} seni takip etmeye başladı`,
+      data: {
+        userId: data.followerId,
+        username: data.followerUsername,
+        userAvatar: data.followerAvatar,
+      },
+    });
+  },
+
+  /**
+   * Lige davet bildirimi
+   */
+  async createLeagueInviteNotification(userId: string, data: {
     leagueName: string;
-    action: 'rank_up' | 'rank_down' | 'league_completed' | 'new_member';
-    rank?: number;
-    reward?: number;
+    leagueId: string;
+    inviterUsername?: string;
   }) {
-    const type = 'league';
-    let title = 'Lig Güncellemesi';
-    let message = '';
-
-    switch (leagueData.action) {
-      case 'rank_up':
-        title = 'Liga Sıralaması';
-        message = `${leagueData.leagueName} liginde ${leagueData.rank}. sıraya yükseldin!`;
-        break;
-      case 'rank_down':
-        title = 'Liga Sıralaması';
-        message = `${leagueData.leagueName} liginde ${leagueData.rank}. sıraya düştün`;
-        break;
-      case 'league_completed':
-        title = 'Lig Tamamlandı';
-        message = `${leagueData.leagueName} liginde 1. oldun! Ödülün hazır`;
-        if (leagueData.reward) {
-          message += ` +${leagueData.reward} kredi`;
-        }
-        break;
-      case 'new_member':
-        title = 'Yeni Lig Üyesi';
-        message = `${leagueData.leagueName} ligine yeni bir üye katıldı`;
-        break;
-    }
+    const message = data.inviterUsername
+      ? `@${data.inviterUsername} seni "${data.leagueName}" ligine davet etti.`
+      : `"${data.leagueName}" ligine davet edildin. Katılmak ister misin?`;
 
     return this.createNotification({
       user_id: userId,
-      type,
-      title,
+      type: 'league_invite',
+      title: 'Lige Davet Edildin',
       message,
-      data: leagueData,
+      data: {
+        leagueId: data.leagueId,
+        leagueName: data.leagueName,
+      },
     });
   },
 
   /**
-   * Sistem bildirimi oluştur
+   * Kupon durumu bildirimi (1 soru kaldı)
    */
-  async createSystemNotification(userId: string, systemData: {
-    type: 'daily_bonus' | 'security_warning' | 'maintenance' | 'update';
-    title: string;
-    message: string;
-    reward?: number;
+  async createCouponStatusNotification(userId: string, data: {
+    couponId: string;
+    remainingQuestions: number;
   }) {
-    const type = 'system';
-    let message = systemData.message;
-    
-    if (systemData.reward) {
-      message += ` +${systemData.reward} kredi`;
-    }
-
     return this.createNotification({
       user_id: userId,
-      type,
-      title: systemData.title,
-      message,
-      data: systemData,
+      type: 'coupon_status',
+      title: `Kuponunda ${data.remainingQuestions} Maç Kaldı!`,
+      message: 'Son maç sonuçlanmak üzere. Kuponunu takip et!',
+      data: {
+        couponId: data.couponId,
+        remainingQuestions: data.remainingQuestions,
+      },
     });
   },
 
   /**
-   * Arkadaş bildirimi oluştur
+   * Yeni sorular eklendi bildirimi
    */
-  async createFriendNotification(userId: string, friendData: {
-    action: 'follow' | 'unfollow' | 'challenge';
-    friendUsername: string;
-    friendId: string;
+  async createPredictionAddedNotification(userId: string, data: {
+    questionCount: number;
+    categoryName?: string;
   }) {
-    const type = 'friend';
-    let title = 'Arkadaş Aktivitesi';
-    let message = '';
-
-    switch (friendData.action) {
-      case 'follow':
-        title = 'Yeni Takipçi';
-        message = `${friendData.friendUsername} seni takip etmeye başladı`;
-        break;
-      case 'unfollow':
-        title = 'Takipçi Kaybı';
-        message = `${friendData.friendUsername} seni takip etmeyi bıraktı`;
-        break;
-      case 'challenge':
-        title = 'Yeni Meydan Okuma';
-        message = `${friendData.friendUsername} sana meydan okudu`;
-        break;
-    }
-
+    const categoryText = data.categoryName ? ` (${data.categoryName})` : '';
     return this.createNotification({
       user_id: userId,
-      type,
-      title,
-      message,
-      data: friendData,
+      type: 'prediction_added',
+      title: 'Yeni Sorular Eklendi',
+      message: `İlgilenebileceğin ${data.questionCount} yeni soru eklendi${categoryText}. Hemen tahmin yap!`,
+      data: {
+        questionCount: data.questionCount,
+        categoryName: data.categoryName,
+      },
     });
   },
+
+  // =====================================================
+  // TEST HELPERS
+  // =====================================================
 
   /**
    * Test için örnek bildirimler oluştur
    */
   async createTestNotifications(userId: string) {
     try {
-      // Önce mevcut bildirimleri kontrol et
-      const { data: existingNotifications } = await this.getUserNotifications(userId);
-      
-      if (existingNotifications && existingNotifications.length > 0) {
-        console.log('User already has notifications, not creating duplicates');
-        return { data: existingNotifications, error: null };
-      }
-
       const testNotifications = [
         {
           user_id: userId,
-          type: 'prediction' as const,
-          title: 'Tahmin Sonuçlandı',
-          message: '"Galatasaray şampiyonluk yaşayacak mı?" tahminin doğru çıktı!',
-          data: {
-            questionTitle: 'Galatasaray şampiyonluk yaşayacak mı?',
-            isCorrect: true,
-            reward: 250,
-          },
+          type: 'prediction_won' as NotificationType,
+          title: 'Tahmin Kazandın! 🎯',
+          message: '"Galatasaray maçı kazanacak mı?" tahmininden 250 kredi kazandın!',
+          data: { reward: 250 },
         },
         {
           user_id: userId,
-          type: 'league' as const,
-          title: 'Liga Sıralaması',
-          message: 'Spor liginde 3. sıraya yükseldin!',
-          data: {
-            leagueName: 'Spor Ligi',
-            action: 'rank_up',
-            rank: 3,
-          },
+          type: 'coupon_won' as NotificationType,
+          title: 'Kuponun Tuttu! 🎉',
+          message: '5 maçlık kuponun tuttu! 1,250 kredi kazandın!',
+          data: { reward: 1250 },
         },
         {
           user_id: userId,
-          type: 'friend' as const,
+          type: 'daily_bonus' as NotificationType,
+          title: 'Günlük Ödüller Yenilendi',
+          message: 'Çark çevir ve günlük oyunlar seni bekliyor!',
+          data: {},
+        },
+        {
+          user_id: userId,
+          type: 'friend_follow' as NotificationType,
           title: 'Yeni Takipçi',
-          message: 'ahmet_bey seni takip etmeye başladı',
-          data: {
-            action: 'follow',
-            friendUsername: 'ahmet_bey',
-            friendId: 'friend-uuid-123',
-          },
+          message: '@ahmet_yilmaz seni takip etmeye başladı',
+          data: { username: 'ahmet_yilmaz' },
         },
         {
           user_id: userId,
-          type: 'system' as const,
-          title: 'Günlük Bonus',
-          message: 'Günlük giriş bonusun hazır! 100 kredi kazandın',
-          data: {
-            type: 'daily_bonus',
-            reward: 100,
-          },
+          type: 'league_invite' as NotificationType,
+          title: 'Lige Davet Edildin',
+          message: '"Spor Severler Ligi" ligine davet edildin.',
+          data: { leagueName: 'Spor Severler Ligi' },
+        },
+        {
+          user_id: userId,
+          type: 'coupon_status' as NotificationType,
+          title: 'Kuponunda 1 Maç Kaldı!',
+          message: 'Son maç sonuçlanmak üzere. Kuponunu takip et!',
+          data: {},
+        },
+        {
+          user_id: userId,
+          type: 'prediction_added' as NotificationType,
+          title: 'Yeni Sorular Eklendi',
+          message: 'İlgilenebileceğin 5 yeni soru eklendi. Hemen tahmin yap!',
+          data: { questionCount: 5 },
         },
       ];
 

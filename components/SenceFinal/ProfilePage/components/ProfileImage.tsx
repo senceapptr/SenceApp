@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Image, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Image, TouchableOpacity, StyleSheet, Animated, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 interface ProfileImageProps {
   scrollY: Animated.Value;
@@ -8,6 +9,8 @@ interface ProfileImageProps {
   onPress: () => void;
   onPressIn: () => void;
   onPressOut: () => void;
+  isOwnProfile?: boolean;
+  onEdit?: () => void;
 }
 
 export const ProfileImage: React.FC<ProfileImageProps> = ({
@@ -17,6 +20,8 @@ export const ProfileImage: React.FC<ProfileImageProps> = ({
   onPress,
   onPressIn,
   onPressOut,
+  isOwnProfile = false,
+  onEdit,
 }) => {
   return (
     <Animated.View
@@ -40,14 +45,14 @@ export const ProfileImage: React.FC<ProfileImageProps> = ({
         },
       ]}
     >
-      <TouchableOpacity 
+      <TouchableOpacity
         onPress={onPress}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         activeOpacity={0.9}
       >
         <Animated.View style={{ transform: [{ scale: profileImageScale }] }}>
-          <Image 
+          <Image
             source={{ uri: profileImage }}
             style={styles.mainProfileImage}
             resizeMode="cover"

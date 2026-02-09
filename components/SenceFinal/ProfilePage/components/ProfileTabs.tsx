@@ -11,17 +11,17 @@ interface ProfileTabsProps {
 export const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange }) => {
   return (
     <View style={styles.tabsContainer}>
-      <TouchableOpacity 
-        onPress={() => onTabChange('predictions')}
-        style={[styles.tab, activeTab === 'predictions' && styles.activeTab]}
+      <TouchableOpacity
+        onPress={() => onTabChange('tickets')}
+        style={[styles.tab, activeTab === 'tickets' && styles.activeTab]}
         activeOpacity={0.7}
       >
-        <Ionicons name="stats-chart" size={16} color={activeTab === 'predictions' ? '#fff' : '#8B949E'} />
-        <Text style={[styles.tabText, activeTab === 'predictions' && styles.activeTabText]}>
-          Tahminler
+        <Ionicons name="ticket" size={16} color={activeTab === 'tickets' ? '#fff' : '#8B949E'} />
+        <Text style={[styles.tabText, activeTab === 'tickets' && styles.activeTabText]}>
+          Ticketlar
         </Text>
       </TouchableOpacity>
-      <TouchableOpacity 
+      <TouchableOpacity
         onPress={() => onTabChange('statistics')}
         style={[styles.tab, activeTab === 'statistics' && styles.activeTab]}
         activeOpacity={0.7}

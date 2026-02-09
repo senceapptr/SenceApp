@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, TextInput, Image, ActivityIndicator, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, TextInput, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { useAuth } from '@/contexts/AuthContext';
-import { leaguesService } from '@/services/leagues.service';
 import { leagueChatService } from '@/services/league-chat.service';
 import { League } from '../types';
 import { formatTimeAgo } from '../utils';
@@ -17,27 +18,24 @@ interface ChatModalProps {
 
 export function ChatModal({ visible, league, onClose }: ChatModalProps) {
   const { user, profile } = useAuth();
+  const insets = useSafeAreaInsets();
   const [message, setMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<LeagueChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
   const subscriptionRef = useRef<any>(null);
 
   // Backend'den chat mesajlarını yükle
   const loadChatMessages = async () => {
     if (!league?.id || !user) return;
 
-    console.log('Loading chat messages for league:', league.id);
-
     try {
       setLoading(true);
       const { data, error } = await leagueChatService.getLeagueChatMessages(league.id);
-      
-      console.log('Load chat messages response:', { data, error });
-      
+
       if (error) {
         console.warn('Backend error, using mock data:', error);
-        // Fallback to mock data if backend fails
         const mockMessages: LeagueChatMessage[] = [
           {
             id: '1',
@@ -55,26 +53,10 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
         setChatMessages(mockMessages);
         return;
       }
-      
+
       setChatMessages(data || []);
     } catch (err) {
       console.error('Chat messages load error:', err);
-      // Fallback to mock data
-      const mockMessages: LeagueChatMessage[] = [
-        {
-          id: '1',
-          league_id: league.id,
-          user_id: user.id,
-          message: 'Merhaba! Bu ligde nasıl başarılı olabiliriz?',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          profiles: {
-            username: profile?.username || 'Sen',
-            profile_image: profile?.profile_image || null
-          }
-        }
-      ];
-      setChatMessages(mockMessages);
     } finally {
       setLoading(false);
     }
@@ -84,33 +66,29 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
   useEffect(() => {
     if (visible && league) {
       loadChatMessages();
-      
+
       // Real-time subscription başlat
       subscriptionRef.current = leagueChatService.subscribeToLeagueChat(
         league.id,
         (newMessage) => {
-          console.log('Real-time message received:', newMessage);
           setChatMessages(prev => {
-            // Duplicate check - aynı mesajı iki kez eklemeyi önle
             const exists = prev.some(msg => msg.id === newMessage.id);
-            if (exists) {
-              console.log('Message already exists, skipping');
-              return prev;
-            }
-            console.log('Adding new message to chat');
+            if (exists) return prev;
             return [...prev, newMessage];
           });
+          // Auto-scroll to bottom
+          setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+          }, 100);
         }
       );
     } else {
-      // Modal kapandığında subscription'ı kapat
       if (subscriptionRef.current) {
         leagueChatService.unsubscribeFromLeagueChat(subscriptionRef.current);
         subscriptionRef.current = null;
       }
     }
 
-    // Cleanup function
     return () => {
       if (subscriptionRef.current) {
         leagueChatService.unsubscribeFromLeagueChat(subscriptionRef.current);
@@ -125,16 +103,10 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
     if (!message.trim() || !user || !league?.id || sending) return;
 
     const messageText = message.trim();
-    console.log('Sending message:', {
-      league_id: league.id,
-      user_id: user.id,
-      message: messageText,
-      league: league
-    });
 
-    // Mesajı hemen local state'e ekle (optimistic update)
+    // Optimistic update
     const optimisticMessage: LeagueChatMessage = {
-      id: `temp-${Date.now()}`, // Temporary ID
+      id: `temp-${Date.now()}`,
       league_id: league.id,
       user_id: user.id,
       message: messageText,
@@ -146,10 +118,14 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
       }
     };
 
-    // Hemen mesajı ekle ve input'u temizle
     setChatMessages(prev => [...prev, optimisticMessage]);
     setMessage('');
     setSending(true);
+
+    // Auto-scroll
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
 
     try {
       const { data, error } = await leagueChatService.sendChatMessage({
@@ -157,233 +133,228 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
         user_id: user.id,
         message: messageText
       });
-      
-      console.log('Send message response:', { data, error });
-      
+
       if (error) {
-        console.warn('Backend error, keeping local message:', error);
-        // Backend hatası olsa bile mesaj zaten local state'te
+        console.warn('Backend error:', error);
         return;
       }
-      
-      // Backend başarılı oldu, gerçek mesajı al
+
       if (data) {
-        // Temporary mesajı gerçek mesajla değiştir
-        setChatMessages(prev => 
-          prev.map(msg => 
+        setChatMessages(prev =>
+          prev.map(msg =>
             msg.id === optimisticMessage.id ? data : msg
           )
         );
       }
-      
     } catch (err) {
       console.error('Send message error:', err);
-      // Hata olsa bile mesaj zaten local state'te görünüyor
     } finally {
       setSending(false);
     }
   };
 
+  const isOwnMessage = (msg: LeagueChatMessage) => msg.user_id === user?.id;
+
   return (
     <Modal
       visible={visible}
-      transparent
       animationType="slide"
       onRequestClose={onClose}
+      transparent={false}
+      presentationStyle="fullScreen"
     >
-      <SafeAreaView style={styles.container}>
-        <LinearGradient
-          colors={['#10B981', '#059669']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.header}
-        >
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={onClose}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.closeText}>✕</Text>
-          </TouchableOpacity>
-          <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>💬 Sohbet</Text>
-            <Text style={styles.headerSubtitle}>{league.name}</Text>
-          </View>
-        </LinearGradient>
-
-        <ScrollView style={styles.messages} showsVerticalScrollIndicator={false}>
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#10B981" />
-              <Text style={styles.loadingText}>Mesajlar yükleniyor...</Text>
-            </View>
-          ) : (
-            chatMessages.map((msg) => (
-              <View key={msg.id} style={styles.messageRow}>
-                <Image 
-                  source={{ 
-                    uri: msg.profiles?.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face' 
-                  }} 
-                  style={styles.avatar} 
-                />
-                <View style={styles.messageContent}>
-                  <View style={styles.messageHeader}>
-                    <Text style={styles.username}>{msg.profiles?.username || 'Bilinmeyen'}</Text>
-                    <Text style={styles.timestamp}>{formatTimeAgo(new Date(msg.created_at))}</Text>
-                  </View>
-                  <Text style={styles.messageText}>{msg.message}</Text>
-                </View>
-              </View>
-            ))
-          )}
-        </ScrollView>
-
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Mesajını yaz..."
-            value={message}
-            onChangeText={setMessage}
-            placeholderTextColor="rgba(32, 32, 32, 0.5)"
-            multiline
-          />
-          <TouchableOpacity
-            style={[styles.sendButton, sending && styles.sendButtonDisabled]}
-            onPress={sendMessage}
-            activeOpacity={0.8}
-            disabled={sending || !message.trim()}
-          >
-            <LinearGradient
-              colors={sending || !message.trim() ? ['#CCCCCC', '#DDDDDD'] : ['#10B981', '#34D399']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.sendGradient}
+      <View style={styles.modalBackground}>
+        <View style={styles.container}>
+          {/* Modern Header */}
+          <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) + 8 }]}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={onClose}
+              activeOpacity={0.7}
             >
-              {sending ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+              <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+            </TouchableOpacity>
+
+            <View style={styles.headerCenter}>
+              <Text style={styles.headerTitle}>{league.name}</Text>
+              <Text style={styles.headerSubtitle}>
+                {chatMessages.length} mesaj
+              </Text>
+            </View>
+
+            <View style={styles.headerPlaceholder} />
+          </View>
+
+          {/* Messages */}
+          <KeyboardAvoidingView
+            style={styles.messagesContainer}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={0}
+          >
+            <ScrollView
+              ref={scrollViewRef}
+              style={styles.messages}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.messagesContent}
+            >
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#10B981" />
+                  <Text style={styles.loadingText}>Mesajlar yükleniyor...</Text>
+                </View>
+              ) : chatMessages.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyIcon}>💬</Text>
+                  <Text style={styles.emptyTitle}>Henüz mesaj yok</Text>
+                  <Text style={styles.emptySubtitle}>İlk mesajı sen yaz!</Text>
+                </View>
               ) : (
-                <Text style={styles.sendText}>Gönder</Text>
+                chatMessages.map((msg) => {
+                  const isOwn = isOwnMessage(msg);
+                  return (
+                    <View
+                      key={msg.id}
+                      style={[
+                        styles.messageRow,
+                        isOwn ? styles.messageRowOwn : styles.messageRowOther
+                      ]}
+                    >
+                      {/* Avatar (only for others) */}
+                      {!isOwn && (
+                        <Image
+                          source={{
+                            uri: msg.profiles?.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+                          }}
+                          style={styles.avatar}
+                        />
+                      )}
+
+                      <View style={[
+                        styles.messageBubble,
+                        isOwn ? styles.bubbleOwn : styles.bubbleOther
+                      ]}>
+                        {/* Username for others */}
+                        {!isOwn && (
+                          <Text style={styles.bubbleUsername}>
+                            {msg.profiles?.username || 'Bilinmeyen'}
+                          </Text>
+                        )}
+
+                        <Text style={[
+                          styles.bubbleText,
+                          isOwn ? styles.bubbleTextOwn : styles.bubbleTextOther
+                        ]}>
+                          {msg.message}
+                        </Text>
+
+                        <Text style={[
+                          styles.bubbleTime,
+                          isOwn ? styles.bubbleTimeOwn : styles.bubbleTimeOther
+                        ]}>
+                          {formatTimeAgo(new Date(msg.created_at))}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })
               )}
-            </LinearGradient>
-          </TouchableOpacity>
+            </ScrollView>
+
+            {/* Modern Input */}
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Mesajını yaz..."
+                  value={message}
+                  onChangeText={setMessage}
+                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  multiline
+                  maxLength={500}
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.sendButton,
+                  (!message.trim() || sending) && styles.sendButtonDisabled
+                ]}
+                onPress={sendMessage}
+                activeOpacity={0.8}
+                disabled={sending || !message.trim()}
+              >
+                {sending ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="send" size={20} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
         </View>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  modalBackground: {
+    flex: 1,
+    backgroundColor: '#0D1117',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0D1117',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    gap: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  closeText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  headerInfo: {
+  headerCenter: {
     flex: 1,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.5)',
+    marginTop: 2,
+  },
+  headerPlaceholder: {
+    width: 44,
+  },
+  messagesContainer: {
+    flex: 1,
   },
   messages: {
     flex: 1,
-    padding: 24,
   },
-  messageRow: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    alignItems: 'flex-start',
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 12,
-  },
-  messageContent: {
-    flex: 1,
-  },
-  messageHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  username: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#202020',
-    marginRight: 8,
-  },
-  timestamp: {
-    fontSize: 12,
-    color: 'rgba(32, 32, 32, 0.5)',
-  },
-  messageText: {
-    fontSize: 14,
-    color: 'rgba(32, 32, 32, 0.8)',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderTopWidth: 2,
-    borderTopColor: '#F2F3F5',
-    gap: 12,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: '#F2F3F5',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#202020',
-  },
-  sendButton: {
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  sendButtonDisabled: {
-    opacity: 0.6,
-  },
-  sendGradient: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  sendText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
+  messagesContent: {
+    padding: 16,
+    paddingBottom: 8,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 60,
   },
   loadingText: {
     marginTop: 16,
@@ -391,5 +362,120 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#10B981',
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.5)',
+  },
+  messageRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    maxWidth: '85%',
+  },
+  messageRowOwn: {
+    alignSelf: 'flex-end',
+    flexDirection: 'row-reverse',
+  },
+  messageRowOther: {
+    alignSelf: 'flex-start',
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 10,
+  },
+  messageBubble: {
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    maxWidth: '100%',
+  },
+  bubbleOwn: {
+    backgroundColor: '#10B981',
+    borderBottomRightRadius: 4,
+  },
+  bubbleOther: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderBottomLeftRadius: 4,
+  },
+  bubbleUsername: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#10B981',
+    marginBottom: 4,
+  },
+  bubbleText: {
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  bubbleTextOwn: {
+    color: '#FFFFFF',
+  },
+  bubbleTextOther: {
+    color: '#FFFFFF',
+  },
+  bubbleTime: {
+    fontSize: 11,
+    marginTop: 4,
+    alignSelf: 'flex-end',
+  },
+  bubbleTimeOwn: {
+    color: 'rgba(255,255,255,0.7)',
+  },
+  bubbleTimeOther: {
+    color: 'rgba(255,255,255,0.4)',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: 24,
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#0D1117',
+  },
+  inputWrapper: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minHeight: 44,
+    maxHeight: 120,
+    justifyContent: 'center',
+  },
+  input: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    maxHeight: 100,
+  },
+  sendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#10B981',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendButtonDisabled: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
 });
-

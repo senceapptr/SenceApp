@@ -6,74 +6,75 @@ import { PageHeaderProps } from '../types';
 
 export function PageHeader({ title, subtitle, onBack, onMenuToggle }: PageHeaderProps) {
   return (
-    <View style={styles.header}>
-      <View style={styles.headerContent}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
+    <View style={styles.container}>
+      <View style={styles.leftSection}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={onBack}
+          style={styles.backButton}
+        >
           <Ionicons name="chevron-back" size={24} color="#F0F6FC" />
         </TouchableOpacity>
 
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>{title}</Text>
-          {!!subtitle && <Text style={styles.headerSubtitle}>{subtitle}</Text>}
+        <View style={styles.titleSection}>
+          <Text style={styles.title}>{title}</Text>
+          {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
         </View>
-
-        <TouchableOpacity onPress={onMenuToggle} activeOpacity={0.7}>
-          <LinearGradient colors={["#10B981", "#059669"]} style={styles.checkIconGradient}>
-            <Ionicons name="checkmark-circle" size={24} color="white" />
-          </LinearGradient>
-        </TouchableOpacity>
       </View>
+
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={onMenuToggle}
+        style={styles.menuButton}
+      >
+        <Ionicons name="ellipsis-horizontal" size={20} color="#8B949E" />
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    backgroundColor: '#161B22',
-    borderBottomWidth: 1,
-    borderBottomColor: '#30363D',
-  },
-  headerContent: {
+  container: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
+  leftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
+    backgroundColor: '#21262D',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  titleSection: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#F0F6FC',
+  },
+  subtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#8B949E',
+    marginTop: 2,
+  },
+  menuButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: '#21262D',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#F0F6FC',
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#10B981',
-  },
-  checkIconGradient: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });
-
-
-
-
-
-
-

@@ -1,110 +1,115 @@
+// =====================================================
+// NOTIFICATIONS LIST - Grouped by Date
+// =====================================================
+
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { NotificationsListProps } from '../types';
+import { View, Text, SectionList, StyleSheet, RefreshControl } from 'react-native';
+import { NotificationsListProps, Notification } from '../types';
 import { NotificationCard } from './NotificationCard';
 import { EmptyState } from './EmptyState';
-import { groupNotificationsByDate } from '../utils';
+import { groupNotificationsByDateSection } from '../utils';
 
-export const NotificationsList: React.FC<NotificationsListProps> = ({
+interface Section {
+  title: string;
+  data: Notification[];
+}
+
+interface ExtendedProps extends NotificationsListProps {
+  refreshing?: boolean;
+  onRefresh?: () => void;
+}
+
+export const NotificationsList: React.FC<ExtendedProps> = ({
   notifications,
   onMarkAsRead,
   onDelete,
   variant = 'page',
+  refreshing = false,
+  onRefresh,
 }) => {
   if (notifications.length === 0) {
     return <EmptyState variant={variant} />;
   }
 
-  const containerStyle = variant === 'modal' ? styles.modalContainer : styles.pageContainer;
-  const { today, yesterday, older } = groupNotificationsByDate(notifications);
+  // Group notifications
+  const grouped = groupNotificationsByDateSection(notifications);
+
+  // Build sections
+  const sections: Section[] = [];
+
+  if (grouped.today.length > 0) {
+    sections.push({ title: 'Bugün', data: grouped.today });
+  }
+  if (grouped.yesterday.length > 0) {
+    sections.push({ title: 'Dün', data: grouped.yesterday });
+  }
+  if (grouped.thisWeek.length > 0) {
+    sections.push({ title: 'Bu Hafta', data: grouped.thisWeek });
+  }
+  if (grouped.older.length > 0) {
+    sections.push({ title: 'Daha Eski', data: grouped.older });
+  }
+
+  const renderSectionHeader = ({ section }: { section: Section }) => (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>{section.title}</Text>
+    </View>
+  );
+
+  const renderItem = ({ item }: { item: Notification }) => (
+    <NotificationCard
+      notification={item}
+      onPress={onMarkAsRead}
+      onDelete={onDelete}
+      onMarkAsRead={onMarkAsRead}
+    />
+  );
 
   return (
-    <ScrollView 
-      style={containerStyle}
+    <SectionList
+      sections={sections}
+      keyExtractor={(item) => item.id}
+      renderItem={renderItem}
+      renderSectionHeader={renderSectionHeader}
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
-    >
-      {today.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Bugün</Text>
-          <View style={styles.notificationList}>
-            {today.map((notification) => (
-              <NotificationCard
-                key={notification.id}
-                notification={notification}
-                onPress={onMarkAsRead}
-                onDelete={onDelete}
-              />
-            ))}
-          </View>
-        </View>
-      )}
-
-      {yesterday.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Dün</Text>
-          <View style={styles.notificationList}>
-            {yesterday.map((notification) => (
-              <NotificationCard
-                key={notification.id}
-                notification={notification}
-                onPress={onMarkAsRead}
-                onDelete={onDelete}
-              />
-            ))}
-          </View>
-        </View>
-      )}
-
-      {older.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Daha Eski</Text>
-          <View style={styles.notificationList}>
-            {older.map((notification) => (
-              <NotificationCard
-                key={notification.id}
-                notification={notification}
-                onPress={onMarkAsRead}
-                onDelete={onDelete}
-              />
-            ))}
-          </View>
-        </View>
-      )}
-      
-      <View style={styles.bottomPadding} />
-    </ScrollView>
+      stickySectionHeadersEnabled={false}
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#432870"
+            colors={['#432870']}
+          />
+        ) : undefined
+      }
+      ListFooterComponent={<View style={styles.footer} />}
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
+  container: {
     flex: 1,
-    paddingHorizontal: 24,
   },
-  pageContainer: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 24,
+  contentContainer: {
+    paddingTop: 8,
   },
-  section: {
-    marginBottom: 24,
+  sectionHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#202020',
-    opacity: 0.6,
-    marginBottom: 12,
-    marginLeft: 4,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  notificationList: {
-    gap: 12,
-  },
-  bottomPadding: {
+  footer: {
     height: 24,
   },
 });
-
-

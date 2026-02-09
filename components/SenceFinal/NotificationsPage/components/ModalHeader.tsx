@@ -1,144 +1,131 @@
+// =====================================================
+// MODAL HEADER - Dark Style
+// =====================================================
+
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 
 interface ModalHeaderProps {
   unreadCount: number;
-  onClearAll: () => void;
-  onClose: () => void;
+  onClose?: () => void;
+  onMarkAllRead?: () => void;
 }
 
 export const ModalHeader: React.FC<ModalHeaderProps> = ({
   unreadCount,
-  onClearAll,
   onClose,
+  onMarkAllRead,
 }) => {
   return (
-    <>
-      {/* Handle */}
-      <View style={styles.modalHandle}>
-        <View style={styles.handle} />
-      </View>
+    <View style={styles.container}>
+      {/* Drag handle */}
+      <View style={styles.handle} />
 
-      {/* Header */}
-      <View style={styles.modalHeader}>
-        <View style={styles.modalHeaderLeft}>
-          <LinearGradient
-            colors={['#432870', '#B29EFD']}
-            style={styles.modalIcon}
-          >
-            <Ionicons name="notifications" size={24} color="white" />
-          </LinearGradient>
-          <View style={styles.modalHeaderInfo}>
-            <Text style={styles.modalTitle}>Bildirimler</Text>
-            {unreadCount > 0 && (
-              <Text style={styles.modalUnreadCount}>{unreadCount} okunmamış</Text>
-            )}
-          </View>
+      <View style={styles.content}>
+        {/* Title */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Bildirimler</Text>
+          {unreadCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{unreadCount}</Text>
+            </View>
+          )}
         </View>
 
-        <View style={styles.modalHeaderActions}>
-          {unreadCount > 0 && (
+        {/* Actions */}
+        <View style={styles.actions}>
+          {unreadCount > 0 && onMarkAllRead && (
             <TouchableOpacity
-              onPress={onClearAll}
-              style={styles.clearAllButton}
-              activeOpacity={0.8}
+              style={styles.actionButton}
+              onPress={onMarkAllRead}
             >
-              <LinearGradient
-                colors={['#432870', '#B29EFD']}
-                style={styles.clearAllGradient}
-              >
-                <Text style={styles.clearAllText}>Tümünü Oku</Text>
-              </LinearGradient>
+              <Text style={styles.actionText}>Tümünü Oku</Text>
             </TouchableOpacity>
           )}
-          
-          <TouchableOpacity
-            onPress={onClose}
-            style={styles.closeButton}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="close" size={20} color="#202020" />
-          </TouchableOpacity>
+
+          {onClose && (
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={onClose}
+            >
+              <Ionicons name="close" size={20} color="#8B949E" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
-    </>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  modalHandle: {
-    alignItems: 'center',
-    paddingTop: 16,
-    paddingBottom: 8,
+  container: {
+    backgroundColor: '#09090B',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+    paddingBottom: 12,
   },
   handle: {
-    width: 48,
-    height: 6,
-    backgroundColor: '#E5E7EB',
+    width: 36,
+    height: 5,
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 3,
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 16,
   },
-  modalHeader: {
+  content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingHorizontal: 20,
   },
-  modalHeaderLeft: {
+  titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    gap: 8,
   },
-  modalIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#F0F6FC',
+  },
+  badge: {
+    backgroundColor: '#432870',
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    paddingHorizontal: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  modalHeaderInfo: {},
-  modalTitle: {
-    fontSize: 20,
+  badgeText: {
+    fontSize: 12,
     fontWeight: '700',
-    color: '#202020',
+    color: '#FFFFFF',
   },
-  modalUnreadCount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#432870',
-    marginTop: 2,
-  },
-  modalHeaderActions: {
+  actions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  clearAllButton: {
-    borderRadius: 12,
-    overflow: 'hidden',
+  actionButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  clearAllGradient: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  clearAllText: {
+  actionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: 'white',
+    color: '#A78BFA',
   },
   closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
   },
 });
-
-

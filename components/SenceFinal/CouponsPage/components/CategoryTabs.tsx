@@ -23,7 +23,7 @@ export function CategoryTabs({
 }: CategoryTabsProps) {
   const tabs = [
     { id: 'all' as CategoryType, name: 'Tümü', count: totalCoupons },
-    { id: 'pending' as CategoryType, name: 'Bekleyen', count: pendingCoupons },
+    { id: 'pending' as CategoryType, name: 'Canlı', count: pendingCoupons },
     { id: 'won' as CategoryType, name: 'Kazanan', count: wonCoupons },
     { id: 'lost' as CategoryType, name: 'Kaybeden', count: lostCoupons },
     { id: 'cancelled' as CategoryType, name: 'İptal', count: cancelledCoupons },
@@ -31,9 +31,9 @@ export function CategoryTabs({
 
   return (
     <View style={styles.container}>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
       >
         {tabs.map((tab) => (
@@ -70,14 +70,14 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   scrollContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
   },
   tab: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 20,
-    marginHorizontal: 4,
-    minWidth: 80,
+    marginRight: 8,
+    minWidth: 70,
     alignItems: 'center',
   },
   activeTab: {
@@ -111,11 +111,3 @@ const styles = StyleSheet.create({
     color: '#484F58',
   },
 });
-
-
-
-
-
-
-
-

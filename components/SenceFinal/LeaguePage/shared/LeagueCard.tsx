@@ -58,14 +58,14 @@ export function LeagueCard({
             )}
           </View>
         </View>
-        
+
         <View style={styles.stats}>
           <Text style={styles.statsText}>👥 {league.participants}/{league.maxParticipants}</Text>
           <Text style={styles.statsText}>📅 {league.endDate}</Text>
         </View>
 
         {!isMyLeague ? (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.joinButtonWrapper}
             onPress={(e) => {
               e.stopPropagation();
@@ -85,17 +85,17 @@ export function LeagueCard({
           </TouchableOpacity>
         ) : (
           <View style={styles.myLeagueActions}>
-            <TouchableOpacity 
-              style={styles.actionButton}
+            <TouchableOpacity
+              style={styles.raceButton}
               onPress={(e) => {
                 e.stopPropagation();
                 onQuestionsPress?.(league);
               }}
               activeOpacity={0.8}
             >
-              <Text style={styles.actionButtonText}>📝 Sorular</Text>
+              <Text style={styles.raceButtonText}>🚀 Yarış!</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionButton}
               onPress={(e) => {
                 e.stopPropagation();
@@ -105,7 +105,7 @@ export function LeagueCard({
             >
               <Text style={styles.actionButtonText}>🏆 Sıralama</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.chatActionButton}
               onPress={(e) => {
                 e.stopPropagation();
@@ -252,6 +252,21 @@ const styles = StyleSheet.create({
   },
   chatActionButtonText: {
     fontSize: 16,
+  },
+  raceButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: '#7C3AED',
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#8B5CF6',
+  },
+  raceButtonText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 });
 

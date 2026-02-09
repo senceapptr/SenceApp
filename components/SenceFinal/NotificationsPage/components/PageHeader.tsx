@@ -1,112 +1,123 @@
+// =====================================================
+// PAGE HEADER - Dark Style
+// =====================================================
+
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface PageHeaderProps {
   unreadCount: number;
   onBack?: () => void;
-  onMenuToggle?: () => void;
+  onMarkAllRead?: () => void;
 }
 
 export const PageHeader: React.FC<PageHeaderProps> = ({
   unreadCount,
   onBack,
-  onMenuToggle,
+  onMarkAllRead,
 }) => {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.header}>
-      <TouchableOpacity
-        onPress={onBack}
-        style={styles.backButton}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="chevron-back" size={20} color="#202020" />
-      </TouchableOpacity>
-      
-      <View style={styles.headerContent}>
-        <Text style={styles.headerTitle}>Bildirimler</Text>
-        {unreadCount > 0 && (
-          <Text style={styles.headerUnreadCount}>{unreadCount} okunmamış</Text>
+    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+      <View style={styles.content}>
+        {/* Back Button */}
+        {onBack && (
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={onBack}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="chevron-back" size={24} color="#F0F6FC" />
+          </TouchableOpacity>
+        )}
+
+        {/* Title */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Bildirimler</Text>
+          {unreadCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{unreadCount}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Mark All Read */}
+        {unreadCount > 0 && onMarkAllRead ? (
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={onMarkAllRead}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.actionText}>Tümünü Oku</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.placeholder} />
         )}
       </View>
-      
-      <TouchableOpacity 
-        style={styles.menuButton}
-        onPress={onMenuToggle}
-        activeOpacity={0.8}
-      >
-        <View style={styles.hamburgerIcon}>
-          <View style={styles.hamburgerLine} />
-          <View style={styles.hamburgerLine} />
-          <View style={styles.hamburgerLine} />
-        </View>
-      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  header: {
-    backgroundColor: 'white',
+  container: {
+    backgroundColor: '#09090B',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 16,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerContent: {
-    flex: 1,
+  titleContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
+    gap: 8,
   },
-  headerTitle: {
-    fontSize: 20,
+  title: {
+    fontSize: 18,
     fontWeight: '700',
-    color: '#202020',
+    color: '#F0F6FC', // White text
   },
-  headerUnreadCount: {
+  badge: {
+    backgroundColor: '#432870',
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  actionButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  actionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#432870',
-    marginTop: 2,
+    color: '#A78BFA', // Light purple
   },
-  menuButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  hamburgerIcon: {
-    width: 20,
-    height: 16,
-    justifyContent: 'space-between',
-  },
-  hamburgerLine: {
-    width: 20,
-    height: 2.5,
-    backgroundColor: '#432870',
-    borderRadius: 1.25,
+  placeholder: {
+    width: 80,
   },
 });
-
-

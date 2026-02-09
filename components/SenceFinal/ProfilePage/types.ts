@@ -20,6 +20,19 @@ export interface Prediction {
   status: 'won' | 'lost' | 'pending';
 }
 
+export interface ProfileStats {
+  totalPredictions: number;
+  correctPredictions: number;
+  accuracyRate: number;
+  totalEarnings: number;
+  highestOddsWon: number;
+  maxWinAmount: number;
+  totalCoupons: number;
+  wonCoupons: number;
+  couponAccuracyRate: number;
+  couponTotalEarnings: number;
+}
+
 export interface Badge {
   id: number;
   name: string;
@@ -30,11 +43,11 @@ export interface Badge {
 }
 
 export interface CreditHistoryItem {
-  day: string;
-  credits: number;
+  date: string; // ISO Date string
+  value: number;
 }
 
-export type TabType = 'predictions' | 'statistics';
+export type TabType = 'tickets' | 'statistics';
 
 export interface UserProfile {
   username: string;

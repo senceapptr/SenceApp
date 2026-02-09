@@ -7,7 +7,7 @@ import { getModalGradientColors } from '../utils';
 
 interface CouponDetailModalProps {
   visible: boolean;
-  coupon: Coupon | ActiveCoupon | null;
+  coupon: (Coupon & { display_id?: number }) | (ActiveCoupon & { display_id?: number }) | null;
   onClose: () => void;
   onClaimReward?: (couponId: number) => void;
   onQuestionDetail?: (questionId: number) => void;
@@ -17,6 +17,17 @@ export function CouponDetailModal({ visible, coupon, onClose, onClaimReward, onQ
   if (!coupon) return null;
 
   const statusBarHeight = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0;
+  const status = coupon.status ?? 'pending';
+  const isWon = status === 'won';
+  const isClaimed = 'claimedReward' in coupon ? coupon.claimedReward : false;
+  const canClaim = isWon && !isClaimed;
+  const couponId = typeof coupon.id === 'number' ? coupon.id : parseInt(String(coupon.id)) || 0;
+
+  const handleClaimPress = () => {
+    if (canClaim && onClaimReward) {
+      onClaimReward(couponId);
+    }
+  };
 
   return (
     <Modal
@@ -26,145 +37,168 @@ export function CouponDetailModal({ visible, coupon, onClose, onClaimReward, onQ
       transparent={true}
       onRequestClose={onClose}
     >
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.modalWrapper}
         activeOpacity={1}
         onPress={onClose}
       >
-        <TouchableOpacity 
-          activeOpacity={1} 
+        <TouchableOpacity
+          activeOpacity={1}
           style={styles.container}
           onPress={(e) => e.stopPropagation()}
         >
-        {/* Header */}
-        <View style={styles.headerWrapper}>
-          <LinearGradient
-            colors={getModalGradientColors(coupon.status)}
-            style={styles.header}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-          >
-          <View style={styles.headerContent}>
-            <View style={styles.headerLeft}>
-              <Image
-                source={{ uri: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop&crop=face" }}
-                style={styles.userImage}
-              />
-              <View>
-                <Text style={styles.title}>Ticket #{coupon.display_id || coupon.id}</Text>
-                <Text style={styles.username}>{coupon.username || 'Kullanıcı'}</Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={onClose}
-            >
-              <Text style={styles.closeText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.stats}>
-            <View style={styles.stat}>
-              <Text style={styles.statLabel}>Yatırım</Text>
-              <Text style={styles.statValue}>{coupon.investmentAmount?.toLocaleString() || '0'} kredi</Text>
-            </View>
-            <View style={styles.stat}>
-              <Text style={styles.statLabel}>Toplam Oran</Text>
-              <Text style={styles.statValue}>{coupon.totalOdds.toFixed(2)}x</Text>
-            </View>
-            <View style={styles.stat}>
-              <Text style={styles.statLabel}>Potansiyel</Text>
-              <Text style={styles.statValue}>{(coupon.potentialEarnings || coupon.potentialWinnings || 0).toLocaleString()} kredi</Text>
-            </View>
-          </View>
-          </LinearGradient>
-        </View>
-
-        {/* Content */}
-        <ScrollView 
-          style={styles.content} 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.contentInner}>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>
-                Tahminler ({coupon.predictions?.length || 0})
-              </Text>
-              <Text style={styles.sectionDate}>09.08.2025</Text>
-            </View>
-
-            <View style={styles.predictions}>
-            {(coupon.predictions || []).map((prediction) => (
-              <TouchableOpacity
-                key={prediction.id}
-                style={[
-                  styles.predictionCard,
-                  prediction.result === 'won' ? styles.predictionWon :
-                  prediction.result === 'lost' ? styles.predictionLost :
-                  prediction.result === 'cancelled' ? styles.predictionCancelled :
-                  styles.predictionPending
-                ]}
-                onPress={() => onQuestionDetail?.(prediction.questionId)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.predictionHeader}>
-                  <Text style={styles.predictionQuestion}>
-                    {prediction.question}
-                  </Text>
-                  <Text style={styles.predictionOdds}>
-                    {prediction.odds}x
-                  </Text>
-                </View>
-
-                <View style={styles.predictionFooter}>
-                  <View style={[
-                    styles.choiceBadge,
-                    prediction.choice === 'yes' ? styles.yesBadge : styles.noBadge
-                  ]}>
-                    <Text style={styles.choiceBadgeText}>
-                      {prediction.choice === 'yes' ? 'EVET' : 'HAYIR'}
-                    </Text>
-                  </View>
-                  <Text style={styles.categoryText}>{prediction.category}</Text>
-                  {prediction.result && (
-                    <View style={[
-                      styles.resultBadge,
-                      prediction.result === 'won' ? styles.resultWon :
-                      prediction.result === 'lost' ? styles.resultLost :
-                      prediction.result === 'cancelled' ? styles.resultCancelled :
-                      styles.resultPending
-                    ]}>
-                      <Text style={styles.resultText}>
-                        {prediction.result === 'won' ? '✅ KAZANDI' :
-                         prediction.result === 'lost' ? '❌ KAYBETTI' :
-                         prediction.result === 'cancelled' ? '🚫 İPTAL' : '⏳ BEKLIYOR'}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))}
-            </View>
-          </View>
-        </ScrollView>
-
-        {/* Actions */}
-        <View style={styles.actions}>
-          <TouchableOpacity 
-            style={styles.shareButton}
-            activeOpacity={0.8}
-          >
+          {/* Header */}
+          <View style={styles.headerWrapper}>
             <LinearGradient
-              colors={['#432870', '#5a3a8f']}
-              style={styles.shareButtonGradient}
+              colors={getModalGradientColors(status)}
+              style={styles.header}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Text style={styles.shareButtonText}>📤 Ticketı Paylaş</Text>
+              <View style={styles.headerContent}>
+                <View style={styles.headerLeft}>
+                  <View style={styles.ticketIconContainer}>
+                    <Text style={styles.ticketIcon}>🎫</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.title}>Ticket #{coupon.display_id || coupon.id}</Text>
+                    <Text style={styles.username}>{coupon.username || 'Kullanıcı'}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={onClose}
+                >
+                  <Text style={styles.closeText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.stats}>
+                <View style={styles.stat}>
+                  <Text style={styles.statLabel}>Yatırım</Text>
+                  <Text style={styles.statValue}>{coupon.investmentAmount?.toLocaleString() || '0'} kredi</Text>
+                </View>
+                <View style={styles.stat}>
+                  <Text style={styles.statLabel}>Toplam Oran</Text>
+                  <Text style={styles.statValue}>{coupon.totalOdds.toFixed(2)}x</Text>
+                </View>
+                <View style={styles.stat}>
+                  <Text style={styles.statLabel}>Potansiyel</Text>
+                  <Text style={styles.statValue}>{((coupon as any).potentialEarnings || (coupon as any).potentialWinnings || 0).toLocaleString()} kredi</Text>
+                </View>
+              </View>
             </LinearGradient>
-          </TouchableOpacity>
-        </View>
+          </View>
+
+          {/* Content - Dark Theme */}
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.contentInner}>
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>
+                  Tahminler ({coupon.predictions?.length || 0})
+                </Text>
+              </View>
+
+              <View style={styles.predictions}>
+                {(coupon.predictions || []).map((prediction) => (
+                  <TouchableOpacity
+                    key={prediction.id}
+                    style={[
+                      styles.predictionCard,
+                      prediction.result === 'won' ? styles.predictionWon :
+                        prediction.result === 'lost' ? styles.predictionLost :
+                          prediction.result === 'cancelled' ? styles.predictionCancelled :
+                            styles.predictionPending
+                    ]}
+                    onPress={() => onQuestionDetail?.(prediction.questionId)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.predictionHeader}>
+                      <Text style={styles.predictionQuestion}>
+                        {prediction.question}
+                      </Text>
+                      <Text style={styles.predictionOdds}>
+                        {prediction.odds}x
+                      </Text>
+                    </View>
+
+                    <View style={styles.predictionFooter}>
+                      <View style={[
+                        styles.choiceBadge,
+                        prediction.choice === 'yes' ? styles.yesBadge : styles.noBadge
+                      ]}>
+                        <Text style={[
+                          styles.choiceBadgeText,
+                          prediction.choice === 'yes' ? styles.yesBadgeText : styles.noBadgeText
+                        ]}>
+                          {prediction.choice === 'yes' ? 'EVET' : 'HAYIR'}
+                        </Text>
+                      </View>
+                      <Text style={styles.categoryText}>{prediction.category}</Text>
+                      {prediction.result && prediction.result !== 'pending' && (
+                        <View style={[
+                          styles.resultBadge,
+                          prediction.result === 'won' ? styles.resultWon :
+                            prediction.result === 'lost' ? styles.resultLost :
+                              styles.resultCancelled
+                        ]}>
+                          <Text style={styles.resultText}>
+                            {prediction.result === 'won' ? 'KAZANDI' :
+                              prediction.result === 'lost' ? 'KAYBETTİ' : 'İPTAL'}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Actions */}
+          <View style={styles.actions}>
+            {canClaim ? (
+              <TouchableOpacity
+                style={styles.claimButton}
+                onPress={handleClaimPress}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={['#10B981', '#059669']}
+                  style={styles.claimButtonGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Text style={styles.claimButtonText}>Ödülü Al</Text>
+                  <Text style={styles.claimAmount}>
+                    +{((coupon as any).potentialEarnings || (coupon as any).potentialWinnings || 0).toLocaleString()} kredi
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            ) : isWon && isClaimed ? (
+              <View style={styles.claimedBadge}>
+                <Text style={styles.claimedText}>Ödül Alındı ✓</Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.shareButton}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={['#21262D', '#161B22']}
+                  style={styles.shareButtonGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Text style={styles.shareButtonText}>Ticketı Paylaş</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
+          </View>
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
@@ -174,12 +208,12 @@ export function CouponDetailModal({ visible, coupon, onClose, onClaimReward, onQ
 const styles = StyleSheet.create({
   modalWrapper: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'flex-end',
   },
   container: {
     maxHeight: '90%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0D1117',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',
@@ -201,11 +235,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  userImage: {
+  ticketIconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 12,
+  },
+  ticketIcon: {
+    fontSize: 24,
   },
   title: {
     fontSize: 20,
@@ -248,7 +288,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flexShrink: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0D1117',
   },
   scrollContent: {
     flexGrow: 1,
@@ -265,11 +305,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#111827',
-  },
-  sectionDate: {
-    fontSize: 14,
-    color: '#6B7280',
+    color: '#F0F6FC',
   },
   predictions: {
     gap: 12,
@@ -278,23 +314,23 @@ const styles = StyleSheet.create({
   predictionCard: {
     padding: 16,
     borderRadius: 16,
-    borderWidth: 2,
+    borderWidth: 1,
   },
   predictionPending: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
+    backgroundColor: '#21262D',
+    borderColor: '#30363D',
   },
   predictionWon: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#BBF7D0',
+    backgroundColor: '#1A2E1A',
+    borderColor: '#10B981',
   },
   predictionLost: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
+    backgroundColor: '#2E1A1A',
+    borderColor: '#DC2626',
   },
   predictionCancelled: {
-    backgroundColor: '#F3F4F6',
-    borderColor: '#D1D5DB',
+    backgroundColor: '#1F2937',
+    borderColor: '#6B7280',
   },
   predictionHeader: {
     flexDirection: 'row',
@@ -306,13 +342,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: '#F0F6FC',
     marginRight: 12,
   },
   predictionOdds: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#432870',
+    color: '#10B981',
   },
   predictionFooter: {
     flexDirection: 'row',
@@ -325,52 +361,89 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   yesBadge: {
-    backgroundColor: '#EDE9FE',
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
   },
   noBadge: {
-    backgroundColor: '#CFFAFE',
+    backgroundColor: 'rgba(220, 38, 38, 0.2)',
   },
   choiceBadgeText: {
     fontSize: 10,
     fontWeight: 'bold',
   },
+  yesBadgeText: {
+    color: '#10B981',
+  },
+  noBadgeText: {
+    color: '#DC2626',
+  },
   categoryText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#8B949E',
   },
   resultBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
-  resultPending: {
-    backgroundColor: '#DBEAFE',
-  },
   resultWon: {
-    backgroundColor: '#D1FAE5',
+    backgroundColor: 'rgba(16, 185, 129, 0.3)',
   },
   resultLost: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: 'rgba(220, 38, 38, 0.3)',
   },
   resultCancelled: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: 'rgba(107, 114, 128, 0.3)',
   },
   resultText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#374151',
+    color: '#F0F6FC',
   },
   actions: {
     paddingHorizontal: 24,
     paddingVertical: 16,
-    paddingBottom: 24,
+    paddingBottom: 32,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    backgroundColor: '#FFFFFF',
+    borderTopColor: '#21262D',
+    backgroundColor: '#0D1117',
+  },
+  claimButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  claimButtonGradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  claimButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  claimAmount: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  claimedBadge: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#21262D',
+    borderRadius: 16,
+  },
+  claimedText: {
+    color: '#10B981',
+    fontSize: 16,
+    fontWeight: '600',
   },
   shareButton: {
     borderRadius: 16,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#30363D',
   },
   shareButtonGradient: {
     paddingVertical: 16,
@@ -378,11 +451,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   shareButtonText: {
-    color: '#FFFFFF',
+    color: '#8B949E',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });
-
-
-

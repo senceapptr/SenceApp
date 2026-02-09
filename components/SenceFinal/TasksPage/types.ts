@@ -5,14 +5,24 @@ export interface Task {
   progress: number;
   maxProgress: number;
   reward: number;
+  icon?: string;
   completed: boolean;
+  claimed: boolean;
   timeLeft?: string;
+  actionType: 'navigate' | 'claim';
+  navigationTarget?: '/home' | '/leagues' | '/gamehub' | null;
 }
 
 export type TaskTab = 'daily' | 'monthly';
 
+export interface TaskCardProps {
+  task: Task;
+  onAction: (task: Task) => void;
+}
+
 export interface TasksListProps {
   tasks: Task[];
+  onTaskAction: (task: Task) => void;
 }
 
 export interface TabsProps {
@@ -30,7 +40,9 @@ export interface PageHeaderProps {
 export interface ProgressSummaryProps {
   completed: number;
   total: number;
+  claimed: number;
   showDailyTimer?: boolean;
+  timeRemaining?: string;
 }
 
 export interface CalendarCardProps {
@@ -43,10 +55,3 @@ export interface CalendarCardProps {
   today: number;
   loginDays: number[];
 }
-
-
-
-
-
-
-

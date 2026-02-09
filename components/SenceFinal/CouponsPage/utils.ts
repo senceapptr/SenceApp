@@ -20,16 +20,6 @@ export const calculateStatistics = (coupons: Coupon[]) => {
   };
 };
 
-/** Tahmin sonuçlarına göre kupon statusunu hesapla */
-export function computeCouponStatus(predictions: { result?: PredictionResult }[]): CouponStatus {
-  if (!predictions || predictions.length === 0) return 'pending';
-  const results = predictions.map(p => p.result ?? 'pending');
-  if (results.some(r => r === 'lost')) return 'lost';
-  if (results.every(r => r === 'cancelled')) return 'cancelled';
-  if (results.every(r => r === 'won')) return 'won';
-  return 'pending';
-}
-
 export const getStatusColor = (status: CouponStatus | 'live'): [string, string] => {
   switch (status) {
     case 'pending': case 'live': return ['#21262D', '#1A1F2A'];
@@ -50,22 +40,27 @@ export const getStatusBorderColor = (status: CouponStatus | 'live'): string => {
   }
 };
 
-/** Kalan süreyi "X gün Y saat Z dakika" formatında döndür */
+/**
+ * Kalan süreyi her zaman 2 birimli formatta döndür
+ * - Gün varsa: "X gün Y saat"
+ * - Gün yoksa saat varsa: "X saat Y dakika"
+ * - Saat yoksa: "X dakika Y saniye"
+ */
 export const calculateTimeRemaining = (endDate: Date): string => {
   const now = new Date();
   const diff = endDate.getTime() - now.getTime();
 
-  if (diff <= 0) return 'Sona Erdi';
+  if (diff <= 0) return 'Yakında Açıklanacak';
 
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-  const parts: string[] = [];
-  if (days > 0) parts.push(`${days} gün`);
-  if (hours > 0) parts.push(`${hours} saat`);
-  if (minutes > 0 || parts.length === 0) parts.push(`${minutes} dakika`);
-  return parts.join(' ');
+  // Her zaman 2 birim göster
+  if (days > 0) return `${days} gün ${hours} saat`;
+  if (hours > 0) return `${hours} saat ${minutes} dakika`;
+  return `${minutes} dakika ${seconds} saniye`;
 };
 
 /** Henüz sonuçlanmamış (pending) tahminlerden en geç bitiş tarihini bul */
@@ -79,6 +74,10 @@ export const getLatestPendingEndDate = (predictions: { result?: PredictionResult
   return new Date(Math.max(...validEndDates.map(d => d.getTime())));
 };
 
+/**
+ * Status badge metni ve rengi
+ * Emoji'ler kaldırıldı
+ */
 export const getStatusBadge = (status: CouponStatus | 'live', predictions?: { result?: PredictionResult; endDate?: Date | null }[]) => {
   switch (status) {
     case 'pending': case 'live':
@@ -86,14 +85,14 @@ export const getStatusBadge = (status: CouponStatus | 'live', predictions?: { re
         const latestEndDate = getLatestPendingEndDate(predictions);
         if (latestEndDate) {
           const timeRemaining = calculateTimeRemaining(latestEndDate);
-          return { text: `⏰ ${timeRemaining}`, color: '#8B5CF6' };
+          return { text: timeRemaining, color: '#8B5CF6' };
         }
       }
-      return { text: '⏰ Bekliyor', color: '#8B5CF6' };
-    case 'won': return { text: '🎉 Kazandı', color: '#10B981' };
-    case 'lost': return { text: '😞 Kaybetti', color: '#DC2626' };
-    case 'cancelled': return { text: '🚫 İptal', color: '#6B7280' };
-    default: return { text: '⏰ Bekliyor', color: '#8B5CF6' };
+      return { text: 'Bekliyor', color: '#8B5CF6' };
+    case 'won': return { text: 'Kazandı', color: '#10B981' };
+    case 'lost': return { text: 'Kaybetti', color: '#DC2626' };
+    case 'cancelled': return { text: 'İptal', color: '#6B7280' };
+    default: return { text: 'Bekliyor', color: '#8B5CF6' };
   }
 };
 
@@ -106,6 +105,3 @@ export const getModalGradientColors = (status: CouponStatus | 'live'): [string, 
     default: return ['#8B5CF6', '#A855F7'];
   }
 };
-
-
-

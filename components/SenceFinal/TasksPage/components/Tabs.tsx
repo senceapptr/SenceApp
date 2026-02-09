@@ -5,66 +5,102 @@ import { TabsProps } from '../types';
 
 export function Tabs({ activeTab, onChangeTab }: TabsProps) {
   return (
-    <View style={styles.tabsContainer}>
-      <TouchableOpacity
-        style={[styles.tab, activeTab === 'daily' && styles.activeTab]}
-        onPress={() => onChangeTab('daily')}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.tabText, activeTab === 'daily' && styles.activeTabText]}>Günlük Görevler</Text>
-        {activeTab === 'daily' && (
-          <LinearGradient colors={["#10B981", "#059669"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.tabIndicator} />
-        )}
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.tab, activeTab === 'monthly' && styles.activeTab]}
-        onPress={() => onChangeTab('monthly')}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.tabText, activeTab === 'monthly' && styles.activeTabText]}>Aylık Görevler</Text>
-        {activeTab === 'monthly' && (
-          <LinearGradient colors={["#10B981", "#059669"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.tabIndicator} />
-        )}
-      </TouchableOpacity>
+    <View style={styles.container}>
+      <View style={styles.tabsWrapper}>
+        {/* Background Track */}
+        <View style={styles.track}>
+          {/* Daily Tab */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => onChangeTab('daily')}
+            style={styles.tabButton}
+          >
+            {activeTab === 'daily' ? (
+              <LinearGradient
+                colors={['#8B5CF6', '#7C3AED']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.activeTab}
+              >
+                <Text style={styles.activeTabText}>🌅 Günlük</Text>
+              </LinearGradient>
+            ) : (
+              <View style={styles.inactiveTab}>
+                <Text style={styles.inactiveTabText}>🌅 Günlük</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* Monthly Tab */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => onChangeTab('monthly')}
+            style={styles.tabButton}
+          >
+            {activeTab === 'monthly' ? (
+              <LinearGradient
+                colors={['#8B5CF6', '#7C3AED']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.activeTab}
+              >
+                <Text style={styles.activeTabText}>📅 Aylık</Text>
+              </LinearGradient>
+            ) : (
+              <View style={styles.inactiveTab}>
+                <Text style={styles.inactiveTabText}>📅 Aylık</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  tabsContainer: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: '#30363D',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
+  container: {
     paddingHorizontal: 16,
-    position: 'relative',
+    paddingVertical: 12,
   },
-  activeTab: {},
-  tabText: {
+  tabsWrapper: {
+    backgroundColor: '#161B22',
+    borderRadius: 16,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: '#30363D',
+  },
+  track: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  tabButton: {
+    flex: 1,
+  },
+  activeTab: {
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  activeTabText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: 'white',
+  },
+  inactiveTab: {
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  inactiveTabText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#8B949E',
-    textAlign: 'center',
-  },
-  activeTabText: {
-    color: '#10B981',
-    fontWeight: '700',
-  },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 2,
   },
 });
-
-
-
-
-
-
-

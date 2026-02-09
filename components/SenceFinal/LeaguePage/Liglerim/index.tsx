@@ -14,10 +14,10 @@ interface LiglerimTabProps {
   leagues: League[];
   currentUser: User;
   onDiscoverTab: () => void;
-  onShowLeagueQuestions: (league: League) => void;
+  onShowRaceArena: (league: League) => void;
 }
 
-export function LiglerimTab({ leagues, currentUser, onDiscoverTab, onShowLeagueQuestions }: LiglerimTabProps) {
+export function LiglerimTab({ leagues, currentUser, onDiscoverTab, onShowRaceArena }: LiglerimTabProps) {
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -33,15 +33,15 @@ export function LiglerimTab({ leagues, currentUser, onDiscoverTab, onShowLeagueQ
     setShowDetails(true);
   };
 
-  const handleQuestionsPress = (league: League) => {
-    onShowLeagueQuestions(league);
+  const handleRacePress = (league: League) => {
+    onShowRaceArena(league);
   };
 
-  const handleQuestionsFromModal = () => {
+  const handleRaceFromModal = () => {
     setShowDetails(false);
     if (selectedLeague) {
       setTimeout(() => {
-        onShowLeagueQuestions(selectedLeague);
+        onShowRaceArena(selectedLeague);
       }, 300);
     }
   };
@@ -124,7 +124,7 @@ export function LiglerimTab({ leagues, currentUser, onDiscoverTab, onShowLeagueQ
       <ActiveSection
         leagues={activeLeagues}
         onCardPress={handleCardPress}
-        onQuestionsPress={handleQuestionsPress}
+        onQuestionsPress={handleRacePress}
         onLeaderboardPress={handleLeaderboardPress}
         onChatPress={handleChatPress}
       />
@@ -132,7 +132,7 @@ export function LiglerimTab({ leagues, currentUser, onDiscoverTab, onShowLeagueQ
       <CompletedSection
         leagues={completedLeagues}
         onCardPress={handleCardPress}
-        onQuestionsPress={handleQuestionsPress}
+        onQuestionsPress={handleRacePress}
         onLeaderboardPress={handleLeaderboardPress}
         onChatPress={handleChatPress}
       />
@@ -145,7 +145,7 @@ export function LiglerimTab({ leagues, currentUser, onDiscoverTab, onShowLeagueQ
         visible={showDetails}
         league={selectedLeague}
         onClose={() => setShowDetails(false)}
-        onQuestions={handleQuestionsFromModal}
+        onQuestions={handleRaceFromModal}
         onLeaderboard={handleLeaderboardFromModal}
         onChat={handleChatFromModal}
         onShare={handleShareFromModal}

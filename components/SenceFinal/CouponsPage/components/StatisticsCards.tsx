@@ -32,7 +32,6 @@ export function StatisticsCards({ totalCoupons, totalEarnings, totalLost }: Stat
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 24,
     marginBottom: 24,
   },
   row: {

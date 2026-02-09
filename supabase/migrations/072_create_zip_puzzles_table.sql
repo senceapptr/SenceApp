@@ -22,10 +22,12 @@ CREATE INDEX IF NOT EXISTS idx_zip_puzzles_status ON zip_puzzles(status);
 ALTER TABLE zip_puzzles ENABLE ROW LEVEL SECURITY;
 
 -- Anyone can read approved/live puzzles
+DROP POLICY IF EXISTS "Anyone can read live puzzles" ON zip_puzzles;
 CREATE POLICY "Anyone can read live puzzles" ON zip_puzzles
   FOR SELECT USING (status = 'live');
 
 -- Admins can do everything
+DROP POLICY IF EXISTS "Admins can manage puzzles" ON zip_puzzles;
 CREATE POLICY "Admins can manage puzzles" ON zip_puzzles
   FOR ALL USING (
     EXISTS (

@@ -19,7 +19,7 @@ import { NotificationBadge } from './ui/NotificationBadge';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-type PageType = 'home' | 'discover' | 'newDiscover' | 'discoverNew' | 'coupons' | 'leagues' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionCardDesign' | 'adminPanel';
+type PageType = 'home' | 'discover' | 'newDiscover' | 'discoverNew' | 'coupons' | 'leagues' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionCardDesign' | 'adminPanel' | 'leaderboard';
 
 interface SlideOutMenuProps {
   isOpen: boolean;
@@ -35,7 +35,7 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [isAnimating, setIsAnimating] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  
+
   // Simple swipe detection
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -48,8 +48,9 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
     { id: 5, title: 'Soru Kartları', highlight: false, page: 'questionCardDesign' as PageType },
     { id: 6, title: 'Görevler', highlight: false, page: 'tasks' as PageType },
     { id: 7, title: 'Market', highlight: false, page: 'market' as PageType },
-    { id: 8, title: 'Ayarlar', highlight: false, page: 'settings' as PageType },
-    { id: 9, title: 'Admin Panel', highlight: true, page: 'adminPanel' as PageType, adminOnly: true },
+    { id: 8, title: '🏆 Sıralama', highlight: true, page: 'leaderboard' as PageType },
+    { id: 9, title: 'Ayarlar', highlight: false, page: 'settings' as PageType },
+    { id: 10, title: 'Admin Panel', highlight: true, page: 'adminPanel' as PageType, adminOnly: true },
   ];
 
   // Create individual animation values for each menu item
@@ -122,14 +123,14 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
             ])
           ])
         );
-        
+
         Animated.parallel(itemAnimations).start(() => {
           setIsAnimating(false);
         });
       });
     } else if (!isOpen) {
       setIsAnimating(true);
-      
+
       // Reset menu items immediately when closing
       menuItemAnims.forEach(anim => {
         anim.opacity.setValue(0);
@@ -177,7 +178,7 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
     const touchEndY = event.nativeEvent.pageY;
     const deltaX = touchEndX - touchStartX.current;
     const deltaY = Math.abs(touchEndY - touchStartY.current);
-    
+
     // Close menu if swiped right significantly and not too much vertical movement
     if (deltaX > 50 && deltaY < 100) {
       onClose();
@@ -185,7 +186,7 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
   };
 
   // Admin olmayan kullanıcılar için admin paneli gizle
-  const filteredMenuItems = menuItems.filter(item => 
+  const filteredMenuItems = menuItems.filter(item =>
     !item.adminOnly || isAdmin
   );
 
@@ -253,8 +254,8 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
           activeOpacity={1}
           onPress={isOpen ? onClose : undefined}
           disabled={!isOpen}>
-          <View 
-            style={styles.disabledContent} 
+          <View
+            style={styles.disabledContent}
             pointerEvents={isOpen ? "none" : "auto"}
             onTouchStart={isOpen ? handleTouchStart : undefined}
             onTouchEnd={isOpen ? handleTouchEnd : undefined}>
@@ -275,8 +276,8 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
         <SafeAreaView style={styles.menuContent}>
           {/* Close Button - Top Right */}
           <View style={styles.topSection}>
-            <TouchableOpacity 
-              style={styles.closeButton} 
+            <TouchableOpacity
+              style={styles.closeButton}
               onPress={onClose}
             >
               <Ionicons name="close" size={22} color="#F0F6FC" />
@@ -284,7 +285,7 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
           </View>
 
           {/* Apple-style Profile Area */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.profileArea}
             onPress={() => {
               onNavigate('profile');
@@ -351,8 +352,8 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
                       {item.title}
                     </Text>
                     {item.page === 'notifications' && unreadNotificationsCount > 0 && (
-                      <NotificationBadge 
-                        count={unreadNotificationsCount} 
+                      <NotificationBadge
+                        count={unreadNotificationsCount}
                         size="small"
                         style={styles.notificationBadge}
                       />

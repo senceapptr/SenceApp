@@ -13,10 +13,10 @@ interface DiscoverLeagueModalProps {
   onScoring: () => void;
 }
 
-export function DiscoverLeagueModal({ 
-  visible, 
-  league, 
-  onClose, 
+export function DiscoverLeagueModal({
+  visible,
+  league,
+  onClose,
   onJoin,
   onLeaderboard,
   onScoring
@@ -32,118 +32,154 @@ export function DiscoverLeagueModal({
     >
       <View style={styles.overlay}>
         <View style={styles.content}>
-          {/* Header with Gradient */}
+          {/* Dark Glass Header */}
           <LinearGradient
-            colors={['#DC2626', '#5a3a8f', '#10B981']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+            colors={['#0D1117', '#161B22', '#21262D']}
             style={styles.header}
           >
+            {/* Close Button */}
             <TouchableOpacity
               style={styles.closeButton}
               onPress={onClose}
               activeOpacity={0.7}
             >
-              <Ionicons name="close" size={24} color="white" />
+              <Ionicons name="close" size={24} color="#9CA3AF" />
             </TouchableOpacity>
 
-            <View style={styles.leagueIcon}>
+            {/* League Icon */}
+            <LinearGradient
+              colors={['#10B981', '#059669']}
+              style={styles.leagueIcon}
+            >
               <Text style={styles.leagueIconText}>🏆</Text>
-            </View>
+            </LinearGradient>
 
+            {/* League Info */}
             <Text style={styles.leagueTitle}>{league.name}</Text>
             <Text style={styles.leagueDescription}>{league.description}</Text>
-            
-            <View style={styles.creator}>
-              <Text style={styles.creatorIcon}>👤</Text>
-              <Text style={styles.creatorText}>@{league.creator} tarafından oluşturuldu</Text>
+
+            {/* Creator Badge */}
+            <View style={styles.creatorBadge}>
+              <Ionicons name="person-circle" size={16} color="#6EE7B7" />
+              <Text style={styles.creatorText}>@{league.creator}</Text>
             </View>
           </LinearGradient>
 
           {/* Body Content */}
-          <ScrollView 
-            style={styles.scrollView} 
+          <ScrollView
+            style={styles.scrollView}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            <View style={styles.body}>
-              {/* Stats Grid 2x2 */}
-              <View style={styles.statsGrid}>
-                <View style={styles.statsRow}>
-                  <View style={[styles.statCard, styles.statCardParticipants]}>
-                    <Text style={styles.statLabel}>KATILIMCI</Text>
-                    <Text style={styles.statValue}>{league.participants}</Text>
-                    <Text style={styles.statSubtext}>/ {league.maxParticipants} maksimum</Text>
-                  </View>
-                  
-                  <View style={[styles.statCard, styles.statCardReward]}>
-                    <Text style={styles.statLabel}>ÖDÜL</Text>
-                    <Text style={styles.statValue}>{league.prize}</Text>
-                  </View>
+            {/* Stats Cards */}
+            <View style={styles.statsContainer}>
+              {/* Participants */}
+              <View style={styles.statCard}>
+                <View style={styles.statIconContainer}>
+                  <Ionicons name="people" size={20} color="#10B981" />
                 </View>
-
-                <View style={styles.statsRow}>
-                  <View style={[styles.statCard, styles.statCardEnd]}>
-                    <Text style={styles.statLabel}>BİTİŞ</Text>
-                    <Text style={styles.statValue}>{league.endDate}</Text>
-                  </View>
-                  
-                  <View style={[styles.statCard, styles.statCardParticipation]}>
-                    <Text style={styles.statLabel}>KATILIM</Text>
-                    <Text style={styles.statValue}>
-                      {league.joinCost === 0 ? 'Ücretsiz' : `${league.joinCost} kredi`}
-                    </Text>
-                  </View>
+                <View style={styles.statInfo}>
+                  <Text style={styles.statValue}>{league.participants}</Text>
+                  <Text style={styles.statLabel}>/ {league.maxParticipants}</Text>
                 </View>
               </View>
 
-              {/* Categories */}
-              <View style={styles.categoriesSection}>
-                <Text style={styles.categoriesSectionTitle}>🎯 Kategoriler</Text>
-                <View style={styles.categoriesList}>
-                  {league.categories.map((cat, index) => (
-                    <View key={index} style={styles.categoryTag}>
-                      <Text style={styles.categoryTagText}>{cat}</Text>
-                    </View>
-                  ))}
+              {/* Prize */}
+              <View style={styles.statCard}>
+                <View style={[styles.statIconContainer, { backgroundColor: 'rgba(245,158,11,0.15)' }]}>
+                  <Ionicons name="gift" size={20} color="#F59E0B" />
+                </View>
+                <View style={styles.statInfo}>
+                  <Text style={styles.statValue}>{league.prize}</Text>
+                  <Text style={styles.statLabel}>Ödül</Text>
                 </View>
               </View>
 
-              {/* Action Buttons */}
-              <View style={styles.actions}>
-                <TouchableOpacity
-                  style={styles.joinButton}
-                  onPress={onJoin}
-                  activeOpacity={0.8}
-                >
-                  <LinearGradient
-                    colors={['#10B981', '#5a3a8f']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.joinButtonGradient}
-                  >
-                    <Text style={styles.joinText}>🎯 Katıl</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
+              {/* End Date */}
+              <View style={styles.statCard}>
+                <View style={[styles.statIconContainer, { backgroundColor: 'rgba(59,130,246,0.15)' }]}>
+                  <Ionicons name="calendar" size={20} color="#3B82F6" />
+                </View>
+                <View style={styles.statInfo}>
+                  <Text style={styles.statValue}>{league.endDate}</Text>
+                  <Text style={styles.statLabel}>Bitiş</Text>
+                </View>
+              </View>
 
-                <View style={styles.secondaryButtons}>
-                  <TouchableOpacity
-                    style={styles.secondaryButton}
-                    onPress={onLeaderboard}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.secondaryButtonText}>🏆 Sıralama</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.secondaryButton}
-                    onPress={onScoring}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.secondaryButtonText}>📊 Puanlama</Text>
-                  </TouchableOpacity>
+              {/* Join Cost */}
+              <View style={styles.statCard}>
+                <View style={[styles.statIconContainer, { backgroundColor: 'rgba(139,92,246,0.15)' }]}>
+                  <Ionicons name="ticket" size={20} color="#8B5CF6" />
+                </View>
+                <View style={styles.statInfo}>
+                  <Text style={styles.statValue}>
+                    {league.joinCost === 0 ? 'Ücretsiz' : `${league.joinCost}`}
+                  </Text>
+                  <Text style={styles.statLabel}>{league.joinCost > 0 ? 'Kredi' : 'Katılım'}</Text>
                 </View>
               </View>
             </View>
+
+            {/* Categories */}
+            <View style={styles.categoriesSection}>
+              <Text style={styles.sectionTitle}>Kategoriler</Text>
+              <View style={styles.categoriesList}>
+                {league.categories.map((cat, index) => (
+                  <View key={index} style={styles.categoryTag}>
+                    <Text style={styles.categoryTagText}>{cat}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Quick Actions */}
+            <View style={styles.quickActions}>
+              <TouchableOpacity
+                style={styles.quickActionButton}
+                onPress={onLeaderboard}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={['rgba(245,158,11,0.2)', 'rgba(245,158,11,0.1)']}
+                  style={styles.quickActionGradient}
+                >
+                  <Ionicons name="trophy" size={22} color="#F59E0B" />
+                  <Text style={styles.quickActionText}>Sıralama</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.quickActionButton}
+                onPress={onScoring}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={['rgba(59,130,246,0.2)', 'rgba(59,130,246,0.1)']}
+                  style={styles.quickActionGradient}
+                >
+                  <Ionicons name="analytics" size={22} color="#3B82F6" />
+                  <Text style={styles.quickActionText}>Puanlama</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            {/* Join Button */}
+            <TouchableOpacity
+              style={styles.joinButton}
+              onPress={onJoin}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#10B981', '#059669']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.joinGradient}
+              >
+                <Ionicons name="rocket" size={22} color="#FFFFFF" />
+                <Text style={styles.joinText}>Lige Katıl</Text>
+                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
+              </LinearGradient>
+            </TouchableOpacity>
           </ScrollView>
         </View>
       </View>
@@ -154,133 +190,127 @@ export function DiscoverLeagueModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   content: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    height: '82%',
+    backgroundColor: '#0D1117',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    height: '85%',
     overflow: 'hidden',
   },
   header: {
     padding: 24,
-    paddingTop: 32,
+    paddingTop: 20,
+    alignItems: 'center',
     position: 'relative',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   closeButton: {
     position: 'absolute',
     top: 16,
     right: 16,
-    width: 32,
-    height: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
   },
   leagueIcon: {
-    width: 80,
-    height: 80,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 24,
+    width: 72,
+    height: 72,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   leagueIconText: {
-    fontSize: 40,
+    fontSize: 32,
   },
   leagueTitle: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: 'white',
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
     marginBottom: 8,
+    textAlign: 'center',
   },
   leagueDescription: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.6)',
+    textAlign: 'center',
     marginBottom: 12,
+    paddingHorizontal: 20,
   },
-  creator: {
+  creatorBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  creatorIcon: {
-    fontSize: 14,
+    gap: 6,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
   creatorText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 13,
+    color: '#6EE7B7',
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
+    padding: 20,
+    paddingBottom: 40,
   },
-  body: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 24,
-  },
-  statsGrid: {
+  statsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
     marginBottom: 24,
   },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
   statCard: {
-    flex: 1,
-    borderRadius: 12,
+    width: '47%',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
     padding: 16,
-    borderWidth: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  statCardParticipants: {
-    backgroundColor: '#F3F4F6',
-    borderColor: '#D1D5DB',
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(16,185,129,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  statCardReward: {
-    backgroundColor: '#DCFCE7',
-    borderColor: '#86EFAC',
-  },
-  statCardEnd: {
-    backgroundColor: '#DBEAFE',
-    borderColor: '#93C5FD',
-  },
-  statCardParticipation: {
-    backgroundColor: '#F3E8FF',
-    borderColor: '#D8B4FE',
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 6,
+  statInfo: {
+    flex: 1,
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#111827',
-    marginBottom: 4,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
-  statSubtext: {
+  statLabel: {
     fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '500',
+    color: 'rgba(255,255,255,0.5)',
+    marginTop: 2,
   },
   categoriesSection: {
     marginBottom: 24,
   },
-  categoriesSectionTitle: {
-    fontSize: 18,
+  sectionTitle: {
+    fontSize: 16,
     fontWeight: '700',
-    color: '#202020',
+    color: '#FFFFFF',
     marginBottom: 12,
   },
   categoriesList: {
@@ -289,49 +319,57 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryTag: {
-    paddingHorizontal: 16,
+    backgroundColor: 'rgba(16,185,129,0.15)',
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: 'rgba(178, 158, 253, 0.3)',
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: 'rgba(67, 40, 112, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.3)',
   },
   categoryTagText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#202020',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#10B981',
   },
-  actions: {
+  quickActions: {
+    flexDirection: 'row',
     gap: 12,
+    marginBottom: 24,
+  },
+  quickActionButton: {
+    flex: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  quickActionGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 16,
+  },
+  quickActionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   joinButton: {
     borderRadius: 16,
     overflow: 'hidden',
   },
-  joinButtonGradient: {
-    paddingVertical: 16,
+  joinGradient: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 18,
   },
   joinText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: 'white',
-  },
-  secondaryButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  secondaryButton: {
     flex: 1,
-    paddingVertical: 12,
-    backgroundColor: '#F2F3F5',
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  secondaryButtonText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#202020',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
 });
