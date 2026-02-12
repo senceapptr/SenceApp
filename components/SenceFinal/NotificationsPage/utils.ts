@@ -2,75 +2,84 @@
 // NOTIFICATIONS PAGE - UTILS
 // =====================================================
 
-import { Notification, NotificationType, NotificationConfig, NotificationCategory } from './types';
+import {
+  FilterTab,
+  Notification,
+  NotificationConfig,
+  NotificationFilter,
+  NotificationRoute,
+  NotificationType,
+} from './types';
 
-// Notification type configurations
-export const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
-  prediction_won: {
-    icon: '🎯',
-    colors: ['#10B981', '#059669'] as const,
-    category: 'rewards',
+const FALLBACK_TYPE: NotificationType = 'prediction_added';
+
+const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
+  coupon_status: {
+    iconName: 'time-outline',
+    tintColor: '#FB923C',
   },
   coupon_won: {
-    icon: '🎫',
-    colors: ['#F59E0B', '#D97706'] as const,
-    category: 'rewards',
+    iconName: 'ticket-outline',
+    tintColor: '#FBBF24',
   },
   daily_bonus: {
-    icon: '🎰',
-    colors: ['#8B5CF6', '#7C3AED'] as const,
-    category: 'rewards',
+    iconName: 'gift-outline',
+    tintColor: '#F59E0B',
   },
   friend_follow: {
-    icon: '👤',
-    colors: ['#3B82F6', '#2563EB'] as const,
-    category: 'social',
+    iconName: 'person-add-outline',
+    tintColor: '#F472B6',
   },
   league_invite: {
-    icon: '🏆',
-    colors: ['#432870', '#6B21A8'] as const,
-    category: 'social',
-  },
-  coupon_status: {
-    icon: '⏰',
-    colors: ['#F97316', '#EA580C'] as const,
-    category: 'system',
+    iconName: 'trophy-outline',
+    tintColor: '#A78BFA',
   },
   prediction_added: {
-    icon: '✨',
-    colors: ['#432870', '#7C3AED'] as const,
-    category: 'system',
+    iconName: 'flash-outline',
+    tintColor: '#2DD4BF',
+  },
+  prediction_won: {
+    iconName: 'checkmark-circle-outline',
+    tintColor: '#34D399',
   },
 };
 
-export const FILTER_TABS = [
-  { key: 'all' as NotificationCategory, label: 'Tümü' },
-  { key: 'rewards' as NotificationCategory, label: 'Kazançlar' },
-  { key: 'social' as NotificationCategory, label: 'Sosyal' },
-  { key: 'system' as NotificationCategory, label: 'Sistem' },
+export const FILTER_TABS: FilterTab[] = [
+  { key: 'all', label: 'Tümü' },
+  { key: 'unread', label: 'Okunmamış' },
 ];
 
-/**
- * Get notification config by type
- */
+const LEGACY_NOTIFICATION_TYPE_MAP: Record<string, NotificationType> = {
+  achievement: 'daily_bonus',
+  coupon: 'coupon_won',
+  coupon_result: 'coupon_won',
+  friend: 'friend_follow',
+  league: 'league_invite',
+  league_update: 'league_invite',
+  prediction: 'prediction_won',
+  prediction_result: 'prediction_won',
+  social: 'friend_follow',
+  system: 'daily_bonus',
+  task_complete: 'daily_bonus',
+};
+
+export const normalizeNotificationType = (rawType?: string | null): NotificationType => {
+  if (!rawType) return FALLBACK_TYPE;
+  if (rawType in NOTIFICATION_CONFIGS) return rawType as NotificationType;
+  return LEGACY_NOTIFICATION_TYPE_MAP[rawType] || FALLBACK_TYPE;
+};
+
 export const getNotificationConfig = (type: NotificationType): NotificationConfig => {
-  return NOTIFICATION_CONFIGS[type] || NOTIFICATION_CONFIGS.prediction_added;
+  return NOTIFICATION_CONFIGS[type] || NOTIFICATION_CONFIGS[FALLBACK_TYPE];
 };
 
-/**
- * Filter notifications by category
- */
-export const filterNotificationsByCategory = (
-  notifications: Notification[],
-  category: NotificationCategory
-): Notification[] => {
-  if (category === 'all') return notifications;
-  return notifications.filter(n => getNotificationConfig(n.type).category === category);
+export const filterNotifications = (notifications: Notification[], filter: NotificationFilter): Notification[] => {
+  if (filter === 'unread') {
+    return notifications.filter(notification => !notification.read);
+  }
+  return notifications;
 };
 
-/**
- * Group notifications by date sections
- */
 export const groupNotificationsByDateSection = (notifications: Notification[]) => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -80,35 +89,47 @@ export const groupNotificationsByDateSection = (notifications: Notification[]) =
   weekAgo.setDate(weekAgo.getDate() - 7);
 
   const sections = {
+    older: [] as Notification[],
+    thisWeek: [] as Notification[],
     today: [] as Notification[],
     yesterday: [] as Notification[],
-    thisWeek: [] as Notification[],
-    older: [] as Notification[],
   };
 
   notifications.forEach(notification => {
-    const notifDate = new Date(notification.created_at);
-    const notifDay = new Date(notifDate.getFullYear(), notifDate.getMonth(), notifDate.getDate());
+    const date = new Date(notification.created_at);
+    if (Number.isNaN(date.getTime())) {
+      sections.older.push(notification);
+      return;
+    }
 
+    const notifDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     if (notifDay.getTime() === today.getTime()) {
       sections.today.push(notification);
-    } else if (notifDay.getTime() === yesterday.getTime()) {
-      sections.yesterday.push(notification);
-    } else if (notifDay >= weekAgo) {
-      sections.thisWeek.push(notification);
-    } else {
-      sections.older.push(notification);
+      return;
     }
+
+    if (notifDay.getTime() === yesterday.getTime()) {
+      sections.yesterday.push(notification);
+      return;
+    }
+
+    if (notifDay >= weekAgo) {
+      sections.thisWeek.push(notification);
+      return;
+    }
+
+    sections.older.push(notification);
   });
 
   return sections;
 };
 
-/**
- * Format time ago string
- */
 export const formatTimeAgo = (dateString: string): string => {
   const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return 'Bilinmiyor';
+  }
+
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
@@ -123,85 +144,71 @@ export const formatTimeAgo = (dateString: string): string => {
   return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
 };
 
-/**
- * Get unread count
- */
 export const getUnreadCount = (notifications: Notification[]): number => {
-  return notifications.filter(n => !n.read).length;
+  return notifications.filter(notification => !notification.read).length;
 };
 
-/**
- * Mock notifications for development
- */
-export const mockNotifications: Notification[] = [
-  {
-    id: 'mock-1',
-    type: 'prediction_won',
-    title: 'Tahmin Kazandın!',
-    message: '"Galatasaray maçı kazanacak mı?" tahmininden 250 kredi kazandın!',
-    time: '5 dk önce',
-    read: false,
-    data: { reward: 250, questionId: 'q1' },
-    created_at: new Date(Date.now() - 5 * 60000).toISOString(),
-  },
-  {
-    id: 'mock-2',
-    type: 'coupon_won',
-    title: 'Kuponun Tuttu! 🎉',
-    message: '5 maçlık kuponun tuttu! 1,250 kredi kazandın!',
-    time: '1 saat önce',
-    read: false,
-    data: { reward: 1250, couponId: 'c1' },
-    created_at: new Date(Date.now() - 60 * 60000).toISOString(),
-  },
-  {
-    id: 'mock-3',
-    type: 'daily_bonus',
-    title: 'Günlük Ödüller Yenilendi',
-    message: 'Çark çevir ve günlük oyunlar seni bekliyor! Hemen gir, bonusunu kap.',
-    time: '2 saat önce',
-    read: false,
-    data: {},
-    created_at: new Date(Date.now() - 2 * 60 * 60000).toISOString(),
-  },
-  {
-    id: 'mock-4',
-    type: 'friend_follow',
-    title: 'Yeni Takipçi',
-    message: '@ahmet_yilmaz seni takip etmeye başladı',
-    time: '3 saat önce',
-    read: true,
-    data: { userId: 'u1', username: 'ahmet_yilmaz' },
-    created_at: new Date(Date.now() - 3 * 60 * 60000).toISOString(),
-  },
-  {
-    id: 'mock-5',
-    type: 'league_invite',
-    title: 'Lige Davet Edildin',
-    message: '"Spor Severler Ligi" ligine davet edildin. Katılmak ister misin?',
-    time: 'Dün',
-    read: true,
-    data: { leagueId: 'l1', leagueName: 'Spor Severler Ligi' },
-    created_at: new Date(Date.now() - 24 * 60 * 60000).toISOString(),
-  },
-  {
-    id: 'mock-6',
-    type: 'coupon_status',
-    title: 'Kuponunda 1 Maç Kaldı!',
-    message: 'Son maç sonuçlanmak üzere. Kuponunu takip et!',
-    time: 'Dün',
-    read: true,
-    data: { couponId: 'c2' },
-    created_at: new Date(Date.now() - 26 * 60 * 60000).toISOString(),
-  },
-  {
-    id: 'mock-7',
-    type: 'prediction_added',
-    title: 'Yeni Sorular Eklendi',
-    message: 'İlgilenebileceğin 5 yeni soru eklendi. Hemen tahmin yap!',
-    time: '2 gün önce',
-    read: true,
-    data: {},
-    created_at: new Date(Date.now() - 2 * 24 * 60 * 60000).toISOString(),
-  },
-];
+export const sortNotificationsByDateDesc = (notifications: Notification[]): Notification[] => {
+  return [...notifications].sort((a, b) => {
+    const aTime = new Date(a.created_at).getTime();
+    const bTime = new Date(b.created_at).getTime();
+    if (Number.isNaN(aTime) && Number.isNaN(bTime)) return 0;
+    if (Number.isNaN(aTime)) return 1;
+    if (Number.isNaN(bTime)) return -1;
+    return bTime - aTime;
+  });
+};
+
+interface ResolveNotificationActionArgs {
+  notification: Notification;
+  onOpenQuestionDetail?: (questionId: string) => void;
+  onNavigateToPage?: (page: NotificationRoute) => void;
+}
+
+export const resolveNotificationAction = ({
+  notification,
+  onNavigateToPage,
+  onOpenQuestionDetail,
+}: ResolveNotificationActionArgs): boolean => {
+  const payload = notification.data;
+
+  if (!payload) {
+    return false;
+  }
+
+  switch (notification.type) {
+    case 'prediction_won':
+    case 'prediction_added':
+      if (payload.questionId && onOpenQuestionDetail) {
+        onOpenQuestionDetail(payload.questionId);
+        return true;
+      }
+      return false;
+
+    case 'coupon_won':
+    case 'coupon_status':
+      if (payload.couponId && onNavigateToPage) {
+        onNavigateToPage('coupons');
+        return true;
+      }
+      return false;
+
+    case 'league_invite':
+      if (payload.leagueId && onNavigateToPage) {
+        onNavigateToPage('leagues');
+        return true;
+      }
+      return false;
+
+    case 'daily_bonus':
+      if (onNavigateToPage) {
+        onNavigateToPage('gameHub');
+        return true;
+      }
+      return false;
+
+    case 'friend_follow':
+    default:
+      return false;
+  }
+};

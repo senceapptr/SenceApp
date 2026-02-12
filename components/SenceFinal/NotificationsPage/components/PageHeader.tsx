@@ -1,57 +1,56 @@
 // =====================================================
-// PAGE HEADER - Dark Style
+// PAGE HEADER
 // =====================================================
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface PageHeaderProps {
-  unreadCount: number;
   onBack?: () => void;
+  unreadCount: number;
+  onClose?: () => void;
+  applyTopInset?: boolean;
   onMarkAllRead?: () => void;
 }
 
 export const PageHeader: React.FC<PageHeaderProps> = ({
-  unreadCount,
+  applyTopInset = true,
   onBack,
+  onClose,
   onMarkAllRead,
+  unreadCount,
 }) => {
   const insets = useSafeAreaInsets();
+  const showLeftAction = onBack || onClose;
+  const safeTopPadding = applyTopInset ? insets.top + 6 : 10;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
-      <View style={styles.content}>
-        {/* Back Button */}
-        {onBack && (
+    <View style={[styles.container, { paddingTop: safeTopPadding }]}>
+      <View style={styles.row}>
+        {showLeftAction ? (
           <TouchableOpacity
-            style={styles.backButton}
-            onPress={onBack}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            activeOpacity={0.8}
+            hitSlop={{ bottom: 8, left: 8, right: 8, top: 8 }}
+            onPress={onBack || onClose}
+            style={styles.iconButton}
           >
-            <Ionicons name="chevron-back" size={24} color="#F0F6FC" />
+            <Ionicons color="#F0F6FC" name={onBack ? 'chevron-back' : 'close'} size={22} />
           </TouchableOpacity>
+        ) : (
+          <View style={styles.placeholder} />
         )}
 
-        {/* Title */}
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>Bildirimler</Text>
-          {unreadCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{unreadCount}</Text>
-            </View>
-          )}
+        <View style={styles.titleWrap}>
+          <Text numberOfLines={1} style={styles.title}>
+            Bildirimler
+          </Text>
         </View>
 
-        {/* Mark All Read */}
         {unreadCount > 0 && onMarkAllRead ? (
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={onMarkAllRead}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Text style={styles.actionText}>Tümünü Oku</Text>
+          <TouchableOpacity activeOpacity={0.8} onPress={onMarkAllRead} style={styles.markAllButton}>
+            <Text style={styles.markAllText}>Tümünü Oku</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.placeholder} />
@@ -63,61 +62,53 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#09090B',
+    backgroundColor: '#0D1117',
+    borderBottomColor: '#262C36',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
     paddingBottom: 12,
+    paddingHorizontal: 20,
   },
-  backButton: {
-    width: 40,
-    height: 40,
+  iconButton: {
+    alignItems: 'center',
+    backgroundColor: '#21262D',
+    borderColor: '#30363D',
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#F0F6FC', // White text
-  },
-  badge: {
-    backgroundColor: '#432870',
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
   },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
+  markAllButton: {
+    alignItems: 'flex-end',
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 40,
+    minWidth: 88,
   },
-  actionButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  actionText: {
-    fontSize: 14,
+  markAllText: {
+    color: '#8BB8FF',
+    fontSize: 13,
     fontWeight: '600',
-    color: '#A78BFA', // Light purple
+    textAlign: 'right',
   },
   placeholder: {
-    width: 80,
+    minWidth: 40,
+  },
+  row: {
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  title: {
+    color: '#F0F6FC',
+    fontSize: 19,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  titleWrap: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 40,
+    paddingHorizontal: 8,
   },
 });

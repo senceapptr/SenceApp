@@ -12,7 +12,7 @@ interface Step2DetailsProps {
     isPrivate: boolean;
   };
   onConfigChange: (config: any) => void;
-  availableCategories: Array<{ id: string; name: string; icon: string }>;
+  availableCategories: Array<{ id: string; name: string; icon: string; color?: string }>;
   onShowDatePicker: () => void;
   onShowCapacityPicker: () => void;
 }
@@ -132,7 +132,7 @@ export function Step2Details({
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="grid" size={18} color="#10B981" />
+              <Ionicons name="grid" size={18} color="#256EFF" />
               <Text style={styles.sectionTitle}>Kategoriler</Text>
               <View style={styles.requiredBadge}>
                 <Text style={styles.requiredText}>Zorunlu</Text>
@@ -176,7 +176,7 @@ export function Step2Details({
                     </Text>
                     {isSelected && (
                       <View style={styles.categoryCheckBadge}>
-                        <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                        <Ionicons name="checkmark-circle" size={18} color="#256EFF" />
                       </View>
                     )}
                   </TouchableOpacity>
@@ -187,7 +187,7 @@ export function Step2Details({
 
           {leagueConfig.categories.length > 0 && (
             <View style={styles.selectedCount}>
-              <Ionicons name="checkmark-done" size={16} color="#10B981" />
+              <Ionicons name="checkmark-done" size={16} color="#256EFF" />
               <Text style={styles.selectedCountText}>
                 {leagueConfig.categories.length} kategori seçildi
               </Text>
@@ -199,7 +199,7 @@ export function Step2Details({
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="settings" size={18} color="#10B981" />
+              <Ionicons name="settings" size={18} color="#256EFF" />
               <Text style={styles.sectionTitle}>Lig Ayarları</Text>
             </View>
           </View>
@@ -249,14 +249,14 @@ export function Step2Details({
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="diamond" size={18} color="#10B981" />
+              <Ionicons name="diamond" size={18} color="#256EFF" />
               <Text style={styles.sectionTitle}>Katılım Ücreti</Text>
             </View>
           </View>
 
           <View style={styles.inputContainer}>
             <View style={styles.inputIconContainer}>
-              <Ionicons name="wallet" size={20} color="#10B981" />
+              <Ionicons name="wallet" size={20} color="#256EFF" />
             </View>
             <TextInput
               style={styles.textInput}
@@ -295,7 +295,7 @@ export function Step2Details({
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="lock-closed" size={18} color="#10B981" />
+              <Ionicons name="lock-closed" size={18} color="#256EFF" />
               <Text style={styles.sectionTitle}>Gizlilik</Text>
             </View>
           </View>
@@ -313,7 +313,7 @@ export function Step2Details({
                 <Ionicons 
                   name="globe" 
                   size={32} 
-                  color={!leagueConfig.isPrivate ? '#10B981' : '#9CA3AF'} 
+                  color={!leagueConfig.isPrivate ? '#256EFF' : '#9CA3AF'} 
                 />
               </View>
               <Text style={[
@@ -327,7 +327,7 @@ export function Step2Details({
               </Text>
               {!leagueConfig.isPrivate && (
                 <View style={styles.privacyCheck}>
-                  <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                  <Ionicons name="checkmark-circle" size={24} color="#256EFF" />
                 </View>
               )}
             </TouchableOpacity>
@@ -368,7 +368,7 @@ export function Step2Details({
         {/* Summary Preview */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeader}>
-            <Ionicons name="receipt" size={18} color="#10B981" />
+            <Ionicons name="receipt" size={18} color="#256EFF" />
             <Text style={styles.summaryTitle}>Lig Özeti</Text>
           </View>
           
@@ -471,9 +471,9 @@ const styles = StyleSheet.create({
   },
   categoryButtonActive: {
     backgroundColor: '#F3E8FF',
-    borderColor: '#10B981',
+    borderColor: '#256EFF',
     borderWidth: 3,
-    shadowColor: '#10B981',
+    shadowColor: '#256EFF',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
     color: '#8B949E',
   },
   categoryTextActive: {
-    color: '#10B981',
+    color: '#256EFF',
     fontWeight: 'bold',
   },
   categoryCheckBadge: {
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
   selectedCountText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#10B981',
+    color: '#256EFF',
   },
   // Settings Grid
   settingsGrid: {
@@ -653,9 +653,9 @@ const styles = StyleSheet.create({
   },
   privacyCardActive: {
     backgroundColor: '#21262D',
-    borderColor: '#10B981',
+    borderColor: '#256EFF',
     borderWidth: 3,
-    shadowColor: '#10B981',
+    shadowColor: '#256EFF',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#10B981',
+    borderColor: '#256EFF',
     borderStyle: 'dashed',
     marginBottom: 20,
   },
@@ -715,7 +715,7 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#10B981',
+    color: '#256EFF',
   },
   summaryRow: {
     flexDirection: 'row',
@@ -739,4 +739,3 @@ const styles = StyleSheet.create({
     color: '#F0F6FC',
   },
 });
-

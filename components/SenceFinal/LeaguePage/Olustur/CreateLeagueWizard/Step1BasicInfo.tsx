@@ -20,10 +20,10 @@ const ICON_OPTIONS = [
   { id: 'rocket', icon: 'rocket', color: '#8B5CF6', label: 'Roket' },
   { id: 'diamond', icon: 'diamond', color: '#06B6D4', label: 'Elmas' },
   { id: 'star', icon: 'star', color: '#FBBF24', label: 'Yıldız' },
-  { id: 'shield', icon: 'shield', color: '#10B981', label: 'Kalkan' },
+  { id: 'shield', icon: 'shield', color: '#256EFF', label: 'Kalkan' },
   { id: 'medal', icon: 'medal', color: '#EF4444', label: 'Madalya' },
   { id: 'game', icon: 'game-controller', color: '#8B5CF6', label: 'Oyun' },
-  { id: 'football', icon: 'football', color: '#10B981', label: 'Futbol' },
+  { id: 'football', icon: 'football', color: '#256EFF', label: 'Futbol' },
 ];
 
 export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoProps) {
@@ -162,7 +162,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="color-palette" size={18} color="#10B981" />
+              <Ionicons name="color-palette" size={18} color="#256EFF" />
               <Text style={styles.sectionTitle}>Lig İkonu</Text>
             </View>
           </View>
@@ -216,7 +216,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
                   {/* Checkmark outside button */}
                   {isSelected && (
                     <View style={styles.iconCheckBadge}>
-                      <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                      <Ionicons name="checkmark-circle" size={20} color="#256EFF" />
                     </View>
                   )}
                 </Animated.View>
@@ -230,7 +230,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="text" size={18} color="#10B981" />
+              <Ionicons name="text" size={18} color="#256EFF" />
               <Text style={styles.sectionTitle}>Lig Adı</Text>
               <View style={styles.requiredBadge}>
                 <Text style={styles.requiredText}>Zorunlu</Text>
@@ -251,7 +251,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
               <Ionicons 
                 name="trophy" 
                 size={20} 
-                color={focusedField === 'name' ? '#10B981' : '#9CA3AF'} 
+                color={focusedField === 'name' ? '#256EFF' : '#9CA3AF'} 
               />
             </View>
             <TextInput
@@ -279,7 +279,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
             <View style={styles.validationFeedback}>
               {leagueConfig.name.length >= 3 ? (
                 <View style={styles.validationSuccess}>
-                  <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                  <Ionicons name="checkmark-circle" size={16} color="#256EFF" />
                   <Text style={styles.validationSuccessText}>Harika bir isim!</Text>
                 </View>
               ) : (
@@ -296,7 +296,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="document-text" size={18} color="#10B981" />
+              <Ionicons name="document-text" size={18} color="#256EFF" />
               <Text style={styles.sectionTitle}>Açıklama</Text>
               <View style={styles.requiredBadge}>
                 <Text style={styles.requiredText}>Zorunlu</Text>
@@ -318,7 +318,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
               <Ionicons 
                 name="list" 
                 size={20} 
-                color={focusedField === 'description' ? '#10B981' : '#9CA3AF'} 
+                color={focusedField === 'description' ? '#256EFF' : '#9CA3AF'} 
               />
               <View style={styles.charCountBadge}>
                 <Text style={[
@@ -349,7 +349,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
             <View style={styles.validationFeedback}>
               {leagueConfig.description.length >= 10 ? (
                 <View style={styles.validationSuccess}>
-                  <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                  <Ionicons name="checkmark-circle" size={16} color="#256EFF" />
                   <Text style={styles.validationSuccessText}>Açıklayıcı ve net!</Text>
                 </View>
               ) : (
@@ -371,7 +371,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
             ]}
           >
             <View style={styles.previewHeader}>
-              <Ionicons name="eye" size={18} color="#10B981" />
+              <Ionicons name="eye" size={18} color="#256EFF" />
               <Text style={styles.previewHeaderText}>Canlı Önizleme</Text>
               <View style={styles.liveBadge}>
                 <View style={styles.liveDot} />
@@ -440,7 +440,7 @@ export function Step1BasicInfo({ leagueConfig, onConfigChange }: Step1BasicInfoP
           
           <View style={styles.tipItem}>
             <View style={styles.tipIconContainer}>
-              <Ionicons name="shield-checkmark" size={18} color="#10B981" />
+              <Ionicons name="shield-checkmark" size={18} color="#256EFF" />
             </View>
             <Text style={styles.tipText}>
               <Text style={styles.tipBold}>Güvenlik:</Text> Ligini daha sonra düzenleyebilirsin
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   iconButtonActive: {
-    shadowColor: '#10B981',
+    shadowColor: '#256EFF',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -547,8 +547,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   inputContainerFocused: {
-    borderColor: '#10B981',
-    shadowColor: '#10B981',
+    borderColor: '#256EFF',
+    shadowColor: '#256EFF',
     shadowOpacity: 0.2,
     shadowRadius: 12,
     backgroundColor: '#161B22',
@@ -598,14 +598,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    backgroundColor: 'rgba(37, 110, 255, 0.15)',
     padding: 10,
     borderRadius: 10,
   },
   validationSuccessText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#10B981',
+    color: '#256EFF',
   },
   validationWarning: {
     flexDirection: 'row',
@@ -633,13 +633,13 @@ const styles = StyleSheet.create({
   previewHeaderText: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#10B981',
+    color: '#256EFF',
   },
   liveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    backgroundColor: 'rgba(37, 110, 255, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -648,18 +648,18 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#10B981',
+    backgroundColor: '#256EFF',
   },
   liveText: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: '#10B981',
+    color: '#256EFF',
   },
   previewCard: {
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#10B981',
+    borderColor: '#256EFF',
     borderStyle: 'dashed',
   },
   previewGradient: {

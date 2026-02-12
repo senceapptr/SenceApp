@@ -1,88 +1,93 @@
+import type { LeagueIconName } from './shared/leagueIcons';
+
 export interface League {
   id: string;
   name: string;
-  description: string;
-  category: string;
-  categories: string[];
   icon: string;
-  participants: number;
-  maxParticipants: number;
   prize: string;
   endDate: string;
-  isJoined: boolean;
-  position?: number;
   creator: string;
+  category: string;
   joinCost: number;
-  isFeatured?: boolean;
-  status?: 'active' | 'completed';
+  isJoined: boolean;
+  creatorId?: string;
+  description: string;
   isPrivate?: boolean;
   pointSystem: string;
+  categories: string[];
+  participants: number;
+  isFeatured?: boolean;
+  maxParticipants: number;
+  position?: number | null;
+  leagueIconColor?: string;
+  endDateISO?: string | null;
+  status?: 'active' | 'completed';
+  leagueIconName?: LeagueIconName;
 }
 
 export interface ChatMessage {
   id: number;
-  username: string;
+  avatar: string;
   message: string;
   timestamp: Date;
-  avatar: string;
+  username: string;
 }
 
 export interface LeaderboardUser {
   rank: number;
-  username: string;
   points: number;
   streak: number;
-  correctPredictions: number;
-  totalPredictions: number;
   avatar: string;
+  username: string;
   isCurrentUser: boolean;
   isPlaceholder?: boolean;
+  totalPredictions: number;
+  correctPredictions: number;
 }
 
 export interface Question {
   id: string;
   text: string;
-  category: string;
-  categoryEmoji: string;
+  noOdds: number;
   endDate: string;
   yesOdds: number;
-  noOdds: number;
+  category: string;
   totalVotes: number;
-  yesPercentage: number;
   noPercentage: number;
-  userVote?: 'yes' | 'no' | null;
   isTrending?: boolean;
+  categoryEmoji: string;
+  yesPercentage: number;
+  userVote?: 'yes' | 'no' | null;
 }
 
 export interface User {
-  username: string;
   avatar: string;
-  joinedLeagues: number;
-  maxLeagues: number;
   credits: number;
   tickets: number;
+  username: string;
+  maxLeagues: number;
+  joinedLeagues: number;
 }
 
 export interface LeagueConfig {
   name: string;
-  description: string;
   icon: string;
-  maxParticipants: number;
   endDate: Date;
-  isPrivate: boolean;
-  categories: string[];
   joinCost: number;
+  isPrivate: boolean;
+  description: string;
+  categories: string[];
+  maxParticipants: number;
 }
 
 export type TabType = 'discover' | 'my-leagues' | 'create';
 
 export interface LeagueVote {
   id: string;
-  questionId: string;
-  vote: 'yes' | 'no' | 'skip';
   odds: number;
-  status: 'pending' | 'won' | 'lost' | 'skipped';
-  pointsEarned: number;
   createdAt: string;
+  questionId: string;
+  pointsEarned: number;
+  vote: 'yes' | 'no' | 'skip';
+  status: 'pending' | 'won' | 'lost' | 'skipped';
 }
-

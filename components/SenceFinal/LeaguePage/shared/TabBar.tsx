@@ -1,81 +1,116 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
 import { TabType } from '../types';
+import { ACCENT_DARK } from './theme';
 
 interface TabBarProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
 }
 
+const TAB_CONFIG: { key: TabType; label: string }[] = [
+  { key: 'discover', label: 'Keşfet' },
+  { key: 'my-leagues', label: 'Liglerim' },
+  { key: 'create', label: 'Oluştur' },
+];
+
 export function TabBar({ activeTab, onTabChange }: TabBarProps) {
+  const [tabsContainerWidth, setTabsContainerWidth] = useState(0);
+  const indicatorTranslateX = useRef(new Animated.Value(0)).current;
+  const tabWidth = tabsContainerWidth > 0 ? tabsContainerWidth / TAB_CONFIG.length : 0;
+
+  const activeIndex = useMemo(() => TAB_CONFIG.findIndex(tab => tab.key === activeTab), [activeTab]);
+
+  useEffect(() => {
+    if (!tabWidth || activeIndex < 0) return;
+
+    Animated.spring(indicatorTranslateX, {
+      damping: 18,
+      mass: 0.75,
+      stiffness: 210,
+      toValue: activeIndex * tabWidth,
+      useNativeDriver: true,
+    }).start();
+  }, [activeIndex, indicatorTranslateX, tabWidth]);
+
   return (
     <View style={styles.container}>
-      <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'discover' && styles.activeTab]}
-          onPress={() => onTabChange('discover')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.tabText, activeTab === 'discover' && styles.activeTabText]}>
-            Keşfet
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'my-leagues' && styles.activeTab]}
-          onPress={() => onTabChange('my-leagues')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.tabText, activeTab === 'my-leagues' && styles.activeTabText]}>
-            Liglerim
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'create' && styles.activeTab]}
-          onPress={() => onTabChange('create')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.tabText, activeTab === 'create' && styles.activeTabText]}>
-            Oluştur
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.tabs} onLayout={event => setTabsContainerWidth(event.nativeEvent.layout.width)}>
+        {tabWidth > 0 && (
+          <Animated.View
+            style={[
+              styles.activeIndicator,
+              {
+                left: 4,
+                transform: [{ translateX: indicatorTranslateX }],
+                width: tabWidth - 8,
+              },
+            ]}
+          />
+        )}
+
+        {TAB_CONFIG.map(tab => {
+          const isActive = activeTab === tab.key;
+
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={styles.tab}
+              onPress={() => onTabChange(tab.key)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.tabText, isActive && styles.activeTabText]}>{tab.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 24,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  tabs: {
-    flexDirection: 'row',
-    backgroundColor: '#161B22',
-    borderRadius: 20,
-    padding: 4,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#30363D',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    alignItems: 'center',
-    backgroundColor: '#21262D',
-  },
-  activeTab: {
-    backgroundColor: '#10B981',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#8B949E',
+  activeIndicator: {
+    backgroundColor: ACCENT_DARK,
+    borderRadius: 16,
+    bottom: 4,
+    elevation: 2,
+    position: 'absolute',
+    shadowColor: 'rgba(0,0,0,0.45)',
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    top: 4,
   },
   activeTabText: {
     color: '#FFFFFF',
   },
+  container: {
+    paddingBottom: 12,
+    paddingHorizontal: 24,
+    paddingTop: 8,
+  },
+  tab: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    zIndex: 2,
+  },
+  tabs: {
+    backgroundColor: '#0F172A',
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    padding: 4,
+    position: 'relative',
+  },
+  tabText: {
+    color: '#9CA3AF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
 });
-

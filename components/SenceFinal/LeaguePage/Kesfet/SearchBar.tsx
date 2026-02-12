@@ -1,14 +1,13 @@
 import React from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { View, TextInput, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Text } from 'react-native';
 
 interface SearchBarProps {
   value: string;
   onChangeText: (text: string) => void;
 }
 
-export function SearchBar({ value, onChangeText }: SearchBarProps) {
+export function SearchBar({ onChangeText, value }: SearchBarProps) {
   return (
     <View style={styles.container}>
       <TextInput
@@ -17,16 +16,11 @@ export function SearchBar({ value, onChangeText }: SearchBarProps) {
         value={value}
         onChangeText={onChangeText}
         placeholderTextColor="#8B949E"
+        autoCapitalize="none"
+        autoCorrect={false}
       />
       <View style={styles.icon}>
-        <LinearGradient
-          colors={['#10B981', '#34D399']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.iconGradient}
-        >
-          <Text style={styles.iconText}>🔍</Text>
-        </LinearGradient>
+        <Ionicons name="search-outline" size={18} color="#9CA3AF" />
       </View>
     </View>
   );
@@ -37,31 +31,20 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     position: 'relative',
   },
-  input: {
-    backgroundColor: '#161B22',
-    borderWidth: 1,
-    borderColor: '#30363D',
-    borderRadius: 24,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    paddingRight: 56,
-    fontSize: 16,
-    color: '#F0F6FC',
-  },
   icon: {
     position: 'absolute',
     right: 16,
-    top: 14,
+    top: 16,
   },
-  iconGradient: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  iconText: {
+  input: {
+    backgroundColor: '#161B22',
+    borderColor: '#30363D',
+    borderRadius: 24,
+    borderWidth: 1,
+    color: '#F0F6FC',
     fontSize: 16,
+    paddingHorizontal: 24,
+    paddingRight: 56,
+    paddingVertical: 16,
   },
 });
-

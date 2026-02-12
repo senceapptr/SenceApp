@@ -26,12 +26,11 @@ export function CategoriesBar({ categories, selectedCategory, onSelectCategory }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#F2F3F5',
-    paddingVertical: 16,
+    backgroundColor: '#0D1117',
+    paddingVertical: 12,
   },
   content: {
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 10,
   },
 });
-

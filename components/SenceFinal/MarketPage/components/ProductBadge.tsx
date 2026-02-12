@@ -15,10 +15,12 @@ export function ProductBadge({ text, position = 'absolute' }: ProductBadgeProps)
 
 const styles = StyleSheet.create({
   badge: {
-    backgroundColor: '#432870',
+    backgroundColor: '#2F4F8C',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 10,
+    borderColor: '#256EFF',
+    borderWidth: 1,
   },
   absoluteBadge: {
     position: 'absolute',
@@ -35,4 +37,3 @@ const styles = StyleSheet.create({
     color: 'white',
   },
 });
-

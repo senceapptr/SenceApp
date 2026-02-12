@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ActiveCoupon } from '../types';
 import { CouponCard } from './CouponCard';
 
@@ -14,15 +13,22 @@ interface ActiveCouponsSectionProps {
   onCreateCouponPress?: () => void;
 }
 
-export function ActiveCouponsSection({ coupons, isDarkMode, theme, onCouponPress, onSeeAllPress, onCreateCouponPress }: ActiveCouponsSectionProps) {
+export function ActiveCouponsSection({
+  coupons,
+  isDarkMode,
+  theme,
+  onCouponPress,
+  onSeeAllPress,
+  onCreateCouponPress,
+}: ActiveCouponsSectionProps) {
   // Güvenlik kontrolü - coupons undefined veya null ise boş array kullan
   const safeCoupons = coupons || [];
-  
+
   // Theme güvenlik kontrolü
   if (!theme) {
     return null;
   }
-  
+
   // Empty state göster
   if (safeCoupons.length === 0) {
     return (
@@ -30,44 +36,34 @@ export function ActiveCouponsSection({ coupons, isDarkMode, theme, onCouponPress
         <View style={styles.header}>
           <Text style={[styles.title, { color: '#F0F6FC' }]}>Aktif Ticketlar</Text>
         </View>
-        
+
         <View style={styles.emptyStateContainer}>
-          <View
-            style={[styles.emptyStateGradient, { backgroundColor: '#21262D' }]}
-          >
+          <View style={[styles.emptyStateGradient, { backgroundColor: '#21262D' }]}>
             <View style={styles.emptyStateIconContainer}>
-              <Ionicons name="ticket-outline" size={48} color="#10B981" />
+              <Ionicons name="ticket-outline" size={48} color="#256EFF" />
             </View>
-            
-            <Text style={styles.emptyStateTitle}>
-              Aktif Ticketın Yok
-            </Text>
-            
-            <TouchableOpacity 
-              style={styles.createCouponButton}
-              onPress={onCreateCouponPress}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="add-circle" size={20} color="#10B981" />
-              <Text style={styles.createCouponButtonText}>
-                Ticket Oluştur
-              </Text>
+
+            <Text style={styles.emptyStateTitle}>Aktif Ticketın Yok</Text>
+
+            <TouchableOpacity style={styles.createCouponButton} onPress={onCreateCouponPress} activeOpacity={0.8}>
+              <Ionicons name="add-circle" size={20} color="#256EFF" />
+              <Text style={styles.createCouponButtonText}>Ticket Oluştur</Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
     );
   }
-  
+
   return (
     <View style={[styles.section, { backgroundColor: 'transparent' }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: '#F0F6FC' }]}>Aktif Ticketlar</Text>
         <TouchableOpacity onPress={onSeeAllPress}>
-          <Text style={[styles.seeAll, { color: '#10B981' }]}>Tümünü gör</Text>
+          <Text style={[styles.seeAll, { color: '#256EFF' }]}>Tümünü gör</Text>
         </TouchableOpacity>
       </View>
-      
+
       <FlatList
         data={Array.isArray(safeCoupons) ? safeCoupons : []}
         renderItem={({ item }) => {
@@ -76,15 +72,10 @@ export function ActiveCouponsSection({ coupons, isDarkMode, theme, onCouponPress
             return null;
           }
           return (
-            <CouponCard 
-              coupon={item} 
-              isDarkMode={isDarkMode} 
-              theme={theme} 
-              onPress={() => onCouponPress?.(item)}
-            />
+            <CouponCard coupon={item} isDarkMode={isDarkMode} theme={theme} onPress={() => onCouponPress?.(item)} />
           );
         }}
-        keyExtractor={(item, index) => (item && item.id) ? item.id.toString() : index.toString()}
+        keyExtractor={(item, index) => (item && item.id ? item.id.toString() : index.toString())}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.list}
@@ -120,7 +111,7 @@ const styles = StyleSheet.create({
   seeAll: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#10B981',
+    color: '#256EFF',
   },
   list: {
     paddingLeft: 16,
@@ -161,21 +152,17 @@ const styles = StyleSheet.create({
   createCouponButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    backgroundColor: 'rgba(37, 110, 255, 0.16)',
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 12,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#10B981',
+    borderColor: '#256EFF',
   },
   createCouponButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#10B981',
+    color: '#256EFF',
   },
 });
-
-
-
-

@@ -7,8 +7,9 @@ import { PageHeader } from './components/PageHeader';
 import { CategoriesBar } from './components/CategoriesBar';
 import { ProductsList } from './components/ProductsList';
 import { PurchaseModal } from './components/PurchaseModal';
+import { EmptyState } from './components/EmptyState';
 
-export function MarketPage({ onBack, onMenuToggle, userCredits }: MarketPageProps) {
+export function MarketPage({ onBack, userCredits }: MarketPageProps) {
   const {
     selectedCategory,
     showPurchaseModal,
@@ -17,17 +18,20 @@ export function MarketPage({ onBack, onMenuToggle, userCredits }: MarketPageProp
     filteredProducts,
     categoryName,
     loading,
+    purchaseLoading,
+    errorMessage,
     setSelectedCategory,
     handleProductPress,
     handleCloseModal,
     handleConfirmPurchase,
+    retryLoadMarketData,
   } = useMarket();
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#432870" />
+      <StatusBar barStyle="light-content" backgroundColor="#0D1117" />
       
-      <PageHeader onBack={onBack} onMenuToggle={onMenuToggle} />
+      <PageHeader onBack={onBack} />
       
       <CategoriesBar
         categories={categories}
@@ -37,8 +41,17 @@ export function MarketPage({ onBack, onMenuToggle, userCredits }: MarketPageProp
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#432870" />
+          <ActivityIndicator size="large" color="#256EFF" />
           <Text style={styles.loadingText}>Market yükleniyor...</Text>
+        </View>
+      ) : errorMessage ? (
+        <View style={styles.errorContainer}>
+          <EmptyState
+            iconName="warning-outline"
+            message={errorMessage}
+            actionLabel="Tekrar Dene"
+            onAction={retryLoadMarketData}
+          />
         </View>
       ) : (
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -56,8 +69,9 @@ export function MarketPage({ onBack, onMenuToggle, userCredits }: MarketPageProp
         visible={showPurchaseModal}
         product={selectedProduct}
         userCredits={userCredits}
+        purchaseLoading={purchaseLoading}
         onClose={handleCloseModal}
-        onConfirm={() => handleConfirmPurchase(userCredits)}
+        onConfirm={shippingAddress => handleConfirmPurchase(userCredits, shippingAddress)}
       />
     </View>
   );
@@ -66,7 +80,7 @@ export function MarketPage({ onBack, onMenuToggle, userCredits }: MarketPageProp
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#0D1117',
   },
   content: {
     flex: 1,
@@ -77,13 +91,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 40,
   },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
     fontWeight: '600',
-    color: '#432870',
+    color: '#9CA3AF',
   },
 });
 
 export default MarketPage;
-

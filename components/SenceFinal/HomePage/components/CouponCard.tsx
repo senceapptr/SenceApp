@@ -22,80 +22,70 @@ export function CouponCard({ coupon, isDarkMode, theme, onPress }: CouponCardPro
     return null;
   }
 
-  // Yeşil tema – aktif kupon kartları (eskisi gibi)
-  const greenGradients = [
-    ['#0D2818', '#134E2E'], // Koyu yeşil
-    ['#14532D', '#166534'], // Orta yeşil
-    ['#1A2E1A', '#243524'], // Yeşilimsi koyu
-  ];
-
-  const gradientColors = greenGradients[(coupon.id || 0) % greenGradients.length];
-  const safeGradientColors = Array.isArray(gradientColors) ? gradientColors : ['#0D2818', '#134E2E'];
-
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-      <LinearGradient
-        colors={safeGradientColors}
-        style={[styles.card, {
-          borderWidth: 1,
-          borderColor: '#10B981',
-          shadowColor: '#000'
-        }]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-      <Text style={[styles.name, { color: '#F0F6FC' }]}>
-        {coupon.name || 'Ticket'}
-      </Text>
-      
-      <View style={styles.stats}>
-        <View style={styles.statRow}>
-          <Text style={[styles.statLabel, { color: '#8B949E' }]}>
-            Soru Sayısı
-          </Text>
-          <Text style={[styles.statValue, { color: '#F0F6FC' }]}>
-            {coupon.questionCount || 0} adet
-          </Text>
-        </View>
-        <View style={styles.statRow}>
-          <Text style={[styles.statLabel, { color: '#8B949E' }]}>
-            Toplam Oran
-          </Text>
-          <Text style={[styles.statValue, { color: '#F0F6FC' }]}>
-            {coupon.totalOdds || 0}x
-          </Text>
-        </View>
-        <View style={styles.statRow}>
-          <Text style={[styles.statLabel, { color: '#8B949E' }]}>
-            Potansiyel Kazanç
-          </Text>
-          <View style={styles.coinContainer}>
-            <Text style={[styles.statValue, { color: '#10B981' }]}>
-              {coupon.potentialWinnings || 0}
-            </Text>
-            <Ionicons name="diamond" size={16} color="#10B981" />
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={styles.outerCard}
+    >
+      <View style={styles.cardFrame}>
+        <LinearGradient
+          colors={['rgba(37,110,255,0.30)', 'rgba(37,110,255,0.10)']}
+          style={styles.innerCard}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <Text style={[styles.name, { color: '#F0F6FC' }]}>{coupon.name || 'Ticket'}</Text>
+
+          <View style={styles.stats}>
+            <View style={styles.statRow}>
+              <Text style={[styles.statLabel, { color: '#8B949E' }]}>Soru Sayısı</Text>
+              <Text style={[styles.statValue, { color: '#F0F6FC' }]}>{coupon.questionCount || 0} adet</Text>
+            </View>
+            <View style={styles.statRow}>
+              <Text style={[styles.statLabel, { color: '#8B949E' }]}>Toplam Oran</Text>
+              <Text style={[styles.statValue, { color: '#F0F6FC' }]}>{coupon.totalOdds || 0}x</Text>
+            </View>
+            <View style={styles.statRow}>
+              <Text style={[styles.statLabel, { color: '#8B949E' }]}>Potansiyel Kazanç</Text>
+              <View style={styles.coinContainer}>
+                <Text style={[styles.statValue, { color: '#fefefeff' }]}>{coupon.potentialWinnings || 0}</Text>
+                <Ionicons name="diamond" size={16} color="#ffffffff" />
+              </View>
+            </View>
+            <View style={styles.statRow}>
+              <Text style={[styles.statLabel, { color: '#8B949E' }]}>Bitiş</Text>
+              <Text style={[styles.statValue, { color: '#F0F6FC' }]}>{coupon.endsIn || 'Bilinmiyor'}</Text>
+            </View>
           </View>
-        </View>
-        <View style={styles.statRow}>
-          <Text style={[styles.statLabel, { color: '#8B949E' }]}>
-            Bitiş
-          </Text>
-          <Text style={[styles.statValue, { color: '#F0F6FC' }]}>
-            {coupon.endsIn || 'Bilinmiyor'}
-          </Text>
-        </View>
+        </LinearGradient>
       </View>
-      </LinearGradient>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  outerCard: {
     width: 280,
     marginRight: 8,
+    borderRadius: 24,
+    borderWidth: 2.5,
+    borderColor: '#256EFF',
+    overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  cardFrame: {
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  innerCard: {
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 22,
+    backgroundColor: 'rgba(18, 37, 77, 0)',
   },
   name: {
     color: '#ffffff',
@@ -125,7 +115,3 @@ const styles = StyleSheet.create({
     gap: 4,
   },
 });
-
-
-
-

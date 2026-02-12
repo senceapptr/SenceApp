@@ -2,9 +2,9 @@ import { supabase } from '@/lib/supabase';
 
 export interface LeagueChatMessage {
   id: string;
-  league_id: string;
   user_id: string;
   message: string;
+  league_id: string;
   created_at: string;
   updated_at: string;
   profiles?: {
@@ -14,9 +14,9 @@ export interface LeagueChatMessage {
 }
 
 export interface CreateLeagueChatMessageData {
-  league_id: string;
   user_id: string;
   message: string;
+  league_id: string;
 }
 
 /**
@@ -30,23 +30,25 @@ export const leagueChatService = {
   async getLeagueChatMessages(leagueId: string) {
     try {
       console.log('Getting chat messages for league:', leagueId);
-      
+
       const { data, error } = await supabase
         .from('league_chat_messages' as any)
-        .select(`
+        .select(
+          `
           *,
           profiles (
             username,
             profile_image
           )
-        `)
+        `,
+        )
         .eq('league_id', leagueId)
         .order('created_at', { ascending: true });
 
       console.log('Get messages response:', { data, error });
 
       if (error) throw error;
-      return { data, error: null };
+      return { data: (data as unknown as LeagueChatMessage[]) || [], error: null };
     } catch (error) {
       console.error('Get league chat messages error:', error);
       return { data: null, error: error as Error };
@@ -59,23 +61,25 @@ export const leagueChatService = {
   async sendChatMessage(messageData: CreateLeagueChatMessageData) {
     try {
       console.log('Sending to database:', messageData);
-      
+
       const { data, error } = await supabase
         .from('league_chat_messages' as any)
         .insert([messageData])
-        .select(`
+        .select(
+          `
           *,
           profiles (
             username,
             profile_image
           )
-        `)
+        `,
+        )
         .single();
 
       console.log('Database response:', { data, error });
 
       if (error) throw error;
-      return { data, error: null };
+      return { data: data as unknown as LeagueChatMessage, error: null };
     } catch (error) {
       console.error('Send chat message error:', error);
       return { data: null, error: error as Error };
@@ -89,22 +93,24 @@ export const leagueChatService = {
     try {
       const { data, error } = await supabase
         .from('league_chat_messages')
-        .update({ 
+        .update({
           message,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', messageId)
-        .select(`
+        .select(
+          `
           *,
           profiles (
             username,
             profile_image
           )
-        `)
+        `,
+        )
         .single();
 
       if (error) throw error;
-      return { data, error: null };
+      return { data: data as unknown as LeagueChatMessage, error: null };
     } catch (error) {
       console.error('Update chat message error:', error);
       return { data: null, error: error as Error };
@@ -116,10 +122,7 @@ export const leagueChatService = {
    */
   async deleteChatMessage(messageId: string) {
     try {
-      const { error } = await supabase
-        .from('league_chat_messages')
-        .delete()
-        .eq('id', messageId);
+      const { error } = await supabase.from('league_chat_messages').delete().eq('id', messageId);
 
       if (error) throw error;
       return { data: true, error: null };
@@ -134,43 +137,45 @@ export const leagueChatService = {
    */
   subscribeToLeagueChat(leagueId: string, callback: (message: LeagueChatMessage) => void) {
     console.log('Starting subscription for league:', leagueId);
-    
+
     const subscription = supabase
       .channel(`league-chat-${leagueId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
+          filter: `league_id=eq.${leagueId}`,
           schema: 'public',
           table: 'league_chat_messages',
-          filter: `league_id=eq.${leagueId}`,
         },
-        async (payload) => {
+        async payload => {
           console.log('Real-time payload received:', payload);
-          
+
           // Mesajı tam detaylarıyla getir
           const { data, error } = await supabase
             .from('league_chat_messages' as any)
-            .select(`
+            .select(
+              `
               *,
               profiles (
                 username,
                 profile_image
               )
-            `)
+            `,
+            )
             .eq('id', payload.new.id)
             .single();
 
           console.log('Real-time message data:', { data, error });
 
           if (!error && data) {
-            callback(data);
+            callback(data as unknown as LeagueChatMessage);
           } else {
             console.warn('Failed to fetch real-time message details:', error);
           }
-        }
+        },
       )
-      .subscribe((status) => {
+      .subscribe(status => {
         console.log('Subscription status:', status);
       });
 
@@ -184,5 +189,5 @@ export const leagueChatService = {
     if (subscription) {
       supabase.removeChannel(subscription);
     }
-  }
+  },
 };

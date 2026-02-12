@@ -17,7 +17,7 @@ import { CouponsPageSkeleton } from './components/CouponsPageSkeleton';
 
 interface CouponsPageProps {
   onMenuToggle: () => void;
-  onQuestionDetail?: (questionId: number) => void;
+  onQuestionDetail?: (questionId: string) => void;
   refreshTrigger?: number;
   onCreateCouponPress?: () => void;
 }
@@ -56,7 +56,7 @@ function CouponsEmptyState({ onCreatePress }: { onCreatePress?: () => void }) {
           duration: 2000,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
 
     Animated.loop(
@@ -71,7 +71,7 @@ function CouponsEmptyState({ onCreatePress }: { onCreatePress?: () => void }) {
           duration: 1500,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
   }, []);
 
@@ -86,12 +86,7 @@ function CouponsEmptyState({ onCreatePress }: { onCreatePress?: () => void }) {
       ]}
     >
       <View style={styles.emptyStateCard}>
-        <Animated.View
-          style={[
-            styles.emptyIconWrapper,
-            { transform: [{ translateY: floatAnim }] },
-          ]}
-        >
+        <Animated.View style={[styles.emptyIconWrapper, { transform: [{ translateY: floatAnim }] }]}>
           <View style={styles.emptyIconCircle}>
             <Ionicons name="ticket" size={64} color="#10B981" />
           </View>
@@ -107,11 +102,7 @@ function CouponsEmptyState({ onCreatePress }: { onCreatePress?: () => void }) {
         </Text>
 
         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-          <TouchableOpacity
-            style={styles.emptyActionButton}
-            onPress={onCreatePress}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={styles.emptyActionButton} onPress={onCreatePress} activeOpacity={0.8}>
             <Ionicons name="add-circle" size={24} color="#FFFFFF" />
             <Text style={styles.emptyActionButtonText}>İlk Ticketını Oluştur</Text>
           </TouchableOpacity>
@@ -125,6 +116,7 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
   const { user } = useAuth();
   // Tek seçim için state - varsayılan 'all'
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('all');
+  const [previousCategory, setPreviousCategory] = useState<CategoryType>('all');
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [showCouponDetail, setShowCouponDetail] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -190,6 +182,15 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
     return coupon.status === selectedCategory;
   });
 
+  const handleCategoryChange = useCallback((category: CategoryType) => {
+    setSelectedCategory(prev => {
+      if (prev !== category) {
+        setPreviousCategory(prev);
+      }
+      return category;
+    });
+  }, []);
+
   const handleCouponClick = (coupon: Coupon) => {
     setSelectedCoupon(coupon);
     setShowCouponDetail(true);
@@ -213,11 +214,13 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
       const data = result.data as { success?: boolean; message?: string; error?: string; amount?: number } | null;
 
       if (data?.success) {
-        Alert.alert('Tebrikler! 🎉', data.message || `${data.amount?.toLocaleString() || coupon.potentialEarnings.toLocaleString()} kredi hesabınıza eklendi!`);
+        Alert.alert(
+          'Tebrikler! 🎉',
+          data.message ||
+            `${data.amount?.toLocaleString() || coupon.potentialEarnings.toLocaleString()} kredi hesabınıza eklendi!`,
+        );
         // Kupon listesini güncelle
-        setCoupons(prev => prev.map(c =>
-          c.rawId === coupon.rawId ? { ...c, claimedReward: true } : c
-        ));
+        setCoupons(prev => prev.map(c => (c.rawId === coupon.rawId ? { ...c, claimedReward: true } : c)));
       } else {
         Alert.alert('Hata', data?.error || 'Ödül alınamadı');
       }
@@ -241,24 +244,27 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
   };
 
   // ListHeaderComponent için memoize
-  const ListHeader = useCallback(() => (
-    <View style={styles.listHeader}>
-      <StatisticsCards
-        totalCoupons={stats.totalCoupons}
-        totalEarnings={stats.totalEarnings}
-        totalLost={stats.totalLost}
-      />
-      <CategoryTabs
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        totalCoupons={stats.totalCoupons}
-        pendingCoupons={stats.pendingCoupons}
-        wonCoupons={stats.wonCoupons}
-        lostCoupons={stats.lostCoupons}
-        cancelledCoupons={stats.cancelledCoupons}
-      />
-    </View>
-  ), [stats, selectedCategory]);
+  const ListHeader = useCallback(
+    () => (
+      <View style={styles.listHeader}>
+        <StatisticsCards
+          totalCoupons={stats.totalCoupons}
+          totalEarnings={stats.totalEarnings}
+          totalLost={stats.totalLost}
+        />
+        <CategoryTabs
+          selectedCategory={selectedCategory}
+          previousCategory={previousCategory}
+          onCategoryChange={handleCategoryChange}
+          totalCoupons={stats.totalCoupons}
+          pendingCoupons={stats.pendingCoupons}
+          wonCoupons={stats.wonCoupons}
+          lostCoupons={stats.lostCoupons}
+        />
+      </View>
+    ),
+    [stats, selectedCategory, previousCategory, handleCategoryChange],
+  );
 
   // Giriş yapılmamış
   if (!user) {
@@ -275,11 +281,7 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
   }
 
   const renderCouponItem = ({ item }: { item: Coupon }) => (
-    <CouponCard
-      coupon={item}
-      onPress={handleCouponClick}
-      onClaim={handleCouponClaim}
-    />
+    <CouponCard coupon={item} onPress={handleCouponClick} onClaim={handleCouponClaim} />
   );
 
   return (
@@ -295,7 +297,7 @@ export function CouponsPage({ onMenuToggle, onQuestionDetail, refreshTrigger, on
           <FlatList
             data={filteredCoupons}
             renderItem={renderCouponItem}
-            keyExtractor={(item) => item.rawId || item.id.toString()}
+            keyExtractor={item => item.rawId || item.id.toString()}
             ListHeaderComponent={ListHeader}
             ListEmptyComponent={<CouponsEmptyState onCreatePress={onCreateCouponPress} />}
             contentContainerStyle={styles.flatListContent}

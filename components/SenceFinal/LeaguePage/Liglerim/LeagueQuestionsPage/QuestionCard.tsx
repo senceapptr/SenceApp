@@ -5,7 +5,7 @@ import { VoteButtons } from './VoteButtons';
 
 interface QuestionCardProps {
   question: Question;
-  onVote: (questionId: number, vote: 'yes' | 'no', odds: number) => void;
+  onVote: (questionId: string, vote: 'yes' | 'no', odds: number) => void;
 }
 
 export function QuestionCard({ question, onVote }: QuestionCardProps) {
@@ -123,18 +123,18 @@ const styles = StyleSheet.create({
   categoryBadge: {
     paddingHorizontal: 12,
     paddingVertical: 4,
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    backgroundColor: 'rgba(37, 110, 255, 0.2)',
     borderRadius: 12,
   },
   categoryText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#10B981',
+    color: '#256EFF',
   },
   trendingBadge: {
     paddingHorizontal: 12,
     paddingVertical: 4,
-    backgroundColor: '#10B981',
+    backgroundColor: '#256EFF',
     borderRadius: 12,
   },
   trendingText: {
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   progressLabelYes: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#10B981',
+    color: '#256EFF',
   },
   progressLabelNo: {
     fontSize: 12,
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   },
   progressYes: {
     height: '100%',
-    backgroundColor: '#10B981',
+    backgroundColor: '#256EFF',
   },
   progressNo: {
     height: '100%',
@@ -209,8 +209,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resultButtonYes: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderColor: '#10B981',
+    backgroundColor: 'rgba(37, 110, 255, 0.1)',
+    borderColor: '#256EFF',
   },
   resultButtonNo: {
     backgroundColor: 'rgba(220, 38, 38, 0.1)',
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   resultTextYes: {
-    color: '#10B981',
+    color: '#256EFF',
   },
   resultTextNo: {
     color: '#DC2626',
@@ -233,4 +233,3 @@ const styles = StyleSheet.create({
     color: '#8B949E',
   },
 });
-

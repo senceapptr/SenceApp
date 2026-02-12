@@ -16,7 +16,7 @@ export function AvailabilityBadge({ available, variant = 'small' }: Availability
         available ? styles.availableText : styles.unavailableText,
         isLarge && styles.largeText
       ]}>
-        {available ? '✓ Alabilir' : '✗ Yetersiz'}
+        {available ? 'Satın Al' : 'Kredi Yetersiz'}
       </Text>
     </View>
   );
@@ -24,33 +24,36 @@ export function AvailabilityBadge({ available, variant = 'small' }: Availability
 
 const styles = StyleSheet.create({
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
     alignItems: 'center',
   },
   largeBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
   availableBadge: {
-    backgroundColor: '#D1FAE5',
+    backgroundColor: 'rgba(16, 185, 129, 0.14)',
+    borderColor: 'rgba(16, 185, 129, 0.28)',
+    borderWidth: 1,
   },
   unavailableBadge: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderColor: 'rgba(239, 68, 68, 0.26)',
+    borderWidth: 1,
   },
   text: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
   largeText: {
-    fontSize: 14,
+    fontSize: 15,
   },
   availableText: {
-    color: '#065F46',
+    color: '#10B981',
   },
   unavailableText: {
-    color: '#991B1B',
+    color: '#EF4444',
   },
 });
-

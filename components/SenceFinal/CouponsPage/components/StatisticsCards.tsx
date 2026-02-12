@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   cardPurple: {
     backgroundColor: '#21262D',
     borderWidth: 1,
-    borderColor: '#30363D',
+    borderColor: '#256EFF',
   },
   cardGreen: {
     backgroundColor: '#21262D',
@@ -75,6 +75,3 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
 });
-
-
-

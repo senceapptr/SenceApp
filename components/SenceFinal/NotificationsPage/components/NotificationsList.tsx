@@ -1,91 +1,99 @@
 // =====================================================
-// NOTIFICATIONS LIST - Grouped by Date
+// NOTIFICATIONS LIST
 // =====================================================
 
-import React from 'react';
-import { View, Text, SectionList, StyleSheet, RefreshControl } from 'react-native';
-import { NotificationsListProps, Notification } from '../types';
+import React, { useMemo, useRef } from 'react';
+import { Swipeable } from 'react-native-gesture-handler';
+import { RefreshControl, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
 import { NotificationCard } from './NotificationCard';
-import { EmptyState } from './EmptyState';
 import { groupNotificationsByDateSection } from '../utils';
+import { Notification, NotificationsListProps } from '../types';
 
 interface Section {
   title: string;
   data: Notification[];
 }
 
-interface ExtendedProps extends NotificationsListProps {
-  refreshing?: boolean;
-  onRefresh?: () => void;
-}
-
-export const NotificationsList: React.FC<ExtendedProps> = ({
+export const NotificationsList: React.FC<NotificationsListProps> = ({
   notifications,
-  onMarkAsRead,
   onDelete,
-  variant = 'page',
-  refreshing = false,
+  onPress,
   onRefresh,
+  refreshing = false,
 }) => {
-  if (notifications.length === 0) {
-    return <EmptyState variant={variant} />;
-  }
+  const swipeableRefs = useRef<Record<string, Swipeable | null>>({});
 
-  // Group notifications
-  const grouped = groupNotificationsByDateSection(notifications);
+  const sections = useMemo<Section[]>(() => {
+    const grouped = groupNotificationsByDateSection(notifications);
+    const nextSections: Section[] = [];
 
-  // Build sections
-  const sections: Section[] = [];
+    if (grouped.today.length > 0) {
+      nextSections.push({ data: grouped.today, title: 'Bugün' });
+    }
+    if (grouped.yesterday.length > 0) {
+      nextSections.push({ data: grouped.yesterday, title: 'Dün' });
+    }
+    if (grouped.thisWeek.length > 0) {
+      nextSections.push({ data: grouped.thisWeek, title: 'Bu Hafta' });
+    }
+    if (grouped.older.length > 0) {
+      nextSections.push({ data: grouped.older, title: 'Daha Eski' });
+    }
 
-  if (grouped.today.length > 0) {
-    sections.push({ title: 'Bugün', data: grouped.today });
-  }
-  if (grouped.yesterday.length > 0) {
-    sections.push({ title: 'Dün', data: grouped.yesterday });
-  }
-  if (grouped.thisWeek.length > 0) {
-    sections.push({ title: 'Bu Hafta', data: grouped.thisWeek });
-  }
-  if (grouped.older.length > 0) {
-    sections.push({ title: 'Daha Eski', data: grouped.older });
-  }
+    return nextSections;
+  }, [notifications]);
 
-  const renderSectionHeader = ({ section }: { section: Section }) => (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{section.title}</Text>
-    </View>
+  const renderRightActions = (notification: Notification) => (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={() => {
+        swipeableRefs.current[notification.id]?.close();
+        onDelete(notification);
+      }}
+      style={styles.deleteAction}
+    >
+      <Text style={styles.deleteText}>Sil</Text>
+    </TouchableOpacity>
   );
 
   const renderItem = ({ item }: { item: Notification }) => (
-    <NotificationCard
-      notification={item}
-      onPress={onMarkAsRead}
-      onDelete={onDelete}
-      onMarkAsRead={onMarkAsRead}
-    />
+    <View style={styles.itemWrap}>
+      <Swipeable
+        friction={2}
+        overshootRight={false}
+        ref={ref => {
+          swipeableRefs.current[item.id] = ref;
+        }}
+        renderRightActions={() => renderRightActions(item)}
+        rightThreshold={44}
+      >
+        <NotificationCard notification={item} onPress={onPress} />
+      </Swipeable>
+    </View>
   );
 
   return (
     <SectionList
-      sections={sections}
-      keyExtractor={(item) => item.id}
-      renderItem={renderItem}
-      renderSectionHeader={renderSectionHeader}
-      style={styles.container}
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
+      ListFooterComponent={<View style={styles.footer} />}
       contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-      stickySectionHeadersEnabled={false}
+      keyExtractor={item => item.id}
       refreshControl={
         onRefresh ? (
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#432870"
-            colors={['#432870']}
-          />
+          <RefreshControl colors={['#3D83FF']} onRefresh={onRefresh} refreshing={refreshing} tintColor="#3D83FF" />
         ) : undefined
       }
-      ListFooterComponent={<View style={styles.footer} />}
+      renderItem={renderItem}
+      renderSectionHeader={({ section }) => (
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{section.title}</Text>
+        </View>
+      )}
+      sections={sections}
+      showsVerticalScrollIndicator={false}
+      stickySectionHeadersEnabled={false}
+      style={styles.container}
     />
   );
 };
@@ -97,19 +105,40 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingTop: 8,
   },
-  sectionHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
+  deleteAction: {
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    backgroundColor: '#DC2626',
+    borderRadius: 20,
+    justifyContent: 'center',
+    marginLeft: 8,
+    minWidth: 84,
+    paddingHorizontal: 18,
   },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  deleteText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
   footer: {
-    height: 24,
+    height: 88,
+  },
+  itemWrap: {
+    paddingHorizontal: 20,
+  },
+  sectionHeader: {
+    paddingBottom: 8,
+    paddingHorizontal: 24,
+    paddingTop: 20,
+  },
+  sectionTitle: {
+    color: '#8B949E',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+    textTransform: 'uppercase',
+  },
+  separator: {
+    height: 10,
   },
 });

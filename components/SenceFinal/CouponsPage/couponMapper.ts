@@ -101,8 +101,10 @@ export function mapBackendCouponToFrontend(coupon: BackendCoupon): Coupon {
 
     const selections = Array.isArray(rawSelections) ? rawSelections : [];
 
-    const predictions: CouponPrediction[] = selections.map((selection) => {
+    const predictions: CouponPrediction[] = selections.map((selection, index) => {
         const questionRow = selection.questions;
+        const predictionId = String(selection.id || '').trim();
+        const questionId = String(selection.question_id || questionRow?.id || '').trim();
 
         const categoryName =
             questionRow?.categories?.name ??
@@ -115,8 +117,8 @@ export function mapBackendCouponToFrontend(coupon: BackendCoupon): Coupon {
         const result = computePredictionResult(selection.status, endDate);
 
         return {
-            id: parseInt(selection.id) || 0,
-            questionId: parseInt(selection.question_id) || 0,
+            id: predictionId || `selection-${index}`,
+            questionId,
             question: questionRow?.title ?? 'Soru bulunamadı',
             choice: selection.vote ?? 'yes',
             odds: Number(selection.odds) || 1,

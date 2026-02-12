@@ -1,10 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { PageHeaderProps } from '../types';
 
-export function PageHeader({ title, subtitle, onBack, onMenuToggle }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, onBack }: PageHeaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.leftSection}>
@@ -21,14 +20,6 @@ export function PageHeader({ title, subtitle, onBack, onMenuToggle }: PageHeader
           {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
         </View>
       </View>
-
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={onMenuToggle}
-        style={styles.menuButton}
-      >
-        <Ionicons name="ellipsis-horizontal" size={20} color="#8B949E" />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -37,7 +28,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -49,7 +40,7 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 20,
     backgroundColor: '#21262D',
     alignItems: 'center',
     justifyContent: 'center',
@@ -68,13 +59,5 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#8B949E',
     marginTop: 2,
-  },
-  menuButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#21262D',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

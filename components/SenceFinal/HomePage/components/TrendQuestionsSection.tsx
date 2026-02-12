@@ -1,14 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { TrendQuestion } from '../types';
 import CategoryQuestionCard from '../../CategoryQuestionCard';
@@ -24,8 +15,7 @@ const SORT_OPTIONS: { key: TrendSortBy; label: string }[] = [
   { key: 'ending', label: 'Yakında Bitecek' },
 ];
 
-const getSortLabel = (sortBy: TrendSortBy) =>
-  SORT_OPTIONS.find((o) => o.key === sortBy)?.label ?? 'Sırala';
+const getSortLabel = (sortBy: TrendSortBy) => SORT_OPTIONS.find(o => o.key === sortBy)?.label ?? 'Sırala';
 
 interface TrendQuestionsSectionProps {
   questions: TrendQuestion[];
@@ -61,25 +51,23 @@ export function TrendQuestionsSection({
     categoriesService.getActiveCategories().then(({ data }) => {
       if (mounted && data) setCategories(data);
     });
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const selectedCategoryName = selectedCategoryId
-    ? categories.find((c) => c.id === selectedCategoryId)?.name ?? null
+    ? (categories.find(c => c.id === selectedCategoryId)?.name ?? null)
     : null;
 
-  const sectionTitle = selectedCategoryName
-    ? `${selectedCategoryName} Soruları`
-    : 'Tüm Sorular';
+  const sectionTitle = selectedCategoryName ? `${selectedCategoryName} Soruları` : 'Tüm Sorular';
 
   const filteredAndSortedQuestions = useMemo(() => {
-    let list = selectedCategoryId
-      ? questions.filter((q) => q.categoryId === selectedCategoryId)
-      : [...questions];
+    let list = selectedCategoryId ? questions.filter(q => q.categoryId === selectedCategoryId) : [...questions];
 
     const query = searchQuery.trim().toLowerCase();
     if (query) {
-      list = list.filter((q) => q.title.toLowerCase().includes(query));
+      list = list.filter(q => q.title.toLowerCase().includes(query));
     }
 
     return [...list].sort((a, b) => {
@@ -133,27 +121,17 @@ export function TrendQuestionsSection({
           style={[styles.categoryChip, selectedCategoryId === null && styles.categoryChipActive]}
           onPress={() => setSelectedCategoryId(null)}
         >
-          <Text
-            style={[
-              styles.categoryChipText,
-              selectedCategoryId === null && styles.categoryChipTextActive,
-            ]}
-          >
+          <Text style={[styles.categoryChipText, selectedCategoryId === null && styles.categoryChipTextActive]}>
             Tümü
           </Text>
         </TouchableOpacity>
-        {categories.map((cat) => (
+        {categories.map(cat => (
           <TouchableOpacity
             key={cat.id}
             style={[styles.categoryChip, selectedCategoryId === cat.id && styles.categoryChipActive]}
             onPress={() => setSelectedCategoryId(cat.id)}
           >
-            <Text
-              style={[
-                styles.categoryChipText,
-                selectedCategoryId === cat.id && styles.categoryChipTextActive,
-              ]}
-            >
+            <Text style={[styles.categoryChipText, selectedCategoryId === cat.id && styles.categoryChipTextActive]}>
               {cat.name}
             </Text>
           </TouchableOpacity>
@@ -173,32 +151,42 @@ export function TrendQuestionsSection({
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={filteredAndSortedQuestions}
-        renderItem={({ item }) => (
-          <CategoryQuestionCard
-            question={item}
-            onDetail={onQuestionPress}
-            onVote={onVote}
-            theme={theme}
-            dynamicStyles={{
-              yesLabel: { color: theme.success || '#34C759' },
-              noLabel: { color: theme.error || '#FF3B30' },
-              yesBar: { backgroundColor: theme.success || '#34C759' },
-              noBar: { backgroundColor: theme.error || '#FF3B30' },
-              yesButton: { borderColor: theme.success || '#34C759' },
-              noButton: { borderColor: theme.error || '#FF3B30' },
-            }}
-          />
-        )}
-        keyExtractor={(item) => item.id.toString()}
-        scrollEnabled={false}
-        contentContainerStyle={styles.list}
-        removeClippedSubviews={false}
-        maxToRenderPerBatch={1}
-        windowSize={2}
-        initialNumToRender={1}
-      />
+      {filteredAndSortedQuestions.length === 0 ? (
+        <View style={styles.emptyStateContainer}>
+          <View style={styles.emptyStateIconWrap}>
+            <Ionicons name="sparkles-outline" size={28} color="#256EFF" />
+          </View>
+          <Text style={styles.emptyStateTitle}>Bu kategoride henüz soru yok</Text>
+          <Text style={styles.emptyStateSubtitle}>Farklı bir kategori seçebilir veya aramayı temizleyebilirsin.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredAndSortedQuestions}
+          renderItem={({ item }) => (
+            <CategoryQuestionCard
+              question={item}
+              onDetail={onQuestionPress}
+              onVote={onVote}
+              theme={theme}
+              dynamicStyles={{
+                yesLabel: { color: theme.success || '#34C759' },
+                noLabel: { color: theme.error || '#FF3B30' },
+                yesBar: { backgroundColor: theme.success || '#34C759' },
+                noBar: { backgroundColor: theme.error || '#FF3B30' },
+                yesButton: { borderColor: theme.success || '#34C759' },
+                noButton: { borderColor: theme.error || '#FF3B30' },
+              }}
+            />
+          )}
+          keyExtractor={item => item.id.toString()}
+          scrollEnabled={false}
+          contentContainerStyle={styles.list}
+          removeClippedSubviews={false}
+          maxToRenderPerBatch={1}
+          windowSize={2}
+          initialNumToRender={1}
+        />
+      )}
     </View>
   );
 }
@@ -300,5 +288,37 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     gap: 8,
+  },
+  emptyStateContainer: {
+    marginHorizontal: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(37,110,255,0.35)',
+    backgroundColor: 'rgba(37,110,255,0.08)',
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  emptyStateIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(37,110,255,0.14)',
+    marginBottom: 14,
+  },
+  emptyStateTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#F5F5F7',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptyStateSubtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: 'rgba(235,235,245,0.72)',
+    textAlign: 'center',
   },
 });

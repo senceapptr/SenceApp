@@ -32,16 +32,16 @@ interface CouponDrawerProps {
   onCouponCreated?: () => void; // Yeni ticket oluşturulduğunda çağrılacak callback
 }
 
-export function CouponDrawer({ 
-  isOpen, 
-  onClose, 
-  selections, 
-  onRemoveSelection, 
+export function CouponDrawer({
+  isOpen,
+  onClose,
+  selections,
+  onRemoveSelection,
   onClearAll,
   onCouponSuccess,
   isFree = false,
   userCredits = 0,
-  onCouponCreated
+  onCouponCreated,
 }: CouponDrawerProps) {
   const { refreshProfile } = useAuth();
   const { theme, isDarkMode } = useTheme();
@@ -78,7 +78,7 @@ export function CouponDrawer({
             easing: Easing.inOut(Easing.sin),
             useNativeDriver: true,
           }),
-        ])
+        ]),
       ).start();
     }
   }, [isOpen, selections.length]);
@@ -90,24 +90,11 @@ export function CouponDrawer({
   };
 
   const runCloseAnimationThenClose = () => {
+    if (isClosing) return;
     setIsClosing(true);
-    contentScale.setValue(1);
-    Animated.parallel([
-      Animated.spring(slideAnim, {
-        toValue: SCREEN_HEIGHT,
-        useNativeDriver: false,
-        tension: 200,
-        friction: 3,
-        restDisplacementThreshold: 0.01,
-        restSpeedThreshold: 0.01,
-      }),
-      Animated.timing(backdropOpacity, {
-        toValue: 0,
-        duration: 100,
-        useNativeDriver: false,
-        easing: Easing.in(Easing.cubic),
-      }),
-    ]).start(() => onClose());
+    setShowLeagueWarning(null);
+    setShowBetModal(false);
+    onClose();
   };
 
   const panResponder = useRef(
@@ -120,24 +107,7 @@ export function CouponDrawer({
       onPanResponderRelease: (_, g) => {
         const { dy, vy } = g;
         if (dy > 100 || vy > 0.5) {
-          setIsClosing(true);
-          slideAnim.setValue(dy);
-          panY.setValue(0);
-          Animated.parallel([
-            Animated.spring(slideAnim, {
-              toValue: SCREEN_HEIGHT,
-              useNativeDriver: false,
-              tension: 60,
-              friction: 8,
-              velocity: vy * 50,
-            }),
-            Animated.timing(backdropOpacity, {
-              toValue: 0,
-              duration: 300,
-              useNativeDriver: false,
-              easing: Easing.in(Easing.cubic),
-            }),
-          ]).start(() => onClose());
+          runCloseAnimationThenClose();
         } else {
           panY.setValue(0);
           Animated.spring(slideAnim, {
@@ -148,7 +118,7 @@ export function CouponDrawer({
           }).start();
         }
       },
-    })
+    }),
   ).current;
 
   useLayoutEffect(() => {
@@ -181,13 +151,11 @@ export function CouponDrawer({
     }
   }, [isOpen, slideAnim, contentScale, backdropOpacity]);
 
-
-
   const handleSubmit = async () => {
     if (selections.length === 0) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Backend'e ticket gönder
       const couponData = {
@@ -195,13 +163,13 @@ export function CouponDrawer({
           question_id: selection.questionId.toString(),
           vote: selection.vote,
           odds: selection.odds,
-          is_boosted: selection.boosted || false
+          is_boosted: selection.boosted || false,
         })),
-        stake_amount: betAmount
+        stake_amount: betAmount,
       };
 
       const result = await couponsService.createCoupon(couponData);
-      
+
       if (result.error) {
         throw result.error;
       }
@@ -210,15 +178,15 @@ export function CouponDrawer({
       setIsSubmitting(false);
       onClearAll();
       onClose();
-      
+
       // Profil verilerini yenile (kredi güncellemesi için)
       await refreshProfile();
-      
+
       // Ticketlarım sayfasını yenile
       if (onCouponCreated) {
         onCouponCreated();
       }
-      
+
       // Trigger confetti animation
       if (onCouponSuccess) {
         setTimeout(() => {
@@ -230,19 +198,16 @@ export function CouponDrawer({
       Alert.alert(
         'Ticket Oluşturuldu! 🎉',
         `Ticketınız başarıyla oluşturuldu. Potansiyel kazancınız: ${Math.round(totalOdds * betAmount)} kredi`,
-        [{ text: 'Tamam', style: 'default' }]
+        [{ text: 'Tamam', style: 'default' }],
       );
-      
     } catch (error) {
       setIsSubmitting(false);
-      
+
       console.error('Coupon creation error:', error);
-      
-      Alert.alert(
-        'Hata',
-        'Ticket oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.',
-        [{ text: 'Tamam', style: 'default' }]
-      );
+
+      Alert.alert('Hata', 'Ticket oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.', [
+        { text: 'Tamam', style: 'default' },
+      ]);
     }
   };
 
@@ -260,29 +225,17 @@ export function CouponDrawer({
     >
       <View style={styles.container} collapsable={false}>
         {/* Backdrop */}
-        <Animated.View 
-          style={[
-            styles.backdrop,
-            { opacity: backdropOpacity }
-          ]}
-        >
-          <TouchableOpacity 
-            style={styles.backdropTouchable}
-            onPress={handleBackdropPress}
-            activeOpacity={1}
-          />
+        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+          <TouchableOpacity style={styles.backdropTouchable} onPress={handleBackdropPress} activeOpacity={1} />
         </Animated.View>
-        
+
         {/* Drawer - PanResponder ile (dokunma bloklanmaz) */}
         <Animated.View
           style={[
             styles.drawer,
             {
               backgroundColor: isDarkMode ? theme.surfaceModal : '#161B22',
-              transform: [
-                { translateY: Animated.add(slideAnim, panY) },
-                { scale: contentScale }
-              ],
+              transform: [{ translateY: Animated.add(slideAnim, panY) }, { scale: contentScale }],
             },
           ]}
         >
@@ -291,12 +244,7 @@ export function CouponDrawer({
             style={[styles.handleContainer, { backgroundColor: isDarkMode ? theme.surfaceCard : '#21262D' }]}
             {...panResponder.panHandlers}
           >
-            <View
-              style={[
-                styles.handle,
-                { backgroundColor: theme.accent },
-              ]} 
-            />
+            <View style={[styles.handle, { backgroundColor: theme.accent }]} />
           </View>
 
           {/* Header - Ana temaya uyumlu koyu */}
@@ -306,12 +254,14 @@ export function CouponDrawer({
                 <View style={styles.headerLeft}>
                   <Animated.View
                     style={{
-                      transform: [{
-                        rotate: headerIconRotate.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ['-3deg', '3deg'],
-                        })
-                      }]
+                      transform: [
+                        {
+                          rotate: headerIconRotate.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ['-3deg', '3deg'],
+                          }),
+                        },
+                      ],
                     }}
                   >
                     <View style={[styles.headerIcon, { backgroundColor: '#21262D' }]}>
@@ -327,15 +277,13 @@ export function CouponDrawer({
                       {selections.length > 0 && (
                         <>
                           <View style={[styles.headerDot, { backgroundColor: '#8B949E' }]} />
-                          <Text style={[styles.headerOdds, { color: '#8B949E' }]}>
-                            {totalOdds.toFixed(2)}x oran
-                          </Text>
+                          <Text style={[styles.headerOdds, { color: '#8B949E' }]}>{totalOdds.toFixed(2)}x oran</Text>
                         </>
                       )}
                     </View>
                   </View>
                 </View>
-                
+
                 <TouchableOpacity
                   onPress={runCloseAnimationThenClose}
                   onPressIn={() => {
@@ -356,173 +304,154 @@ export function CouponDrawer({
                   }}
                   activeOpacity={1}
                 >
-                  <Animated.View 
+                  <Animated.View
                     style={[
                       styles.closeButton,
-                      { transform: [{ scale: closeButtonScale }], backgroundColor: '#21262D', borderColor: '#30363D' }
+                      { transform: [{ scale: closeButtonScale }], backgroundColor: '#21262D', borderColor: '#30363D' },
                     ]}
                   >
                     <Ionicons name="close" size={24} color="#F0F6FC" />
                   </Animated.View>
                 </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        </View>
-      </View>
 
           {/* Kapanırken içerik kaldırılır – iOS dokunma blokajı önlenir */}
-          {!isClosing && (selections.length === 0 ? (
-            <View style={styles.emptyState}>
-              <View style={[styles.emptyIcon, { backgroundColor: '#21262D' }]}>
-                <Text style={styles.emptyIconText}>🎯</Text>
+          {!isClosing &&
+            (selections.length === 0 ? (
+              <View style={styles.emptyState}>
+                <View style={[styles.emptyIcon, { backgroundColor: '#21262D' }]}>
+                  <Text style={styles.emptyIconText}>🎯</Text>
+                </View>
+                <Text style={[styles.emptyTitle, { color: '#F0F6FC' }]}>Ticketın Boş</Text>
+                <Text style={[styles.emptySubtitle, { color: '#8B949E' }]}>
+                  Tahmin yapmak için sorulara evet veya hayır diyerek ticketını oluştur.
+                </Text>
               </View>
-              <Text style={[styles.emptyTitle, { color: '#F0F6FC' }]}>Ticketın Boş</Text>
-              <Text style={[styles.emptySubtitle, { color: '#8B949E' }]}>
-                Tahmin yapmak için sorulara evet veya hayır diyerek ticketını oluştur.
-              </Text>
-            </View>
-          ) : (
-            <>
-              {/* Selections List - Her zaman koyu tema renkleri */}
-              <ScrollView 
-                style={styles.selectionsList}
-                showsVerticalScrollIndicator={false}
-              >
-                {selections.map((selection) => (
-                  <View key={selection.id} style={styles.selectionCard}>
-                    <View style={[styles.selectionGradient, { backgroundColor: '#21262D', borderColor: '#30363D' }]}>
-                      <View style={styles.selectionContent}>
-                        <View style={styles.selectionMain}>
-                          <Text style={[styles.selectionTitle, { color: '#F0F6FC' }]} numberOfLines={2}>
-                            {selection.title}
-                          </Text>
-                          <View style={styles.selectionMeta}>
-                            <LinearGradient
-                              colors={
-                                selection.vote === 'yes' 
-                                  ? ['#10B981', '#059669']
-                                  : ['#DC2626', '#B91C1C']
-                              }
-                              style={styles.voteBadge}
-                            >
-                              <Text style={styles.voteBadgeText}>
-                                {selection.vote === 'yes' ? 'EVET' : 'HAYIR'}
-                              </Text>
-                            </LinearGradient>
-                            <Text style={[styles.oddsText, { color: '#F0F6FC' }]}>
-                              {selection.odds}x
+            ) : (
+              <>
+                {/* Selections List - Her zaman koyu tema renkleri */}
+                <ScrollView style={styles.selectionsList} showsVerticalScrollIndicator={false}>
+                  {selections.map(selection => (
+                    <View key={selection.id} style={styles.selectionCard}>
+                      <View style={[styles.selectionGradient, { backgroundColor: '#21262D', borderColor: '#30363D' }]}>
+                        <View style={styles.selectionContent}>
+                          <View style={styles.selectionMain}>
+                            <Text style={[styles.selectionTitle, { color: '#F0F6FC' }]} numberOfLines={2}>
+                              {selection.title}
                             </Text>
-                            {selection.boosted && (
+                            <View style={styles.selectionMeta}>
                               <LinearGradient
-                                colors={['#34D399', '#059669']}
-                                style={styles.boostBadge}
+                                colors={selection.vote === 'yes' ? ['#10B981', '#059669'] : ['#DC2626', '#B91C1C']}
+                                style={styles.voteBadge}
                               >
-                                <Text style={styles.boostBadgeText}>BOOST</Text>
+                                <Text style={styles.voteBadgeText}>{selection.vote === 'yes' ? 'EVET' : 'HAYIR'}</Text>
                               </LinearGradient>
-                            )}
-                            {affectsLeague(selection.questionId) && (
-                              <TouchableOpacity
-                                onPress={() => setShowLeagueWarning(selection.id)}
-                                style={styles.leagueBadge}
-                                activeOpacity={0.8}
-                              >
-                                <LinearGradient
-                                  colors={['#C9F158', '#A8D83F']}
-                                  style={styles.leagueBadgeGradient}
-                                >
-                                  <Text style={styles.leagueBadgeText}>Liga Etki ⚡</Text>
+                              <Text style={[styles.oddsText, { color: '#F0F6FC' }]}>{selection.odds}x</Text>
+                              {selection.boosted && (
+                                <LinearGradient colors={['#34D399', '#059669']} style={styles.boostBadge}>
+                                  <Text style={styles.boostBadgeText}>BOOST</Text>
                                 </LinearGradient>
-                              </TouchableOpacity>
-                            )}
+                              )}
+                              {affectsLeague(selection.questionId) && (
+                                <TouchableOpacity
+                                  onPress={() => setShowLeagueWarning(selection.id)}
+                                  style={styles.leagueBadge}
+                                  activeOpacity={0.8}
+                                >
+                                  <LinearGradient colors={['#C9F158', '#A8D83F']} style={styles.leagueBadgeGradient}>
+                                    <Text style={styles.leagueBadgeText}>Liga Etki ⚡</Text>
+                                  </LinearGradient>
+                                </TouchableOpacity>
+                              )}
+                            </View>
                           </View>
+
+                          <TouchableOpacity
+                            onPress={() => onRemoveSelection(selection.id)}
+                            style={styles.removeButton}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                          </TouchableOpacity>
                         </View>
-                        
+                      </View>
+                    </View>
+                  ))}
+                </ScrollView>
+
+                {/* Summary - Fixed at Bottom - Her zaman koyu tema renkleri */}
+                <View style={[styles.summaryContainer, { borderTopColor: '#30363D' }]}>
+                  <View style={styles.summaryGradient}>
+                    <View style={[styles.summaryCard, { backgroundColor: '#21262D', borderColor: '#30363D' }]}>
+                      <View style={styles.summaryRow}>
+                        <Text style={[styles.summaryLabel, { color: '#8B949E' }]}>Toplam Oran</Text>
+                        <Text style={[styles.summaryOdds, { color: '#F0F6FC' }]}>{totalOdds.toFixed(2)}x</Text>
+                      </View>
+                      <View style={styles.summaryRow}>
+                        <Text style={[styles.summaryLabel, { color: '#8B949E' }]}>Bahis Tutarı</Text>
                         <TouchableOpacity
-                          onPress={() => onRemoveSelection(selection.id)}
-                          style={styles.removeButton}
+                          onPress={() => {
+                            setShowBetModal(true);
+                            setBetInputValue(betAmount.toString());
+                          }}
+                          style={[styles.betButton, { backgroundColor: '#161B22', borderColor: '#10B981' }]}
                           activeOpacity={0.7}
                         >
-                          <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                          <Text style={[styles.betButtonText, { color: '#F0F6FC' }]}>{betAmount} kredi</Text>
+                          <Ionicons name="pencil" size={14} color="#10B981" />
                         </TouchableOpacity>
                       </View>
-                    </View>
-                  </View>
-                ))}
-              </ScrollView>
-
-              {/* Summary - Fixed at Bottom - Her zaman koyu tema renkleri */}
-              <View style={[styles.summaryContainer, { borderTopColor: '#30363D' }]}>
-                <View style={styles.summaryGradient}>
-                  <View style={[styles.summaryCard, { backgroundColor: '#21262D', borderColor: '#30363D' }]}>
-                    <View style={styles.summaryRow}>
-                      <Text style={[styles.summaryLabel, { color: '#8B949E' }]}>Toplam Oran</Text>
-                      <Text style={[styles.summaryOdds, { color: '#F0F6FC' }]}>
-                        {totalOdds.toFixed(2)}x
-                      </Text>
-                    </View>
-                    <View style={styles.summaryRow}>
-                      <Text style={[styles.summaryLabel, { color: '#8B949E' }]}>Bahis Tutarı</Text>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setShowBetModal(true);
-                          setBetInputValue(betAmount.toString());
-                        }}
-                        style={[styles.betButton, { backgroundColor: '#161B22', borderColor: '#10B981' }]}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.betButtonText, { color: '#F0F6FC' }]}>
-                          {betAmount} kredi
+                      <View style={[styles.summaryRow, styles.summaryRowTotal, { borderTopColor: '#30363D' }]}>
+                        <Text style={[styles.summaryLabelTotal, { color: '#8B949E' }]}>Potansiyel Kazanç</Text>
+                        <Text style={[styles.summaryTotal, { color: '#10B981' }]}>
+                          {Math.round(potentialWin)} kredi
                         </Text>
-                        <Ionicons name="pencil" size={14} color="#10B981" />
+                      </View>
+                    </View>
+
+                    {/* Action Buttons */}
+                    <View style={styles.actionButtons}>
+                      <TouchableOpacity onPress={onClearAll} style={styles.clearButton} activeOpacity={0.8}>
+                        <View
+                          style={[
+                            styles.clearButtonGradient,
+                            { backgroundColor: '#21262D', borderWidth: 1, borderColor: '#30363D', borderRadius: 14 },
+                          ]}
+                        >
+                          <Text style={[styles.clearButtonText, { color: '#F0F6FC' }]}>Temizle</Text>
+                        </View>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={handleSubmit}
+                        disabled={isSubmitting || selections.length === 0}
+                        style={[
+                          styles.submitButton,
+                          (isSubmitting || selections.length === 0) && styles.submitButtonDisabled,
+                          {
+                            backgroundColor: isSubmitting || selections.length === 0 ? '#21262D' : '#10B981',
+                          },
+                        ]}
+                        activeOpacity={0.8}
+                      >
+                        {isSubmitting ? (
+                          <View style={styles.loadingContainer}>
+                            <View style={styles.spinner} />
+                            <Text style={[styles.submitButtonTextDisabled, { color: '#8B949E' }]}>
+                              Oluşturuluyor...
+                            </Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.submitButtonText}>Ticket Oluştur</Text>
+                        )}
                       </TouchableOpacity>
                     </View>
-                    <View style={[styles.summaryRow, styles.summaryRowTotal, { borderTopColor: '#30363D' }]}>
-                      <Text style={[styles.summaryLabelTotal, { color: '#8B949E' }]}>Potansiyel Kazanç</Text>
-                      <Text style={[styles.summaryTotal, { color: '#10B981' }]}>
-                        {Math.round(potentialWin)} kredi
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Action Buttons */}
-                  <View style={styles.actionButtons}>
-                    <TouchableOpacity
-                      onPress={onClearAll}
-                      style={styles.clearButton}
-                      activeOpacity={0.8}
-                    >
-                      <View style={[styles.clearButtonGradient, { backgroundColor: '#21262D', borderWidth: 1, borderColor: '#30363D', borderRadius: 14 }]}>
-                        <Text style={[styles.clearButtonText, { color: '#F0F6FC' }]}>Temizle</Text>
-                      </View>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity
-                      onPress={handleSubmit}
-                      disabled={isSubmitting || selections.length === 0}
-                      style={[
-                        styles.submitButton, 
-                        (isSubmitting || selections.length === 0) && styles.submitButtonDisabled,
-                        { 
-                          backgroundColor: isSubmitting || selections.length === 0 
-                            ? '#21262D'
-                            : '#10B981' 
-                        }
-                      ]}
-                      activeOpacity={0.8}
-                    >
-                      {isSubmitting ? (
-                        <View style={styles.loadingContainer}>
-                          <View style={styles.spinner} />
-                          <Text style={[styles.submitButtonTextDisabled, { color: '#8B949E' }]}>Oluşturuluyor...</Text>
-                        </View>
-                      ) : (
-                        <Text style={styles.submitButtonText}>Ticket Oluştur</Text>
-                      )}
-                    </TouchableOpacity>
                   </View>
                 </View>
-              </View>
-            </>
-          ))}
+              </>
+            ))}
         </Animated.View>
 
         {/* League Warning – overlay (Modal yok, iOS dokunma sorunu önlenir) */}
@@ -543,7 +472,15 @@ export function CouponDrawer({
               </Text>
               <TouchableOpacity
                 onPress={() => setShowLeagueWarning(null)}
-                style={[styles.warningButton, { backgroundColor: theme.primaryDark || '#059669', paddingHorizontal: 24, paddingVertical: 12, alignItems: 'center' }]}
+                style={[
+                  styles.warningButton,
+                  {
+                    backgroundColor: theme.primaryDark || '#059669',
+                    paddingHorizontal: 24,
+                    paddingVertical: 12,
+                    alignItems: 'center',
+                  },
+                ]}
                 activeOpacity={0.8}
               >
                 <Text style={styles.warningButtonText}>Anladım</Text>
@@ -579,7 +516,9 @@ export function CouponDrawer({
                       {userCredits.toLocaleString()} kredi
                     </Text>
                   </View>
-                  <Text style={[styles.betInputLabel, { color: theme.textMuted }]}>Kaç kredi bahis yapmak istiyorsun?</Text>
+                  <Text style={[styles.betInputLabel, { color: theme.textMuted }]}>
+                    Kaç kredi bahis yapmak istiyorsun?
+                  </Text>
                   <TextInput
                     style={[styles.betModalInput, { color: theme.textPrimary, borderColor: theme.border }]}
                     value={betInputValue}
@@ -599,7 +538,10 @@ export function CouponDrawer({
                     }
                     setShowBetModal(false);
                   }}
-                  style={[styles.betConfirmButton, { backgroundColor: theme.primaryDark || '#059669', paddingVertical: 16, alignItems: 'center' }]}
+                  style={[
+                    styles.betConfirmButton,
+                    { backgroundColor: theme.primaryDark || '#059669', paddingVertical: 16, alignItems: 'center' },
+                  ]}
                   activeOpacity={0.8}
                 >
                   <Text style={styles.betConfirmButtonText}>Onayla</Text>
@@ -1064,7 +1006,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: 'white',
   },
-  
+
   // Bet Modal Styles
   betModalOverlay: {
     flex: 1,

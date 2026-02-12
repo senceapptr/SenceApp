@@ -1,57 +1,55 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  TouchableOpacity,
-  ScrollView,
-  Share,
-  Image,
-  Platform,
-} from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Share, Image } from 'react-native';
+
+import { PRIMARY_BLUE } from './shared/theme';
+import { resolveLeagueIcon } from './shared/leagueIcons';
 
 interface LeagueInviteModalProps {
   visible: boolean;
-  onClose: () => void;
-  leagueName: string;
   leagueId: string;
-  leagueDescription?: string;
-  memberCount: number;
-  isPrivate: boolean;
   isAdmin?: boolean;
+  leagueName: string;
+  isPrivate: boolean;
+  onClose: () => void;
+  memberCount: number;
+  leagueIconName?: string;
+  leagueIconColor?: string;
+  leagueDescription?: string;
   pendingRequests?: PendingRequest[];
-  onApproveRequest?: (userId: string) => void;
   onRejectRequest?: (userId: string) => void;
+  onApproveRequest?: (userId: string) => void;
 }
 
 interface PendingRequest {
   userId: string;
-  username: string;
   avatar: string;
+  username: string;
+  accuracy: number;
   requestDate: string;
   predictionCount: number;
-  accuracy: number;
 }
 
 export function LeagueInviteModal({
-  visible,
-  onClose,
-  leagueName,
-  leagueId,
-  leagueDescription = 'Heyecanlı tahminler ve rekabet seni bekliyor!',
-  memberCount,
-  isPrivate,
   isAdmin = false,
-  pendingRequests = [],
+  isPrivate,
+  leagueDescription = 'Heyecanlı tahminler ve rekabet seni bekliyor!',
+  leagueIconColor,
+  leagueIconName,
+  leagueId,
+  leagueName,
+  memberCount,
   onApproveRequest,
-  onRejectRequest
+  onClose,
+  onRejectRequest,
+  pendingRequests = [],
+  visible,
 }: LeagueInviteModalProps) {
   const insets = useSafeAreaInsets();
+  const resolvedIcon = resolveLeagueIcon(leagueIconName, leagueIconColor);
   const [activeTab, setActiveTab] = useState<'invite' | 'pending'>('invite');
   const [copied, setCopied] = useState(false);
   const [qrGenerated, setQrGenerated] = useState(false);
@@ -72,8 +70,8 @@ export function LeagueInviteModal({
   const handleShare = async () => {
     try {
       await Share.share({
-        title: `${leagueName} - Sence`,
         message: `${leagueName} ligine katıl! ${leagueDescription}\n\n${leagueLink}`,
+        title: `${leagueName} - Sence`,
       });
     } catch (err) {
       console.error('Share failed:', err);
@@ -112,14 +110,16 @@ export function LeagueInviteModal({
 
           {/* League Info Card */}
           <View style={styles.leagueCard}>
-            <View style={styles.leagueIconContainer}>
-              <Text style={styles.leagueIconText}>🏆</Text>
+            <View style={[styles.leagueIconContainer, { backgroundColor: resolvedIcon.color }]}>
+              <Ionicons name={resolvedIcon.name} size={28} color="#FFFFFF" />
             </View>
             <View style={styles.leagueInfo}>
-              <Text style={styles.leagueName} numberOfLines={1}>{leagueName}</Text>
+              <Text style={styles.leagueName} numberOfLines={1}>
+                {leagueName}
+              </Text>
               <View style={styles.leagueBadges}>
                 <View style={styles.badge}>
-                  <Ionicons name="people" size={14} color="#10B981" />
+                  <Ionicons name="people" size={14} color={PRIMARY_BLUE} />
                   <Text style={styles.badgeText}>{memberCount} Üye</Text>
                 </View>
                 {isPrivate && (
@@ -143,11 +143,9 @@ export function LeagueInviteModal({
                 <Ionicons
                   name="share-social"
                   size={18}
-                  color={activeTab === 'invite' ? '#10B981' : 'rgba(255,255,255,0.5)'}
+                  color={activeTab === 'invite' ? PRIMARY_BLUE : 'rgba(255,255,255,0.5)'}
                 />
-                <Text style={[styles.tabText, activeTab === 'invite' && styles.tabTextActive]}>
-                  Davet
-                </Text>
+                <Text style={[styles.tabText, activeTab === 'invite' && styles.tabTextActive]}>Davet</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -158,11 +156,9 @@ export function LeagueInviteModal({
                 <Ionicons
                   name="time"
                   size={18}
-                  color={activeTab === 'pending' ? '#10B981' : 'rgba(255,255,255,0.5)'}
+                  color={activeTab === 'pending' ? PRIMARY_BLUE : 'rgba(255,255,255,0.5)'}
                 />
-                <Text style={[styles.tabText, activeTab === 'pending' && styles.tabTextActive]}>
-                  Bekleyen
-                </Text>
+                <Text style={[styles.tabText, activeTab === 'pending' && styles.tabTextActive]}>Bekleyen</Text>
                 <View style={styles.tabBadge}>
                   <Text style={styles.tabBadgeText}>{pendingRequests.length}</Text>
                 </View>
@@ -176,36 +172,25 @@ export function LeagueInviteModal({
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            {(!hasPendingRequests || activeTab === 'invite') ? (
+            {!hasPendingRequests || activeTab === 'invite' ? (
               <>
                 {/* QR Code Section */}
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
-                    <Ionicons name="qr-code" size={20} color="#10B981" />
+                    <Ionicons name="qr-code" size={20} color={PRIMARY_BLUE} />
                     <Text style={styles.sectionTitle}>QR Kod</Text>
                   </View>
 
                   {!qrGenerated ? (
-                    <TouchableOpacity
-                      style={styles.generateQrButton}
-                      onPress={handleGenerateQR}
-                      activeOpacity={0.8}
-                    >
-                      <LinearGradient
-                        colors={['#10B981', '#059669']}
-                        style={styles.generateQrGradient}
-                      >
+                    <TouchableOpacity style={styles.generateQrButton} onPress={handleGenerateQR} activeOpacity={0.8}>
+                      <LinearGradient colors={[PRIMARY_BLUE, PRIMARY_BLUE]} style={styles.generateQrGradient}>
                         <Ionicons name="add-circle" size={24} color="#FFFFFF" />
                         <Text style={styles.generateQrText}>QR Kod Oluştur</Text>
                       </LinearGradient>
                     </TouchableOpacity>
                   ) : (
                     <View style={styles.qrContainer}>
-                      <Image
-                        source={{ uri: qrCodeUrl }}
-                        style={styles.qrImage}
-                        resizeMode="contain"
-                      />
+                      <Image source={{ uri: qrCodeUrl }} style={styles.qrImage} resizeMode="contain" />
                       <Text style={styles.qrHint}>QR kodu taratarak lige katılabilirler</Text>
                     </View>
                   )}
@@ -214,34 +199,28 @@ export function LeagueInviteModal({
                 {/* Link Section */}
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
-                    <Ionicons name="link" size={20} color="#10B981" />
+                    <Ionicons name="link" size={20} color={PRIMARY_BLUE} />
                     <Text style={styles.sectionTitle}>Davet Linki</Text>
                   </View>
 
                   <View style={styles.linkContainer}>
-                    <Text style={styles.linkText} numberOfLines={1}>{leagueLink}</Text>
+                    <Text style={styles.linkText} numberOfLines={1}>
+                      {leagueLink}
+                    </Text>
                     <TouchableOpacity
                       style={[styles.copyButton, copied && styles.copyButtonSuccess]}
                       onPress={handleCopyLink}
                       activeOpacity={0.8}
                     >
-                      <Ionicons
-                        name={copied ? "checkmark" : "copy"}
-                        size={18}
-                        color="#FFFFFF"
-                      />
+                      <Ionicons name={copied ? 'checkmark' : 'copy'} size={18} color="#FFFFFF" />
                     </TouchableOpacity>
                   </View>
                 </View>
 
                 {/* Share Button */}
-                <TouchableOpacity
-                  style={styles.shareButton}
-                  onPress={handleShare}
-                  activeOpacity={0.8}
-                >
+                <TouchableOpacity style={styles.shareButton} onPress={handleShare} activeOpacity={0.8}>
                   <LinearGradient
-                    colors={['#10B981', '#059669']}
+                    colors={[PRIMARY_BLUE, PRIMARY_BLUE]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.shareGradient}
@@ -261,20 +240,15 @@ export function LeagueInviteModal({
                     <Text style={styles.emptyText}>Bekleyen istek yok</Text>
                   </View>
                 ) : (
-                  pendingRequests.map((request) => (
+                  pendingRequests.map(request => (
                     <View key={request.userId} style={styles.requestCard}>
-                      <Image
-                        source={{ uri: request.avatar }}
-                        style={styles.requestAvatar}
-                      />
+                      <Image source={{ uri: request.avatar }} style={styles.requestAvatar} />
                       <View style={styles.requestInfo}>
                         <Text style={styles.requestName}>{request.username}</Text>
                         <Text style={styles.requestDate}>{request.requestDate}</Text>
                         <View style={styles.requestStats}>
                           <Text style={styles.requestStat}>🎯 {request.predictionCount}</Text>
-                          <Text style={[styles.requestStat, { color: '#10B981' }]}>
-                            ✓ %{request.accuracy}
-                          </Text>
+                          <Text style={[styles.requestStat, { color: PRIMARY_BLUE }]}>✓ %{request.accuracy}</Text>
                         </View>
                       </View>
                       <View style={styles.requestActions}>
@@ -306,63 +280,124 @@ export function LeagueInviteModal({
 }
 
 const styles = StyleSheet.create({
-  modalBackground: {
-    flex: 1,
-    backgroundColor: '#0D1117',
+  approveBtn: {
+    alignItems: 'center',
+    backgroundColor: '#256EFF',
+    borderRadius: 18,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  backButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 22,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  badge: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(37, 110, 255,0.15)',
+    borderRadius: 12,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  badgeText: {
+    color: '#256EFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
   container: {
-    flex: 1,
     backgroundColor: '#0D1117',
+    flex: 1,
+  },
+  copyButton: {
+    alignItems: 'center',
+    backgroundColor: '#256EFF',
+    borderRadius: 10,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  copyButtonSuccess: {
+    backgroundColor: '#256EFF',
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 15,
+  },
+  generateQrButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  generateQrGradient: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    paddingVertical: 16,
+  },
+  generateQrText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   headerCenter: {
-    flex: 1,
     alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    flex: 1,
   },
   headerSubtitle: {
-    fontSize: 13,
     color: 'rgba(255,255,255,0.6)',
+    fontSize: 13,
     marginTop: 2,
   },
-  leagueCard: {
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  leagueBadges: {
     flexDirection: 'row',
+    gap: 8,
+  },
+  leagueCard: {
     alignItems: 'center',
-    margin: 16,
-    padding: 16,
     backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    flexDirection: 'row',
+    margin: 16,
+    padding: 16,
   },
   leagueIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: 'rgba(16,185,129,0.15)',
-    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(37, 110, 255,0.15)',
+    borderRadius: 16,
+    height: 56,
+    justifyContent: 'center',
     marginRight: 14,
+    width: 56,
   },
   leagueIconText: {
     fontSize: 28,
@@ -371,59 +406,157 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   leagueName: {
+    color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '700',
-    color: '#FFFFFF',
     marginBottom: 6,
   },
-  leagueBadges: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  badge: {
-    flexDirection: 'row',
+  linkContainer: {
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(16,185,129,0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    backgroundColor: 'rgba(0,0,0,0.3)',
     borderRadius: 12,
+    flexDirection: 'row',
+    gap: 10,
+    padding: 12,
+  },
+  linkText: {
+    color: 'rgba(255,255,255,0.7)',
+    flex: 1,
+    fontFamily: 'monospace',
+    fontSize: 13,
+  },
+  modalBackground: {
+    backgroundColor: '#0D1117',
+    flex: 1,
+  },
+  pendingContainer: {
+    flex: 1,
   },
   privateBadge: {
     backgroundColor: 'rgba(245,158,11,0.15)',
   },
-  badgeText: {
+  qrContainer: {
+    alignItems: 'center',
+  },
+  qrHint: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 12,
+  },
+  qrImage: {
+    borderRadius: 12,
+    height: 180,
+    marginBottom: 12,
+    width: 180,
+  },
+  rejectBtn: {
+    alignItems: 'center',
+    backgroundColor: '#EF4444',
+    borderRadius: 18,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  requestActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  requestAvatar: {
+    borderColor: 'rgba(37, 110, 255,0.3)',
+    borderRadius: 24,
+    borderWidth: 2,
+    height: 48,
+    marginRight: 12,
+    width: 48,
+  },
+  requestCard: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    marginBottom: 10,
+    padding: 14,
+  },
+  requestDate: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
+    marginBottom: 6,
+  },
+  requestInfo: {
+    flex: 1,
+  },
+  requestName: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  requestStat: {
+    color: 'rgba(255,255,255,0.6)',
     fontSize: 12,
     fontWeight: '600',
-    color: '#10B981',
   },
-  tabsContainer: {
+  requestStats: {
     flexDirection: 'row',
-    marginHorizontal: 16,
-    marginBottom: 8,
+    gap: 10,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingTop: 8,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  section: {
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-    padding: 4,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 16,
+    padding: 16,
+  },
+  sectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+  },
+  sectionTitle: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  shareButton: {
+    borderRadius: 16,
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+  shareGradient: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'center',
+    paddingVertical: 16,
+  },
+  shareText: {
+    color: '#FFFFFF',
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   tab: {
+    alignItems: 'center',
+    borderRadius: 10,
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: 6,
+    justifyContent: 'center',
     paddingVertical: 10,
-    borderRadius: 10,
   },
   tabActive: {
-    backgroundColor: 'rgba(16,185,129,0.15)',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.5)',
-  },
-  tabTextActive: {
-    color: '#10B981',
+    backgroundColor: 'rgba(37, 110, 255,0.15)',
   },
   tabBadge: {
     backgroundColor: '#EF4444',
@@ -432,183 +565,24 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   tabBadgeText: {
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '800',
-    color: '#FFFFFF',
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingTop: 8,
-  },
-  section: {
+  tabsContainer: {
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  generateQrButton: {
     borderRadius: 12,
-    overflow: 'hidden',
-  },
-  generateQrGradient: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 16,
+    marginBottom: 8,
+    marginHorizontal: 16,
+    padding: 4,
   },
-  generateQrText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  qrContainer: {
-    alignItems: 'center',
-  },
-  qrImage: {
-    width: 180,
-    height: 180,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  qrHint: {
-    fontSize: 12,
+  tabText: {
     color: 'rgba(255,255,255,0.5)',
-  },
-  linkContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 12,
-    padding: 12,
-    gap: 10,
-  },
-  linkText: {
-    flex: 1,
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.7)',
-    fontFamily: 'monospace',
-  },
-  copyButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#10B981',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  copyButtonSuccess: {
-    backgroundColor: '#059669',
-  },
-  shareButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginTop: 8,
-  },
-  shareGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 16,
-  },
-  shareText: {
-    flex: 1,
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  pendingContainer: {
-    flex: 1,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.5)',
-  },
-  requestCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  requestAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 12,
-    borderWidth: 2,
-    borderColor: 'rgba(16,185,129,0.3)',
-  },
-  requestInfo: {
-    flex: 1,
-  },
-  requestName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 2,
-  },
-  requestDate: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.4)',
-    marginBottom: 6,
-  },
-  requestStats: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  requestStat: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.6)',
   },
-  requestActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  approveBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#10B981',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  rejectBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#EF4444',
-    justifyContent: 'center',
-    alignItems: 'center',
+  tabTextActive: {
+    color: '#256EFF',
   },
 });

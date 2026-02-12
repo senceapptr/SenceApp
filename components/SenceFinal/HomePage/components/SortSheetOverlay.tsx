@@ -33,6 +33,11 @@ export function SortSheetOverlay({ visible, sortBy, onSelect, onClose }: SortShe
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const panY = useRef(new Animated.Value(0)).current;
+  const resetSheetValues = () => {
+    slideAnim.setValue(SCREEN_HEIGHT);
+    backdropOpacity.setValue(0);
+    panY.setValue(0);
+  };
 
   useLayoutEffect(() => {
     if (visible) {
@@ -59,25 +64,8 @@ export function SortSheetOverlay({ visible, sortBy, onSelect, onClose }: SortShe
   }, [visible]);
 
   const closeSheet = () => {
-    Animated.parallel([
-      Animated.spring(slideAnim, {
-        toValue: SCREEN_HEIGHT,
-        useNativeDriver: false,
-        tension: 200,
-        friction: 3,
-        restDisplacementThreshold: 0.01,
-        restSpeedThreshold: 0.01,
-      }),
-      Animated.timing(backdropOpacity, {
-        toValue: 0,
-        duration: 100,
-        useNativeDriver: false,
-        easing: Easing.in(Easing.cubic),
-      }),
-    ]).start(() => {
-      onClose();
-      slideAnim.setValue(SCREEN_HEIGHT);
-    });
+    onClose();
+    resetSheetValues();
   };
 
   const panResponder = useRef(
@@ -90,26 +78,8 @@ export function SortSheetOverlay({ visible, sortBy, onSelect, onClose }: SortShe
       onPanResponderRelease: (_, g) => {
         const { dy, vy } = g;
         if (dy > 100 || vy > 0.5) {
-          slideAnim.setValue(dy);
-          panY.setValue(0);
-          Animated.parallel([
-            Animated.spring(slideAnim, {
-              toValue: SCREEN_HEIGHT,
-              useNativeDriver: false,
-              tension: 60,
-              friction: 8,
-              velocity: vy * 50,
-            }),
-            Animated.timing(backdropOpacity, {
-              toValue: 0,
-              duration: 300,
-              useNativeDriver: false,
-              easing: Easing.in(Easing.cubic),
-            }),
-          ]).start(() => {
-            onClose();
-            slideAnim.setValue(SCREEN_HEIGHT);
-          });
+          onClose();
+          resetSheetValues();
         } else {
           panY.setValue(0);
           Animated.spring(slideAnim, {
@@ -120,7 +90,7 @@ export function SortSheetOverlay({ visible, sortBy, onSelect, onClose }: SortShe
           }).start();
         }
       },
-    })
+    }),
   ).current;
 
   return (
@@ -128,25 +98,21 @@ export function SortSheetOverlay({ visible, sortBy, onSelect, onClose }: SortShe
       <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
         <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeSheet} activeOpacity={1} />
       </Animated.View>
-      <Animated.View
-        style={[styles.sheet, { transform: [{ translateY: Animated.add(slideAnim, panY) }] }]}
-      >
+      <Animated.View style={[styles.sheet, { transform: [{ translateY: Animated.add(slideAnim, panY) }] }]}>
         <View style={styles.handleWrap} {...panResponder.panHandlers}>
           <View style={styles.handle} />
         </View>
         <View style={styles.titleWrap}>
           <Text style={styles.title}>Sırala</Text>
         </View>
-        {SORT_OPTIONS.map((opt) => (
+        {SORT_OPTIONS.map(opt => (
           <TouchableOpacity
             key={opt.key}
             style={[styles.option, sortBy === opt.key && styles.optionActive]}
             onPress={() => onSelect(opt.key)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.optionText, sortBy === opt.key && styles.optionTextActive]}>
-              {opt.label}
-            </Text>
+            <Text style={[styles.optionText, sortBy === opt.key && styles.optionTextActive]}>{opt.label}</Text>
             {sortBy === opt.key && <Ionicons name="checkmark" size={20} color="#0A84FF" />}
           </TouchableOpacity>
         ))}

@@ -2,167 +2,265 @@
 // NOTIFICATIONS PAGE - HOOKS
 // =====================================================
 
-import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { notificationsService } from '@/services/notifications.service';
-import { Notification, NotificationCategory } from './types';
+
+import { Notification, NotificationFilter, NotificationRoute } from './types';
 import {
-  mockNotifications,
-  getUnreadCount,
+  filterNotifications,
   formatTimeAgo,
-  getNotificationConfig,
-  filterNotificationsByCategory,
-  groupNotificationsByDateSection,
+  getUnreadCount,
+  normalizeNotificationType,
+  resolveNotificationAction,
+  sortNotificationsByDateDesc,
 } from './utils';
 
-export const useNotifications = () => {
-  const { user, refreshUnreadCount } = useAuth();
+const UNDO_TIMEOUT_MS = 4000;
+
+interface PendingDeleteState {
+  userId: string;
+  notification: Notification;
+  timeoutId: ReturnType<typeof setTimeout>;
+}
+
+interface UseNotificationsOptions {
+  onOpenQuestionDetail?: (questionId: string) => void;
+  onNavigateToPage?: (page: NotificationRoute) => void;
+}
+
+const mapBackendNotification = (notif: any): Notification => {
+  const createdAt = typeof notif?.created_at === 'string' ? notif.created_at : new Date().toISOString();
+
+  return {
+    created_at: createdAt,
+    data: notif?.data || {},
+    id: notif?.id ? String(notif.id) : String(Date.now()),
+    message: notif?.message || '',
+    read: Boolean(notif?.is_read),
+    time: formatTimeAgo(createdAt),
+    title: notif?.title || 'Bildirim',
+    type: normalizeNotificationType(notif?.type),
+  };
+};
+
+export const useNotifications = ({ onNavigateToPage, onOpenQuestionDetail }: UseNotificationsOptions = {}) => {
+  const { refreshUnreadCount, user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [activeFilter, setActiveFilter] = useState<NotificationCategory>('all');
+  const [activeFilter, setActiveFilter] = useState<NotificationFilter>('all');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [undoCandidate, setUndoCandidate] = useState<Notification | null>(null);
+  const pendingDeleteRef = useRef<PendingDeleteState | null>(null);
 
-  // Backend'den bildirim verilerini yükle
+  const commitDelete = useCallback(
+    async (notification: Notification, userId: string) => {
+      try {
+        const { error } = await notificationsService.deleteNotification(notification.id, userId);
+        if (error) {
+          throw error;
+        }
+        await refreshUnreadCount();
+      } catch (err) {
+        console.error('Delete notification error:', err);
+        setNotifications(prev => sortNotificationsByDateDesc([...prev, notification]));
+        Alert.alert('Hata', 'Bildirim silinirken bir hata oluştu');
+      }
+    },
+    [refreshUnreadCount],
+  );
+
+  const flushPendingDelete = useCallback(async () => {
+    const pendingDelete = pendingDeleteRef.current;
+    if (!pendingDelete) return;
+
+    clearTimeout(pendingDelete.timeoutId);
+    pendingDeleteRef.current = null;
+    setUndoCandidate(current => (current?.id === pendingDelete.notification.id ? null : current));
+    await commitDelete(pendingDelete.notification, pendingDelete.userId);
+  }, [commitDelete]);
+
   const loadNotificationsData = useCallback(async () => {
     if (!user) {
+      setNotifications([]);
+      setErrorMessage('Bildirimleri görmek için hesabına giriş yapmalısın.');
       setLoading(false);
       return;
     }
 
     try {
+      setErrorMessage(null);
       const { data, error } = await notificationsService.getUserNotifications(user.id);
 
       if (error) {
-        console.warn('Backend error, using mock data:', error);
-        setNotifications(mockNotifications);
-        return;
+        throw error;
       }
 
-      if (data && data.length > 0) {
-        // Backend verilerini frontend formatına çevir
-        const mappedNotifications: Notification[] = data.map((notif: any) => ({
-          id: notif.id,
-          type: notif.type || 'prediction_added',
-          title: notif.title || 'Bildirim',
-          message: notif.message || '',
-          time: formatTimeAgo(notif.created_at),
-          read: notif.is_read || false,
-          data: notif.data || {},
-          created_at: notif.created_at,
-        }));
-        setNotifications(mappedNotifications);
-      } else {
-        // No notifications from backend, use mock for demo
-        setNotifications(mockNotifications);
-      }
+      const mappedNotifications = sortNotificationsByDateDesc((data || []).map(mapBackendNotification));
+      setNotifications(mappedNotifications);
     } catch (err) {
       console.error('Notifications data load error:', err);
-      setNotifications(mockNotifications);
+      setNotifications([]);
+      setErrorMessage('Bildirimler yüklenemedi. Lütfen tekrar dene.');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [user]);
 
-  // Sayfa yüklendiğinde veriyi çek
   useEffect(() => {
-    loadNotificationsData();
+    setLoading(true);
+    void loadNotificationsData();
   }, [loadNotificationsData]);
 
-  // Pull to refresh
+  useEffect(() => {
+    return () => {
+      const pendingDelete = pendingDeleteRef.current;
+      if (!pendingDelete) return;
+
+      clearTimeout(pendingDelete.timeoutId);
+      pendingDeleteRef.current = null;
+      void notificationsService.deleteNotification(pendingDelete.notification.id, pendingDelete.userId);
+    };
+  }, []);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadNotificationsData();
-  }, [loadNotificationsData]);
-
-  // Mark as read
-  const markAsRead = useCallback(async (id: string) => {
-    if (!user) return;
-
     try {
-      await notificationsService.markAsRead(id, user.id);
-
-      setNotifications(prev =>
-        prev.map(notif =>
-          notif.id === id ? { ...notif, read: true } : notif
-        )
-      );
-      refreshUnreadCount();
-    } catch (err) {
-      console.error('Mark as read error:', err);
+      await flushPendingDelete();
+      await loadNotificationsData();
+    } finally {
+      setRefreshing(false);
     }
-  }, [user, refreshUnreadCount]);
+  }, [flushPendingDelete, loadNotificationsData]);
 
-  // Mark all as read
+  const markAsRead = useCallback(
+    async (id: string): Promise<boolean> => {
+      if (!user) return false;
+
+      let wasUnread = false;
+      setNotifications(prev =>
+        prev.map(notification => {
+          if (notification.id === id && !notification.read) {
+            wasUnread = true;
+            return { ...notification, read: true };
+          }
+          return notification;
+        }),
+      );
+
+      if (!wasUnread) {
+        return true;
+      }
+
+      const { error } = await notificationsService.markAsRead(id, user.id);
+      if (error) {
+        setNotifications(prev =>
+          prev.map(notification => (notification.id === id ? { ...notification, read: false } : notification)),
+        );
+        Alert.alert('Hata', 'Bildirim güncellenemedi.');
+        return false;
+      }
+
+      await refreshUnreadCount();
+      return true;
+    },
+    [refreshUnreadCount, user],
+  );
+
   const markAllAsRead = useCallback(async () => {
     if (!user) return;
 
-    try {
-      await notificationsService.markAllAsRead(user.id);
-      setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
-      refreshUnreadCount();
-    } catch (err) {
-      console.error('Mark all as read error:', err);
-      Alert.alert('Hata', 'Bildirimler temizlenirken bir hata oluştu');
+    const previousNotifications = notifications;
+    setNotifications(prev => prev.map(notification => ({ ...notification, read: true })));
+
+    const { error } = await notificationsService.markAllAsRead(user.id);
+    if (error) {
+      setNotifications(previousNotifications);
+      Alert.alert('Hata', 'Bildirimler güncellenemedi.');
+      return;
     }
-  }, [user, refreshUnreadCount]);
 
-  // Delete notification
-  const deleteNotification = useCallback(async (id: string) => {
-    if (!user) return;
+    await refreshUnreadCount();
+  }, [notifications, refreshUnreadCount, user]);
 
-    try {
-      await notificationsService.deleteNotification(id, user.id);
-      setNotifications(prev => prev.filter(notif => notif.id !== id));
-      refreshUnreadCount();
-    } catch (err) {
-      console.error('Delete notification error:', err);
-      Alert.alert('Hata', 'Bildirim silinirken bir hata oluştu');
-    }
-  }, [user, refreshUnreadCount]);
-
-  // Filtered notifications
-  const filteredNotifications = filterNotificationsByCategory(notifications, activeFilter);
-
-  // Grouped by date
-  const groupedNotifications = groupNotificationsByDateSection(filteredNotifications);
-
-  // Unread count
-  const unreadCount = getUnreadCount(notifications);
-
-  // Create test notifications
-  const createTestNotifications = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      const result = await notificationsService.createTestNotifications(user.id);
-
-      if (result.data) {
-        Alert.alert('Başarılı!', `${result.data.length} test bildirimi oluşturuldu!`);
-        loadNotificationsData();
-        refreshUnreadCount();
-      } else if (result.error) {
-        Alert.alert('Hata', result.error.message || 'Test bildirimleri oluşturulurken bir hata oluştu');
+  const handleNotificationPress = useCallback(
+    async (notification: Notification) => {
+      if (!notification.read) {
+        const marked = await markAsRead(notification.id);
+        if (!marked) return;
       }
-    } catch (err) {
-      console.error('Create test notifications error:', err);
-      Alert.alert('Hata', 'Test bildirimleri oluşturulurken bir hata oluştu');
-    }
-  }, [user, loadNotificationsData, refreshUnreadCount]);
+
+      resolveNotificationAction({
+        notification,
+        onNavigateToPage,
+        onOpenQuestionDetail,
+      });
+    },
+    [markAsRead, onNavigateToPage, onOpenQuestionDetail],
+  );
+
+  const deleteNotification = useCallback(
+    async (notification: Notification) => {
+      if (!user) return;
+
+      await flushPendingDelete();
+      setNotifications(prev => prev.filter(item => item.id !== notification.id));
+
+      const timeoutId = setTimeout(() => {
+        const pendingDelete = pendingDeleteRef.current;
+        if (!pendingDelete || pendingDelete.notification.id !== notification.id) {
+          return;
+        }
+
+        pendingDeleteRef.current = null;
+        setUndoCandidate(null);
+        void commitDelete(pendingDelete.notification, pendingDelete.userId);
+      }, UNDO_TIMEOUT_MS);
+
+      pendingDeleteRef.current = {
+        notification,
+        timeoutId,
+        userId: user.id,
+      };
+      setUndoCandidate(notification);
+    },
+    [commitDelete, flushPendingDelete, user],
+  );
+
+  const undoDeleteNotification = useCallback(() => {
+    const pendingDelete = pendingDeleteRef.current;
+    if (!pendingDelete) return;
+
+    clearTimeout(pendingDelete.timeoutId);
+    pendingDeleteRef.current = null;
+    setUndoCandidate(null);
+    setNotifications(prev => sortNotificationsByDateDesc([...prev, pendingDelete.notification]));
+  }, []);
+
+  const filteredNotifications = useMemo(
+    () => filterNotifications(notifications, activeFilter),
+    [activeFilter, notifications],
+  );
+
+  const unreadCount = useMemo(() => getUnreadCount(notifications), [notifications]);
 
   return {
-    notifications: filteredNotifications,
-    groupedNotifications,
     activeFilter,
-    setActiveFilter,
-    loading,
-    refreshing,
-    onRefresh,
-    markAsRead,
-    markAllAsRead,
     deleteNotification,
+    errorMessage,
+    isAuthenticated: Boolean(user),
+    loading,
+    markAllAsRead,
+    notifications: filteredNotifications,
+    onPressNotification: handleNotificationPress,
+    onRefresh,
+    refreshing,
+    setActiveFilter,
+    undoCandidate,
+    undoDeleteNotification,
     unreadCount,
-    createTestNotifications,
   };
 };

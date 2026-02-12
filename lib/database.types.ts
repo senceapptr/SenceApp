@@ -419,6 +419,39 @@ export type Database = {
           },
         ]
       }
+      league_categories: {
+        Row: {
+          category_id: string
+          created_at: string
+          league_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          league_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          league_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "league_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_categories_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       league_invitations: {
         Row: {
           created_at: string | null
@@ -632,7 +665,10 @@ export type Database = {
           end_date: string | null
           entry_fee: number | null
           id: string
+          icon_color: string
+          icon_name: string
           image_url: string | null
+          is_featured: boolean | null
           league_code: string
           max_members: number | null
           name: string
@@ -651,7 +687,10 @@ export type Database = {
           end_date?: string | null
           entry_fee?: number | null
           id?: string
+          icon_color?: string
+          icon_name?: string
           image_url?: string | null
+          is_featured?: boolean | null
           league_code: string
           max_members?: number | null
           name: string
@@ -670,7 +709,10 @@ export type Database = {
           end_date?: string | null
           entry_fee?: number | null
           id?: string
+          icon_color?: string
+          icon_name?: string
           image_url?: string | null
+          is_featured?: boolean | null
           league_code?: string
           max_members?: number | null
           name?: string
@@ -699,45 +741,74 @@ export type Database = {
       }
       market_items: {
         Row: {
+          badge: string | null
+          category_id: string | null
           created_at: string | null
           description: string | null
           effect_data: Json | null
+          featured: boolean | null
           icon: string | null
           id: string
           image_url: string | null
           is_active: boolean | null
           name: string
+          original_price: number | null
           price: number
+          requires_shipping: boolean
           stock: number | null
+          status: string | null
           type: string
+          updated_at: string | null
         }
         Insert: {
+          badge?: string | null
+          category_id?: string | null
           created_at?: string | null
           description?: string | null
           effect_data?: Json | null
+          featured?: boolean | null
           icon?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
           name: string
+          original_price?: number | null
           price: number
+          requires_shipping?: boolean
           stock?: number | null
+          status?: string | null
           type: string
+          updated_at?: string | null
         }
         Update: {
+          badge?: string | null
+          category_id?: string | null
           created_at?: string | null
           description?: string | null
           effect_data?: Json | null
+          featured?: boolean | null
           icon?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
           name?: string
+          original_price?: number | null
           price?: number
+          requires_shipping?: boolean
           stock?: number | null
+          status?: string | null
           type?: string
+          updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "market_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notification_settings: {
         Row: {
@@ -970,8 +1041,10 @@ export type Database = {
           is_admin: boolean | null
           is_banned: boolean | null
           is_verified: boolean | null
+          league_quota: number
           level: number | null
           profile_image: string | null
+          tickets: number
           updated_at: string | null
           username: string
         }
@@ -989,8 +1062,10 @@ export type Database = {
           is_admin?: boolean | null
           is_banned?: boolean | null
           is_verified?: boolean | null
+          league_quota?: number
           level?: number | null
           profile_image?: string | null
+          tickets?: number
           updated_at?: string | null
           username: string
         }
@@ -1008,8 +1083,10 @@ export type Database = {
           is_admin?: boolean | null
           is_banned?: boolean | null
           is_verified?: boolean | null
+          league_quota?: number
           level?: number | null
           profile_image?: string | null
+          tickets?: number
           updated_at?: string | null
           username?: string
         }
@@ -1380,30 +1457,45 @@ export type Database = {
       }
       user_purchases: {
         Row: {
+          created_at: string | null
           id: string
           item_id: string | null
           purchased_at: string | null
           quantity: number | null
+          requires_shipping: boolean
+          shipping_address: Json | null
+          shipping_status: string
           status: string | null
           total_price: number
+          updated_at: string | null
           user_id: string | null
         }
         Insert: {
+          created_at?: string | null
           id?: string
           item_id?: string | null
           purchased_at?: string | null
           quantity?: number | null
+          requires_shipping?: boolean
+          shipping_address?: Json | null
+          shipping_status?: string
           status?: string | null
           total_price: number
+          updated_at?: string | null
           user_id?: string | null
         }
         Update: {
+          created_at?: string | null
           id?: string
           item_id?: string | null
           purchased_at?: string | null
           quantity?: number | null
+          requires_shipping?: boolean
+          shipping_address?: Json | null
+          shipping_status?: string
           status?: string | null
           total_price?: number
+          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -1731,6 +1823,23 @@ export type Database = {
       is_following: {
         Args: { p_follower_id: string; p_following_id: string }
         Returns: boolean
+      }
+      purchase_market_item: {
+        Args: { p_item_id: string; p_quantity?: number; p_shipping_address?: Json }
+        Returns: {
+          created_at: string | null
+          id: string
+          item_id: string | null
+          purchased_at: string | null
+          quantity: number | null
+          requires_shipping: boolean
+          shipping_address: Json | null
+          shipping_status: string
+          status: string | null
+          total_price: number
+          updated_at: string | null
+          user_id: string | null
+        }
       }
       recalculate_all_active_odds: {
         Args: never

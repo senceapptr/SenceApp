@@ -1,5 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, StatusBar, Animated, Dimensions, Modal, Alert, ActivityIndicator, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  StatusBar,
+  Animated,
+  Dimensions,
+  Modal,
+  Alert,
+  ActivityIndicator,
+  TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
@@ -42,7 +56,32 @@ import { verificationService } from '@/services/verification.service';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type PageType = 'home' | 'coupons' | 'leagues' | 'gameHub' | 'newDiscover' | 'discoverNew' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionDetail' | 'questionCardDesign' | 'editProfile' | 'privacySettings' | 'helpCenter' | 'support' | 'faq' | 'feedback' | 'about' | 'adminPanel' | 'allQuestions' | 'emailVerification' | 'leaderboard';
+type PageType =
+  | 'home'
+  | 'coupons'
+  | 'leagues'
+  | 'gameHub'
+  | 'newDiscover'
+  | 'discoverNew'
+  | 'writeQuestion'
+  | 'tasks'
+  | 'settings'
+  | 'market'
+  | 'notifications'
+  | 'profile'
+  | 'questionDetail'
+  | 'questionCardDesign'
+  | 'editProfile'
+  | 'privacySettings'
+  | 'helpCenter'
+  | 'support'
+  | 'faq'
+  | 'feedback'
+  | 'about'
+  | 'adminPanel'
+  | 'allQuestions'
+  | 'emailVerification'
+  | 'leaderboard';
 
 interface Question {
   id: string;
@@ -83,7 +122,7 @@ interface UserProfile {
 function AllQuestionsModal({
   onBack,
   handleQuestionDetail,
-  handleVote
+  handleVote,
 }: {
   onBack: () => void;
   handleQuestionDetail: (questionId: string, sourceCategory?: any) => void;
@@ -137,7 +176,8 @@ function AllQuestionsModal({
 
 // Ana uygulama içeriği - sadece giriş yapmış kullanıcılar için
 function AppContent() {
-  const { user, profile, pendingVerification, isEmailVerified, markEmailAsVerified, checkEmailVerification } = useAuth();
+  const { user, profile, pendingVerification, isEmailVerified, markEmailAsVerified, checkEmailVerification } =
+    useAuth();
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [showEmailVerificationBanner, setShowEmailVerificationBanner] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -149,6 +189,7 @@ function AppContent() {
   const [isQuestionDetailLoading, setIsQuestionDetailLoading] = useState(false);
   // Animasyon state'i kaldırıldı - kullanıcı deneyimi için kritik
   const [isCouponDrawerOpen, setIsCouponDrawerOpen] = useState(false);
+  const [isLeagueRaceActive, setIsLeagueRaceActive] = useState(false);
   const [couponSelections, setCouponSelections] = useState<CouponSelection[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
   const [couponsRefreshTrigger, setCouponsRefreshTrigger] = useState(0);
@@ -159,8 +200,11 @@ function AppContent() {
     fullName: profile?.full_name || user?.email?.split('@')[0] || 'Kullanıcı',
     bio: profile?.bio || 'Henüz bio eklenmedi',
     email: user?.email || '',
-    profileImage: profile?.profile_image || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
-    coverImage: profile?.cover_image || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop'
+    profileImage:
+      profile?.profile_image ||
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
+    coverImage:
+      profile?.cover_image || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
   };
 
   // User credits - gerçek profil verisinden al
@@ -230,19 +274,19 @@ function AppContent() {
     // Mock question ile anında göster
     const mockQuestion: Question = {
       id: questionIdString,
-      title: "Soru Yükleniyor...",
-      description: "Soru detayları yükleniyor...",
-      category: "Genel",
-      image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop",
+      title: 'Soru Yükleniyor...',
+      description: 'Soru detayları yükleniyor...',
+      category: 'Genel',
+      image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop',
       yesOdds: 2.0,
       noOdds: 2.0,
       totalVotes: 0,
-      timeLeft: "Yükleniyor...",
-      publishDate: "Yükleniyor...",
-      endDate: "2024-12-31T23:59:59",
+      timeLeft: 'Yükleniyor...',
+      publishDate: 'Yükleniyor...',
+      endDate: '2024-12-31T23:59:59',
       yesPercentage: 50,
       noPercentage: 50,
-      totalAmount: 0
+      totalAmount: 0,
     };
     setSelectedQuestion(mockQuestion);
 
@@ -267,7 +311,9 @@ function AppContent() {
           title: result.data.title || 'Soru',
           description: result.data.description || '',
           category: result.data.categories?.name || 'Genel',
-          image: result.data.image_url || 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop',
+          image:
+            result.data.image_url ||
+            'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop',
           yesOdds: result.data.yes_odds || 2.0,
           noOdds: result.data.no_odds || 2.0,
           totalVotes: result.data.total_votes || 0,
@@ -276,7 +322,7 @@ function AppContent() {
           endDate: result.data.end_date,
           yesPercentage: result.data.yes_percentage || 50,
           noPercentage: result.data.no_percentage || 50,
-          totalAmount: result.data.total_amount || 0
+          totalAmount: result.data.total_amount || 0,
         };
 
         setSelectedQuestion(question);
@@ -284,19 +330,19 @@ function AppContent() {
         // Backend'den veri gelmezse mock data kullan
         const mockQuestion: Question = {
           id: questionIdString,
-          title: "Soru Bulunamadı",
-          description: "Bu soru için detay bilgisi bulunamadı.",
-          category: "Genel",
-          image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop",
+          title: 'Soru Bulunamadı',
+          description: 'Bu soru için detay bilgisi bulunamadı.',
+          category: 'Genel',
+          image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop',
           yesOdds: 2.0,
           noOdds: 2.0,
           totalVotes: 0,
-          timeLeft: "Bilinmiyor",
-          publishDate: "Bilinmiyor",
-          endDate: "2024-12-31T23:59:59",
+          timeLeft: 'Bilinmiyor',
+          publishDate: 'Bilinmiyor',
+          endDate: '2024-12-31T23:59:59',
           yesPercentage: 50,
           noPercentage: 50,
-          totalAmount: 0
+          totalAmount: 0,
         };
         setSelectedQuestion(mockQuestion);
       }
@@ -306,19 +352,19 @@ function AppContent() {
       // Hata durumunda mock data kullan
       const mockQuestion: Question = {
         id: questionId.toString(),
-        title: "Soru Yüklenemedi",
-        description: "Soru detayları yüklenirken bir hata oluştu.",
-        category: "Genel",
-        image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop",
+        title: 'Soru Yüklenemedi',
+        description: 'Soru detayları yüklenirken bir hata oluştu.',
+        category: 'Genel',
+        image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop',
         yesOdds: 2.0,
         noOdds: 2.0,
         totalVotes: 0,
-        timeLeft: "Bilinmiyor",
-        publishDate: "Bilinmiyor",
-        endDate: "2024-12-31T23:59:59",
+        timeLeft: 'Bilinmiyor',
+        publishDate: 'Bilinmiyor',
+        endDate: '2024-12-31T23:59:59',
         yesPercentage: 50,
         noPercentage: 50,
-        totalAmount: 0
+        totalAmount: 0,
       };
       setSelectedQuestion(mockQuestion);
     }
@@ -339,21 +385,21 @@ function AppContent() {
   };
 
   const handleVote = (questionId: string, vote: 'yes' | 'no', odds: number, questionTitle?: string) => {
-    // Check if question is already in coupon
-    const existingSelectionIndex = couponSelections.findIndex(
-      selection => selection.questionId === questionId
-    );
+    setCouponSelections(prevSelections => {
+      // Check if question is already in coupon
+      const existingSelectionIndex = prevSelections.findIndex(selection => selection.questionId === questionId);
 
-    if (existingSelectionIndex !== -1) {
-      // Update existing selection
-      const updatedSelections = [...couponSelections];
-      updatedSelections[existingSelectionIndex] = {
-        ...updatedSelections[existingSelectionIndex],
-        vote,
-        odds
-      };
-      setCouponSelections(updatedSelections);
-    } else {
+      if (existingSelectionIndex !== -1) {
+        // Update existing selection
+        const updatedSelections = [...prevSelections];
+        updatedSelections[existingSelectionIndex] = {
+          ...updatedSelections[existingSelectionIndex],
+          vote,
+          odds,
+        };
+        return updatedSelections;
+      }
+
       // Add new selection
       const newSelection: CouponSelection = {
         id: Date.now(), // Simple ID generation
@@ -361,10 +407,10 @@ function AppContent() {
         title: questionTitle || `Soru ${questionId}`, // Use actual title if provided
         vote,
         odds,
-        boosted: Math.random() > 0.7 // Random boost for demo
+        boosted: Math.random() > 0.7, // Random boost for demo
       };
-      setCouponSelections([...couponSelections, newSelection]);
-    }
+      return [...prevSelections, newSelection];
+    });
 
     // Open coupon drawer
     setIsCouponDrawerOpen(true);
@@ -398,13 +444,17 @@ function AppContent() {
     setCurrentPage(page as PageType);
   };
 
-  const handleNavigateToPage = (page: PageType) => {
-    setCurrentPage(page);
+  const handleNavigateToPage = (page: string) => {
+    setCurrentPage(page as PageType);
     setIsMenuOpen(false);
   };
 
   const handleTasksNavigate = () => {
     setCurrentPage('tasks');
+  };
+
+  const handleTasksPageNavigation = (page: 'home' | 'leagues' | 'gameHub') => {
+    setCurrentPage(page);
   };
 
   const handleCouponsNavigate = () => {
@@ -419,7 +469,7 @@ function AppContent() {
       Alert.alert(
         'Ticket Oluştur',
         'Sorulara EVET veya HAYIR oyu vererek ticket oluşturabilirsin. Birden fazla soru ekleyebilirsin!',
-        [{ text: 'Tamam', style: 'default' }]
+        [{ text: 'Tamam', style: 'default' }],
       );
     }, 300);
   };
@@ -454,11 +504,7 @@ function AppContent() {
         );
       case 'allQuestions':
         return (
-          <AllQuestionsModal
-            onBack={handleBack}
-            handleQuestionDetail={handleQuestionDetail}
-            handleVote={handleVote}
-          />
+          <AllQuestionsModal onBack={handleBack} handleQuestionDetail={handleQuestionDetail} handleVote={handleVote} />
         );
       case 'coupons':
         return (
@@ -475,16 +521,12 @@ function AppContent() {
             onBack={() => setCurrentPage('home')}
             handleQuestionDetail={handleQuestionDetail}
             handleVote={handleVote}
+            onRaceModeChange={setIsLeagueRaceActive}
             onMenuToggle={handleMenuToggle}
           />
         );
       case 'gameHub':
-        return (
-          <GameHubPage
-            onBack={() => setCurrentPage('home')}
-            onMenuToggle={handleMenuToggle}
-          />
-        );
+        return <GameHubPage onBack={() => setCurrentPage('home')} onMenuToggle={handleMenuToggle} />;
       case 'newDiscover':
         return (
           <NewDiscoverPage
@@ -504,17 +546,13 @@ function AppContent() {
           />
         );
       case 'writeQuestion':
-        return (
-          <WriteQuestionPage
-            onBack={handleBack}
-            onMenuToggle={handleMenuToggle}
-          />
-        );
+        return <WriteQuestionPage onBack={handleBack} onMenuToggle={handleMenuToggle} />;
       case 'tasks':
         return (
           <TasksPage
             onBack={handleBack}
             onMenuToggle={handleMenuToggle}
+            onNavigateToPage={handleTasksPageNavigation}
           />
         );
       case 'settings':
@@ -554,19 +592,9 @@ function AppContent() {
         }
         return null;
       case 'editProfile':
-        return (
-          <EditProfilePage
-            onBack={handleBack}
-            userProfile={userProfile}
-            onUpdateProfile={handleUpdateProfile}
-          />
-        );
+        return <EditProfilePage onBack={handleBack} userProfile={userProfile} onUpdateProfile={handleUpdateProfile} />;
       case 'privacySettings':
-        return (
-          <PrivacySettingsPage
-            onBack={handleBack}
-          />
-        );
+        return <PrivacySettingsPage onBack={handleBack} />;
       case 'helpCenter':
         return (
           <HelpCenterPage
@@ -577,72 +605,32 @@ function AppContent() {
           />
         );
       case 'support':
-        return (
-          <SupportPage
-            onBack={handleBack}
-          />
-        );
+        return <SupportPage onBack={handleBack} />;
       case 'faq':
-        return (
-          <FAQPage
-            onBack={handleBack}
-          />
-        );
+        return <FAQPage onBack={handleBack} />;
       case 'feedback':
-        return (
-          <FeedbackPage
-            onBack={handleBack}
-          />
-        );
+        return <FeedbackPage onBack={handleBack} />;
       case 'about':
-        return (
-          <AboutPage
-            onBack={handleBack}
-          />
-        );
+        return <AboutPage onBack={handleBack} />;
       case 'adminPanel':
-        return (
-          <AdminPanel
-            onBack={handleBack}
-          />
-        );
+        return <AdminPanel onBack={handleBack} />;
       case 'market':
-        return (
-          <MarketPage
-            onBack={handleBack}
-            onMenuToggle={handleMenuToggle}
-            userCredits={userCredits}
-          />
-        );
+        return <MarketPage onBack={handleBack} userCredits={userCredits} />;
       case 'notifications':
         return (
           <NotificationsPage
             onBack={handleBack}
             onMenuToggle={handleMenuToggle}
+            onNavigateToPage={page => setCurrentPage(page as PageType)}
+            onOpenQuestionDetail={questionId => handleQuestionDetail(questionId)}
           />
         );
       case 'profile':
-        return (
-          <ProfilePage
-            onBack={handleBack}
-            onMenuToggle={handleMenuToggle}
-            userProfile={userProfile}
-          />
-        );
+        return <ProfilePage onBack={handleBack} onMenuToggle={handleMenuToggle} userProfile={userProfile} />;
       case 'questionCardDesign':
-        return (
-          <QuestionCardDesignPage
-            onBack={handleBack}
-            onMenuToggle={handleMenuToggle}
-          />
-        );
+        return <QuestionCardDesignPage onBack={handleBack} onMenuToggle={handleMenuToggle} />;
       case 'leaderboard':
-        return (
-          <LeaderboardPage
-            onBack={handleBack}
-            onMenuToggle={handleMenuToggle}
-          />
-        );
+        return <LeaderboardPage onBack={handleBack} onMenuToggle={handleMenuToggle} />;
       default:
         return (
           <HomePage
@@ -658,12 +646,7 @@ function AppContent() {
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
-        hidden={false}
-      />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent hidden={false} />
       <ThemeTransition>
         <SlideOutMenu isOpen={isMenuOpen} onClose={handleMenuClose} onNavigate={handleNavigateToPage}>
           <View style={styles.pageWrapper}>
@@ -691,30 +674,30 @@ function AppContent() {
             )}
             {renderCurrentPage()}
             {/* Only show bottom tabs on main pages */}
-            {(['home', 'coupons', 'gameHub', 'leagues'] as PageType[]).includes(currentPage) && (
+            {(['home', 'coupons', 'gameHub', 'leagues'] as PageType[]).includes(currentPage) &&
+              !isLeagueRaceActive && (
               <BottomTabs currentPage={currentPage} onPageChange={handlePageChange} />
             )}
-            {/* Coupon Drawer – sayfa içeriğiyle aynı view ağacında (iOS dokunma blokajı önlenir) */}
-            <CouponDrawer
-              isOpen={isCouponDrawerOpen}
-              onClose={() => setIsCouponDrawerOpen(false)}
-              selections={couponSelections}
-              onRemoveSelection={handleRemoveSelection}
-              onClearAll={handleClearAll}
-              onCouponSuccess={handleCouponSuccess}
-              userCredits={userCredits}
-              onCouponCreated={() => {
-                setCouponsRefreshTrigger(prev => prev + 1);
-              }}
-            />
+            {/* Coupon Drawer - detay modalı kapalıyken ana katmanda render edilir */}
+            {!isQuestionDetailOpen && (
+              <CouponDrawer
+                isOpen={isCouponDrawerOpen}
+                onClose={() => setIsCouponDrawerOpen(false)}
+                selections={couponSelections}
+                onRemoveSelection={handleRemoveSelection}
+                onClearAll={handleClearAll}
+                onCouponSuccess={handleCouponSuccess}
+                userCredits={userCredits}
+                onCouponCreated={() => {
+                  setCouponsRefreshTrigger(prev => prev + 1);
+                }}
+              />
+            )}
           </View>
         </SlideOutMenu>
 
         {/* Confetti Animation */}
-        <ConfettiAnimation
-          isVisible={showConfetti}
-          onComplete={() => setShowConfetti(false)}
-        />
+        <ConfettiAnimation isVisible={showConfetti} onComplete={() => setShowConfetti(false)} />
 
         {/* Question Detail Modal with Slide Animation */}
         <Modal
@@ -743,6 +726,20 @@ function AppContent() {
                 />
               ) : null}
             </Animated.View>
+
+            {/* Coupon Drawer - detay modalı açıkken bu katmanda render edilir */}
+            <CouponDrawer
+              isOpen={isCouponDrawerOpen}
+              onClose={() => setIsCouponDrawerOpen(false)}
+              selections={couponSelections}
+              onRemoveSelection={handleRemoveSelection}
+              onClearAll={handleClearAll}
+              onCouponSuccess={handleCouponSuccess}
+              userCredits={userCredits}
+              onCouponCreated={() => {
+                setCouponsRefreshTrigger(prev => prev + 1);
+              }}
+            />
           </View>
         </Modal>
       </ThemeTransition>
@@ -790,9 +787,7 @@ function AppWithAuth() {
 
   // Email verification gösteriliyorsa
   if (showEmailVerification) {
-    return (
-      <AppContentWrapper />
-    );
+    return <AppContentWrapper />;
   }
 
   // Giriş yapılmamışsa login sayfasını göster
@@ -831,7 +826,7 @@ function AppContentWrapper() {
 function EmailVerificationPageWrapper({
   userId,
   userEmail,
-  onVerified
+  onVerified,
 }: {
   userId: string;
   userEmail: string;
@@ -890,18 +885,14 @@ function EmailVerificationPageWrapper({
       const result = await verificationService.verifyOTP(userId, userEmail, otp);
 
       if (result.success) {
-        Alert.alert(
-          'Başarılı',
-          'Email adresiniz başarıyla doğrulandı!',
-          [
-            {
-              text: 'Tamam',
-              onPress: () => {
-                onVerified();
-              }
-            }
-          ]
-        );
+        Alert.alert('Başarılı', 'Email adresiniz başarıyla doğrulandı!', [
+          {
+            text: 'Tamam',
+            onPress: () => {
+              onVerified();
+            },
+          },
+        ]);
       } else {
         const errorMessage = result.error || 'Kod hatalı veya süresi dolmuş';
         const remainingAttempts = result.remainingAttempts;
@@ -944,11 +935,23 @@ function EmailVerificationPageWrapper({
       >
         {/* Header */}
         <View style={{ alignItems: 'center', marginBottom: 40 }}>
-          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+          <View
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: 40,
+              backgroundColor: '#F3F4F6',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 20,
+            }}
+          >
             <Text style={{ fontSize: 40 }}>✉️</Text>
           </View>
 
-          <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#111827', marginBottom: 12, textAlign: 'center' }}>Email Doğrulama</Text>
+          <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#111827', marginBottom: 12, textAlign: 'center' }}>
+            Email Doğrulama
+          </Text>
           <Text style={{ fontSize: 16, color: '#6B7280', textAlign: 'center', lineHeight: 24, paddingHorizontal: 20 }}>
             {userEmail} adresine gönderilen 6 haneli kodu girin
           </Text>
@@ -956,12 +959,7 @@ function EmailVerificationPageWrapper({
 
         {/* OTP Input */}
         <View style={{ alignItems: 'center', marginBottom: 32 }}>
-          <InputOTP
-            length={6}
-            value={otp}
-            onChange={setOtp}
-            style={{ marginVertical: 20 }}
-          />
+          <InputOTP length={6} value={otp} onChange={setOtp} style={{ marginVertical: 20 }} />
 
           {sendingOTP && (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, gap: 8 }}>
@@ -973,7 +971,17 @@ function EmailVerificationPageWrapper({
 
         {/* Action Button */}
         <TouchableOpacity
-          style={[{ backgroundColor: '#432870', paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }, (loading || otp.length !== 6) && { backgroundColor: '#9CA3AF' }]}
+          style={[
+            {
+              backgroundColor: '#432870',
+              paddingVertical: 16,
+              borderRadius: 12,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 24,
+            },
+            (loading || otp.length !== 6) && { backgroundColor: '#9CA3AF' },
+          ]}
           onPress={handleVerify}
           disabled={loading || otp.length !== 6}
           activeOpacity={0.8}
@@ -998,17 +1006,16 @@ function EmailVerificationPageWrapper({
               <ActivityIndicator size="small" color="#432870" />
             ) : (
               <Text style={[countdown > 0 && { color: '#9CA3AF' }]}>
-                {countdown > 0
-                  ? `Kodu Tekrar Gönder (${formatCountdown(countdown)})`
-                  : 'Kodu Tekrar Gönder'
-                }
+                {countdown > 0 ? `Kodu Tekrar Gönder (${formatCountdown(countdown)})` : 'Kodu Tekrar Gönder'}
               </Text>
             )}
           </TouchableOpacity>
         </View>
 
         {/* Info */}
-        <View style={{ backgroundColor: '#F9FAFB', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' }}>
+        <View
+          style={{ backgroundColor: '#F9FAFB', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' }}
+        >
           <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', lineHeight: 20 }}>
             ⏰ Kod 10 dakika geçerlidir{'\n'}
             📧 Email'inizi kontrol etmeyi unutmayın (Spam klasörüne bakın)

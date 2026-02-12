@@ -2,8 +2,8 @@ export type PredictionResult = 'won' | 'lost' | 'pending' | 'cancelled';
 export type CouponStatus = 'pending' | 'won' | 'lost' | 'cancelled';
 
 export interface CouponPrediction {
-  id: number;
-  questionId: number;
+  id: string;
+  questionId: string;
   question: string;
   choice: 'yes' | 'no';
   odds: number;

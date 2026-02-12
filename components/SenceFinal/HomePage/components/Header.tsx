@@ -12,35 +12,35 @@ interface HeaderProps {
 
 export function Header({ onMenuToggle, headerTranslateY, isDarkMode, theme }: HeaderProps) {
   const { unreadNotificationsCount } = useAuth();
-  
+
   return (
-    <Animated.View style={[
-      styles.container,
-      {
-        transform: [{ translateY: headerTranslateY }],
-      }
-    ]}>
+    <Animated.View
+      style={[
+        styles.container,
+        {
+          transform: [{ translateY: headerTranslateY }],
+        },
+      ]}
+    >
       <View style={styles.content}>
-        <TouchableOpacity 
-          style={[styles.menuButton, { 
-            backgroundColor: 'rgba(33, 38, 45, 0.9)',
-            borderColor: 'rgba(48, 54, 61, 0.8)',
-            shadowColor: '#000'
-          }]}
+        <TouchableOpacity
+          style={[
+            styles.menuButton,
+            {
+              backgroundColor: 'rgba(33, 38, 45, 0.9)',
+              shadowColor: '#000',
+            },
+          ]}
           onPress={onMenuToggle}
           activeOpacity={0.8}
         >
           <View style={styles.hamburgerIcon}>
-            <View style={[styles.hamburgerLine, { backgroundColor: '#F0F6FC' }]} />
-            <View style={[styles.hamburgerLine, { backgroundColor: '#F0F6FC' }]} />
-            <View style={[styles.hamburgerLine, { backgroundColor: '#F0F6FC' }]} />
+            <View style={[styles.hamburgerLine, { backgroundColor: '#FFFFFF' }]} />
+            <View style={[styles.hamburgerLine, { backgroundColor: '#FFFFFF' }]} />
+            <View style={[styles.hamburgerLine, { backgroundColor: '#FFFFFF' }]} />
           </View>
           {unreadNotificationsCount > 0 && (
-            <NotificationBadge 
-              count={unreadNotificationsCount} 
-              size="small"
-              style={styles.notificationBadge}
-            />
+            <NotificationBadge count={unreadNotificationsCount} size="small" style={styles.notificationBadge} />
           )}
         </TouchableOpacity>
       </View>
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    backgroundColor: 'rgba(33, 38, 45, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -79,8 +79,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
+    borderWidth: 0,
   },
   hamburgerIcon: {
     width: 18,
@@ -99,4 +98,3 @@ const styles = StyleSheet.create({
     right: -2,
   },
 });
-

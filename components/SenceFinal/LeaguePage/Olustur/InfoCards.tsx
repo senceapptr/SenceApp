@@ -5,19 +5,19 @@ import { LinearGradient } from 'expo-linear-gradient';
 export function InfoCards() {
   const infoItems = [
     {
-      gradient: ['#10B981', '#34D399'],
+      gradient: ['#256EFF', '#256EFF'],
       emoji: '🎯',
       title: 'Özelleştirilebilir',
       description: 'Kategorileri, kuralları ve ödül sistemini sen belirle'
     },
     {
-      gradient: ['#C9F158', '#353831'],
+      gradient: ['#256EFF', '#353831'],
       emoji: '👥',
       title: 'Arkadaşlarınla Özel',
       description: 'Public veya private lig seçenekleri'
     },
     {
-      gradient: ['#10B981', '#34D399'],
+      gradient: ['#256EFF', '#256EFF'],
       emoji: '💰',
       title: 'Ödül Havuzu',
       description: 'Katılım ücretlerinden oluşan büyük ödüller'

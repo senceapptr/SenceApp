@@ -1,211 +1,182 @@
 // =====================================================
-// NOTIFICATION CARD - Premium Dark Style (Ticket Style)
+// NOTIFICATION CARD
 // =====================================================
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
 import { NotificationCardProps } from '../types';
 import { getNotificationConfig } from '../utils';
 
-export const NotificationCard: React.FC<NotificationCardProps> = ({
-  notification,
-  onPress,
-  onDelete,
-  onMarkAsRead,
-}) => {
+const HEX_COLOR_PATTERN = /^#?([0-9a-f]{6})$/i;
+
+const toRgb = (hexColor: string) => {
+  const match = HEX_COLOR_PATTERN.exec(hexColor.trim());
+  if (!match) {
+    return { b: 110, g: 110, r: 110 };
+  }
+
+  const normalized = match[1];
+  return {
+    b: parseInt(normalized.slice(4, 6), 16),
+    g: parseInt(normalized.slice(2, 4), 16),
+    r: parseInt(normalized.slice(0, 2), 16),
+  };
+};
+
+const getReadToneFromTint = (hexColor: string) => {
+  const { b, g, r } = toRgb(hexColor);
+  const luminance = r * 0.299 + g * 0.587 + b * 0.114;
+
+  const desaturated = {
+    b: Math.round(b * 0.12 + luminance * 0.88),
+    g: Math.round(g * 0.12 + luminance * 0.88),
+    r: Math.round(r * 0.12 + luminance * 0.88),
+  };
+
+  const background = {
+    b: Math.round(desaturated.b * 0.18 + 12),
+    g: Math.round(desaturated.g * 0.18 + 12),
+    r: Math.round(desaturated.r * 0.18 + 12),
+  };
+
+  const border = {
+    b: Math.round(desaturated.b * 0.28 + 20),
+    g: Math.round(desaturated.g * 0.28 + 20),
+    r: Math.round(desaturated.r * 0.28 + 20),
+  };
+
+  return {
+    backgroundColor: `rgb(${background.r}, ${background.g}, ${background.b})`,
+    borderColor: `rgb(${border.r}, ${border.g}, ${border.b})`,
+  };
+};
+
+export const NotificationCard: React.FC<NotificationCardProps> = ({ notification, onPress }) => {
   const config = getNotificationConfig(notification.type);
   const isUnread = !notification.read;
-
-  // Renk ve tema ayarları (TicketListItem'dan esinlenildi)
-  // config.colors[0] = ana renk (glow, border için)
-  const primaryColor = config.colors[0];
-
-  const handlePress = () => {
-    if (isUnread) {
-      onMarkAsRead(notification.id);
-    }
-    onPress(notification.id);
-  };
+  const readToneStyle = getReadToneFromTint(config.tintColor);
+  const cardToneStyle = isUnread
+    ? {
+        backgroundColor: `${config.tintColor}2B`,
+        borderColor: `${config.tintColor}B3`,
+        shadowColor: config.tintColor,
+      }
+    : {
+        ...readToneStyle,
+        shadowColor: config.tintColor,
+      };
 
   return (
     <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={handlePress}
-      style={[
-        styles.container,
-        {
-          borderColor: isUnread ? primaryColor : 'rgba(255,255,255,0.05)',
-          borderWidth: isUnread ? 1 : 1,
-          shadowColor: isUnread ? primaryColor : 'transparent',
-          shadowOpacity: isUnread ? 0.25 : 0,
-        }
-      ]}
+      activeOpacity={0.8}
+      onPress={() => onPress(notification)}
+      style={[styles.container, cardToneStyle, isUnread && styles.unreadContainer]}
     >
-      <LinearGradient
-        colors={['#161B22', '#0D1117']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.cardGradient}
-      >
-        <View style={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              {/* Icon Box */}
-              <View style={[styles.iconBox, { backgroundColor: primaryColor + '20' }]}>
-                <Text style={{ fontSize: 16 }}>{config.icon}</Text>
-              </View>
+      <View style={styles.content}>
+        <View
+          style={[
+            styles.iconWrap,
+            {
+              backgroundColor: `${config.tintColor}40`,
+              borderColor: `${config.tintColor}CC`,
+            },
+          ]}
+        >
+          <Ionicons color={config.tintColor} name={config.iconName as any} size={24} />
+        </View>
 
-              <View>
-                <View style={styles.titleRow}>
-                  <Text style={[styles.title, !isUnread && styles.titleRead]} numberOfLines={1}>
-                    {notification.title}
-                  </Text>
-                  {isUnread && (
-                    <View style={[styles.unreadDot, { backgroundColor: primaryColor }]} />
-                  )}
-                </View>
-                <Text style={styles.timeText}>{notification.time}</Text>
-              </View>
-            </View>
-
-            {/* Delete Button */}
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => onDelete(notification.id)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="close" size={16} color="#6B7280" />
-            </TouchableOpacity>
+        <View style={styles.textContent}>
+          <View style={styles.titleRow}>
+            <Text numberOfLines={1} style={[styles.title, !isUnread && styles.readText]}>
+              {notification.title}
+            </Text>
+            {isUnread && <View style={styles.unreadDot} />}
           </View>
 
-          <View style={styles.divider} />
-
-          {/* Message Content */}
-          <Text style={[styles.message, !isUnread && styles.messageRead]}>
+          <Text numberOfLines={2} style={[styles.message, !isUnread && styles.readText]}>
             {notification.message}
           </Text>
 
-          {/* Reward Badge if exists */}
-          {notification.data?.reward && (
-            <View style={styles.rewardContainer}>
-              <View style={[styles.rewardBadge, { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderColor: '#10B981' }]}>
-                <Ionicons name="gift-outline" size={12} color="#10B981" style={{ marginRight: 4 }} />
-                <Text style={styles.rewardText}>+{notification.data.reward} Kredi</Text>
-              </View>
-            </View>
-          )}
+          <Text style={styles.time}>{notification.time}</Text>
         </View>
-      </LinearGradient>
+      </View>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 12,
-    borderRadius: 16,
+    backgroundColor: '#253247',
+    borderColor: '#5E7CA6',
+    borderRadius: 20,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
     elevation: 4,
+    minHeight: 100,
     overflow: 'hidden',
-    backgroundColor: '#0D1117', // Fallback color
-  },
-  cardGradient: {
-    padding: 0,
-    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    shadowColor: '#000000',
+    shadowOffset: {
+      height: 4,
+      width: 0,
+    },
+    shadowOpacity: 0.26,
+    shadowRadius: 12,
   },
   content: {
-    padding: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  headerLeft: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
+    gap: 14,
   },
-  iconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+  iconWrap: {
     alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    height: 46,
+    justifyContent: 'center',
+    marginTop: 1,
+    width: 46,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 2,
+  message: {
+    color: '#B1BAC4',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  readText: {
+    color: '#8B949E',
+  },
+  textContent: {
+    flex: 1,
+    gap: 5,
+    justifyContent: 'center',
+    minHeight: 70,
+  },
+  time: {
+    color: '#8B949E',
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
   },
   title: {
     color: '#F0F6FC',
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: 0.3,
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '700',
+    marginRight: 8,
   },
-  titleRead: {
-    color: '#8B949E',
+  titleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  unreadContainer: {
+    borderWidth: 1.2,
   },
   unreadDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  timeText: {
-    color: '#8B949E',
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  deleteButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginBottom: 12,
-  },
-  message: {
-    fontSize: 14,
-    color: '#C9D1D9', // GitHub dark text color style
-    lineHeight: 20,
-    fontWeight: '400',
-  },
-  messageRead: {
-    color: '#6E7681',
-  },
-  rewardContainer: {
-    marginTop: 12,
-    flexDirection: 'row',
-  },
-  rewardBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  rewardText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#10B981',
-    letterSpacing: 0.5,
+    backgroundColor: '#3D83FF',
+    borderRadius: 4,
+    height: 8,
+    width: 8,
   },
 });

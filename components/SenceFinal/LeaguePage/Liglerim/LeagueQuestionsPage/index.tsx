@@ -10,12 +10,12 @@ interface LeagueQuestionsPageProps {
   onBack: () => void;
   leagueName: string;
   leagueCategories: string[];
-  handleVote?: (questionId: number, vote: 'yes' | 'no', odds: number) => void;
+  handleVote?: (questionId: string, vote: 'yes' | 'no', odds: number) => void;
 }
 
 const mockQuestions: Question[] = [
   {
-    id: 1,
+    id: '1',
     text: "Fenerbahçe bu hafta sonu Galatasaray'ı yenecek mi?",
     category: "futbol",
     categoryEmoji: "⚽",
@@ -29,7 +29,7 @@ const mockQuestions: Question[] = [
     isTrending: true
   },
   {
-    id: 2,
+    id: '2',
     text: "Lakers bu sezon NBA şampiyonu olacak mı?",
     category: "basketbol",
     categoryEmoji: "🏀",
@@ -43,7 +43,7 @@ const mockQuestions: Question[] = [
     isTrending: false
   },
   {
-    id: 3,
+    id: '3',
     text: "Djokovic French Open'ı kazanacak mı?",
     category: "tenis",
     categoryEmoji: "🎾",
@@ -57,7 +57,7 @@ const mockQuestions: Question[] = [
     isTrending: true
   },
   {
-    id: 4,
+    id: '4',
     text: "Beşiktaş bu sezon Avrupa kupalarına kalacak mı?",
     category: "futbol",
     categoryEmoji: "⚽",
@@ -71,7 +71,7 @@ const mockQuestions: Question[] = [
     isTrending: false
   },
   {
-    id: 5,
+    id: '5',
     text: "Anadolu Efes EuroLeague finaline kalacak mı?",
     category: "basketbol",
     categoryEmoji: "🏀",
@@ -105,7 +105,7 @@ export function LeagueQuestionsPage({
     ? mockQuestions 
     : mockQuestions.filter(q => q.category === activeCategory);
 
-  const handleVoteClick = (questionId: number, vote: 'yes' | 'no', odds: number) => {
+  const handleVoteClick = (questionId: string, vote: 'yes' | 'no', odds: number) => {
     if (handleVote) {
       handleVote(questionId, vote, odds);
     }
@@ -115,7 +115,7 @@ export function LeagueQuestionsPage({
     <View style={styles.container}>
       {/* Header */}
       <LinearGradient
-        colors={['#10B981', '#059669', '#047857']}
+        colors={['#256EFF', '#256EFF', '#256EFF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.headerSafeArea}
@@ -249,4 +249,3 @@ const styles = StyleSheet.create({
     color: '#8B949E',
   },
 });
-

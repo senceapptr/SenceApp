@@ -5,6 +5,7 @@ import { LeagueCard } from '../shared/LeagueCard';
 
 interface CompletedSectionProps {
   leagues: League[];
+  nowTick: number;
   onCardPress: (league: League) => void;
   onQuestionsPress: (league: League) => void;
   onLeaderboardPress: (league: League) => void;
@@ -13,6 +14,7 @@ interface CompletedSectionProps {
 
 export function CompletedSection({ 
   leagues, 
+  nowTick,
   onCardPress,
   onQuestionsPress,
   onLeaderboardPress,
@@ -27,6 +29,7 @@ export function CompletedSection({
         <LeagueCard
           key={league.id}
           league={league}
+          nowTick={nowTick}
           isMyLeague
           onCardPress={onCardPress}
           onQuestionsPress={onQuestionsPress}
@@ -49,4 +52,3 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 });
-

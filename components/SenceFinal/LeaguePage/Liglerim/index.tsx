@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
+
+import { useAuth } from '@/contexts/AuthContext';
+import { leaguesService, PendingLeagueRequest } from '@/services/leagues.service';
+
 import { League, User } from '../types';
 import { LeagueProgressCard } from './LeagueProgressCard';
 import { ActiveSection } from './ActiveSection';
@@ -12,17 +16,20 @@ import { LeagueInviteModal } from '../LeagueInviteModal';
 
 interface LiglerimTabProps {
   leagues: League[];
+  nowTick: number;
   currentUser: User;
   onDiscoverTab: () => void;
   onShowRaceArena: (league: League) => void;
 }
 
-export function LiglerimTab({ leagues, currentUser, onDiscoverTab, onShowRaceArena }: LiglerimTabProps) {
+export function LiglerimTab({ leagues, nowTick, currentUser, onDiscoverTab, onShowRaceArena }: LiglerimTabProps) {
+  const { user } = useAuth();
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<PendingLeagueRequest[]>([]);
 
   const myLeagues = leagues.filter(league => league.isJoined);
   const activeLeagues = myLeagues.filter(league => league.status === 'active');
@@ -70,52 +77,41 @@ export function LiglerimTab({ leagues, currentUser, onDiscoverTab, onShowRaceAre
     }, 100);
   };
 
+  const loadPendingRequests = async (leagueId: string) => {
+    const result = await leaguesService.getPendingLeagueRequests(leagueId);
+    setPendingRequests(result.data || []);
+  };
+
   const handleShareFromModal = () => {
     setShowDetails(false);
     setTimeout(() => {
+      if (selectedLeague?.isPrivate) {
+        void loadPendingRequests(selectedLeague.id);
+      } else {
+        setPendingRequests([]);
+      }
       setShowInvite(true);
     }, 100);
   };
 
-  const handleApproveRequest = (userId: string) => {
-    console.log('Approved user:', userId);
-    // Here you would call your API to approve the request
+  const handleApproveRequest = async (userId: string) => {
+    if (!selectedLeague) return;
+
+    const result = await leaguesService.approveLeagueRequest(selectedLeague.id, userId);
+    if (result.error) return;
+
+    setPendingRequests(prev => prev.filter(request => request.userId !== userId));
+    setSelectedLeague(prev => (prev ? { ...prev, participants: prev.participants + 1 } : prev));
   };
 
-  const handleRejectRequest = (userId: string) => {
-    console.log('Rejected user:', userId);
-    // Here you would call your API to reject the request
-  };
+  const handleRejectRequest = async (userId: string) => {
+    if (!selectedLeague) return;
 
-  // Mock pending requests data
-  const mockPendingRequests = [
-    {
-      userId: '1',
-      username: 'ahmet_yilmaz',
-      avatar: 'https://i.pravatar.cc/150?img=1',
-      requestDate: '2 saat önce',
-      predictionCount: 145,
-      accuracy: 78,
-      bio: 'Spor tahminlerinde uzmanım'
-    },
-    {
-      userId: '2',
-      username: 'zeynep_kaya',
-      avatar: 'https://i.pravatar.cc/150?img=5',
-      requestDate: '5 saat önce',
-      predictionCount: 89,
-      accuracy: 65,
-      bio: 'Teknoloji ve finans takipçisiyim'
-    },
-    {
-      userId: '3',
-      username: 'mehmet_demir',
-      avatar: 'https://i.pravatar.cc/150?img=3',
-      requestDate: '1 gün önce',
-      predictionCount: 234,
-      accuracy: 82,
-    },
-  ];
+    const result = await leaguesService.rejectLeagueRequest(selectedLeague.id, userId);
+    if (result.error) return;
+
+    setPendingRequests(prev => prev.filter(request => request.userId !== userId));
+  };
 
   return (
     <View style={styles.container}>
@@ -123,6 +119,7 @@ export function LiglerimTab({ leagues, currentUser, onDiscoverTab, onShowRaceAre
 
       <ActiveSection
         leagues={activeLeagues}
+        nowTick={nowTick}
         onCardPress={handleCardPress}
         onQuestionsPress={handleRacePress}
         onLeaderboardPress={handleLeaderboardPress}
@@ -131,6 +128,7 @@ export function LiglerimTab({ leagues, currentUser, onDiscoverTab, onShowRaceAre
 
       <CompletedSection
         leagues={completedLeagues}
+        nowTick={nowTick}
         onCardPress={handleCardPress}
         onQuestionsPress={handleRacePress}
         onLeaderboardPress={handleLeaderboardPress}
@@ -168,10 +166,12 @@ export function LiglerimTab({ leagues, currentUser, onDiscoverTab, onShowRaceAre
         leagueName={selectedLeague?.name || ''}
         leagueId={selectedLeague?.id.toString() || ''}
         leagueDescription={selectedLeague?.description}
+        leagueIconName={selectedLeague?.leagueIconName}
+        leagueIconColor={selectedLeague?.leagueIconColor}
         memberCount={selectedLeague?.participants || 0}
         isPrivate={selectedLeague?.isPrivate || false}
-        isAdmin={true}
-        pendingRequests={mockPendingRequests}
+        isAdmin={selectedLeague?.creatorId === user?.id}
+        pendingRequests={pendingRequests}
         onApproveRequest={handleApproveRequest}
         onRejectRequest={handleRejectRequest}
         onClose={() => setShowInvite(false)}
@@ -185,4 +185,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-

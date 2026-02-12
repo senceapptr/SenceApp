@@ -1,43 +1,46 @@
-import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { Session, User, AuthError } from '@supabase/supabase-js';
+import React, { createContext, useContext, useLayoutEffect, useState } from 'react';
+
 import { supabase, supabaseService } from '@/lib/supabase';
 import { verificationService } from '@/services/verification.service';
 
 // Profil tipi
 export interface Profile {
   id: string;
-  username: string;
-  full_name: string | null;
-  bio: string | null;
   email: string;
-  profile_image: string | null;
+  username: string;
+  bio: string | null;
+  level: number | null;
+  credits: number | null;
+  tickets?: number | null;
+  full_name: string | null;
+  experience: number | null;
+  created_at: string | null;
+  updated_at: string | null;
   cover_image: string | null;
-  credits: number;
-  level: number;
-  experience: number;
-  created_at: string;
-  updated_at: string;
-  is_verified?: boolean; // Email verification durumu
+  profile_image: string | null;
+  league_quota?: number | null;
+  is_verified?: boolean | null; // Email verification durumu
 }
 
 interface AuthContextType {
+  loading: boolean;
   user: User | null;
   profile: Profile | null;
   session: Session | null;
-  loading: boolean;
-  unreadNotificationsCount: number;
   isEmailVerified: boolean; // Email verification durumu
   pendingVerification: boolean; // SignUp sonrası verification bekleniyor mu
-  pendingVerificationUser: { id: string; email: string; password?: string } | null; // SignUp sonrası user bilgileri (user null olsa bile)
-  signUp: (email: string, password: string, username: string) => Promise<{ error: AuthError | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
+  unreadNotificationsCount: number;
   forceLogout: () => Promise<void>;
-  updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
   refreshUnreadCount: () => Promise<void>;
-  checkEmailVerification: () => Promise<void>; // Email verification durumunu kontrol et
   markEmailAsVerified: () => Promise<void>; // Verification başarılı olduğunda state'i güncelle
+  checkEmailVerification: () => Promise<void>; // Email verification durumunu kontrol et
+  updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
+  pendingVerificationUser: { id: string; email: string; password?: string } | null; // SignUp sonrası user bilgileri (user null olsa bile)
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signUp: (email: string, password: string, username: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,16 +53,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [pendingVerification, setPendingVerification] = useState(false);
-  const [pendingVerificationUser, setPendingVerificationUser] = useState<{ id: string; email: string; password?: string } | null>(null);
+  const [pendingVerificationUser, setPendingVerificationUser] = useState<{
+    id: string;
+    email: string;
+    password?: string;
+  } | null>(null);
 
   // Profil bilgilerini yükle
   const loadProfile = async (userId: string, retries = 3) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
 
       if (error) {
         // Profil bulunamadıysa ve deneme hakkı varsa tekrar dene
@@ -68,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await new Promise(resolve => setTimeout(resolve, 1000));
           return loadProfile(userId, retries - 1);
         }
-        
+
         console.error('Error loading profile:', error);
         return;
       }
@@ -77,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Email verification durumunu kontrol et
       const profileData = data as Profile | null;
       if (profileData?.is_verified !== undefined) {
-        setIsEmailVerified(profileData.is_verified);
+        setIsEmailVerified(Boolean(profileData.is_verified));
       }
     } catch (error) {
       console.error('Error in loadProfile:', error);
@@ -109,8 +112,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Mevcut session'ı kontrol et
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -132,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         loadProfile(session.user.id);
         loadUnreadCount(session.user.id);
@@ -143,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setPendingVerification(false);
         setPendingVerificationUser(null);
       }
-      
+
       setLoading(false);
     });
 
@@ -157,13 +162,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Şifreyi geçici olarak sakla (verification sonrası otomatik login için)
     try {
       console.log('Starting signup process...');
-      
+
       // 1. Kullanıcıyı oluştur (username'i metadata'da gönder)
       // NOT: emailRedirectTo eklemiyoruz - kendi OTP sistemimiz var
       // Email confirmation'ı Supabase Dashboard'da kapatmak gerekiyor
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
-        password,
         options: {
           data: {
             username: username,
@@ -171,6 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Email confirmation bypass etmek için (kendi OTP sistemimiz var)
           // Ama Supabase Dashboard'da "Enable email confirmations" kapatılmalı
         },
+        password,
       });
 
       if (authError) {
@@ -197,21 +202,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       while (!profileCreated && attempts < maxAttempts) {
         attempts++;
-        
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            username,
-            email,
-            full_name: username,
-            profile_image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
-            cover_image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
-            bio: 'Yeni Sence kullanıcısı 🎯',
-            credits: 10000,
-            level: 1,
-            experience: 0,
-          } as any);
+
+        const { error: profileError } = await supabase.from('profiles').insert({
+          bio: 'Yeni Sence kullanıcısı 🎯',
+          cover_image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
+          credits: 10000,
+          email,
+          experience: 0,
+          full_name: username,
+          id: authData.user.id,
+          level: 1,
+          profile_image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
+          username,
+        } as any);
 
         if (!profileError) {
           console.log('Profile created successfully');
@@ -240,9 +243,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // User bilgilerini geçici olarak sakla (user null olsa bile)
       // Şifreyi de sakla - verification sonrası otomatik login için
       setPendingVerificationUser({
-        id: authData.user.id,
         email: authData.user.email || email,
-        password: password // Geçici olarak sakla - verification sonrası otomatik login için
+        id: authData.user.id,
+        password: password, // Geçici olarak sakla - verification sonrası otomatik login için
       });
       setPendingVerification(true);
 
@@ -266,56 +269,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         // "Email not confirmed" hatası - Supabase email confirmation açık olduğunda session oluşturmuyor
         // Service Role Key ile Admin API kullanarak session oluşturmayı deneyelim
-        if (error.message?.toLowerCase().includes('email') && 
-            (error.message?.toLowerCase().includes('confirm') || 
-             error.message?.toLowerCase().includes('verified') ||
-             error.message?.toLowerCase().includes('not confirmed'))) {
+        if (
+          error.message?.toLowerCase().includes('email') &&
+          (error.message?.toLowerCase().includes('confirm') ||
+            error.message?.toLowerCase().includes('verified') ||
+            error.message?.toLowerCase().includes('not confirmed'))
+        ) {
           console.warn('Email not confirmed - attempting to create session using Admin API');
-          
+
           try {
             // Önce şifre kontrolü yap (email ve password ile)
             // Service Role Key ile direkt auth.users tablosundan user'ı bul
             const { data: authUsers, error: adminError } = await supabaseService.auth.admin.listUsers();
-            
+
             if (adminError) {
               console.error('Admin API error:', adminError);
               // Admin API kullanılamıyorsa, normal hata mesajını döndür
-              return { 
+              return {
                 error: {
                   ...error,
-                  message: 'Email adresiniz doğrulanmadı. Lütfen Supabase Dashboard\'da "Enable email confirmations" ayarını kapatın veya email doğrulama yapın.'
-                } as AuthError
+                  message:
+                    'Email adresiniz doğrulanmadı. Lütfen Supabase Dashboard\'da "Enable email confirmations" ayarını kapatın veya email doğrulama yapın.',
+                } as AuthError,
               };
             }
-            
+
             // Email ile user'ı bul
             const user = authUsers?.users?.find(u => u.email === email);
-            
+
             if (!user) {
               // Email bulunamadı
               return { error };
             }
-            
+
             // Şifre kontrolü için tekrar signInWithPassword dene - bu sefer bypass edelim
             // Alternatif: Service Role ile user'ın email_confirmed_at'ini güncelle
             // Ama bu güvenlik riski - şifre kontrolü yapmıyor
-            
+
             // En güvenli yaklaşım: Email confirmation'ı Supabase Dashboard'da kapatmak
             // Geçici çözüm: Admin API ile user'ı getir ve session oluştur
             // NOT: Bu güvenlik riski - şifre doğrulaması yapılmıyor!
-            
+
             // Email doğru - şimdi şifre kontrolü yapmalıyız
             // Service Role Key ile email_confirmed_at'i güncelleyerek email confirmation'ı bypass edelim
             // Bu güvenli bir yaklaşım - şifre kontrolü zaten ilk signInWithPassword çağrısında yapıldı
-            
+
             // User'ın email_confirmed_at'ini güncelle (şifre doğru olduğu için güvenli)
-            const { data: updateData, error: updateError } = await supabaseService.auth.admin.updateUserById(
-              user.id,
-              {
-                email_confirm: true, // Email'i confirmed olarak işaretle
-              }
-            );
-            
+            const { data: updateData, error: updateError } = await supabaseService.auth.admin.updateUserById(user.id, {
+              email_confirm: true, // Email'i confirmed olarak işaretle
+            });
+
             if (updateError) {
               console.error('Failed to update email confirmation status:', updateError);
               // Update başarısız - normal signIn'i tekrar dene
@@ -323,47 +326,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 email,
                 password,
               });
-              
+
               if (retryError) {
                 return { error: retryError };
               }
-              
+
               if (retryData?.user && retryData?.session) {
                 return { error: null };
               }
             }
-            
+
             // Email confirmation güncellendi - tekrar signIn dene
             const { data: retrySignInData, error: retrySignInError } = await supabase.auth.signInWithPassword({
               email,
               password,
             });
-            
+
             if (retrySignInError) {
               return { error: retrySignInError };
             }
-            
+
             if (retrySignInData?.user && retrySignInData?.session) {
               // Başarılı - session oluşturuldu
               console.log('Session created successfully after updating email confirmation');
               return { error: null };
             }
-            
+
             // Session oluşturulamadı
-            return { 
+            return {
               error: {
                 ...error,
-                message: 'Email adresiniz doğrulanmadı. Lütfen Supabase Dashboard\'da "Enable email confirmations" ayarını kapatın.'
-              } as AuthError
+                message:
+                  'Email adresiniz doğrulanmadı. Lütfen Supabase Dashboard\'da "Enable email confirmations" ayarını kapatın.',
+              } as AuthError,
             };
           } catch (bypassError) {
             console.error('Error attempting to bypass email confirmation:', bypassError);
             // Bypass başarısız - kullanıcıya açıklayıcı mesaj göster
-            return { 
+            return {
               error: {
                 ...error,
-                message: 'Email adresiniz doğrulanmadı. Lütfen Supabase Dashboard\'da Authentication > Settings > "Enable email confirmations" ayarını kapatın.'
-              } as AuthError
+                message:
+                  'Email adresiniz doğrulanmadı. Lütfen Supabase Dashboard\'da Authentication > Settings > "Enable email confirmations" ayarını kapatın.',
+              } as AuthError,
             };
           }
         }
@@ -395,16 +400,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Supabase auth'dan çıkış yap
       await supabase.auth.signOut();
-      
+
       // Local state'i temizle
       setUser(null);
       setProfile(null);
       setSession(null);
-      
+
       // AsyncStorage'dan tüm Supabase verilerini temizle
       const { clearSupabaseAuth } = await import('@/lib/supabase-storage');
       await clearSupabaseAuth();
-      
+
       console.log('Force logout completed - all auth data cleared');
     } catch (error) {
       console.error('Force logout error:', error);
@@ -418,17 +423,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const { error } = await (supabase
-        .from('profiles') as any)
-        .update(updates)
-        .eq('id', user.id);
+      const { error } = await (supabase.from('profiles') as any).update(updates).eq('id', user.id);
 
       if (error) {
         return { error };
       }
 
       // Local state'i güncelle
-      setProfile((prev) => (prev ? { ...prev, ...updates } : null));
+      setProfile(prev => (prev ? { ...prev, ...updates } : null));
 
       return { error: null };
     } catch (error) {
@@ -454,11 +456,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Email verification durumunu kontrol et
   const checkEmailVerification = async () => {
     if (!user) return;
-    
+
     try {
       const result = await verificationService.checkVerificationStatus(user.id);
       setIsEmailVerified(result.isVerified);
-      
+
       // Profil state'ini de güncelle
       if (profile) {
         setProfile({ ...profile, is_verified: result.isVerified });
@@ -471,7 +473,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Email verification başarılı olduğunda state'i güncelle ve otomatik login yap
   const markEmailAsVerified = async () => {
     setIsEmailVerified(true);
-    
+
     // Verification sonrası otomatik login yap (eğer şifre varsa)
     const verificationUser = pendingVerificationUser;
     if (verificationUser?.password && verificationUser.email) {
@@ -481,7 +483,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: verificationUser.email,
           password: verificationUser.password,
         });
-        
+
         if (signInError) {
           console.error('Auto-login error:', signInError);
           // Hata olsa bile devam et - kullanıcı manuel login yapabilir
@@ -492,10 +494,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Auto-login exception:', error);
       }
     }
-    
+
     setPendingVerification(false);
     setPendingVerificationUser(null); // Artık gerek yok - güvenlik için temizle
-    
+
     // Profil state'ini de güncelle
     if (profile) {
       setProfile({ ...profile, is_verified: true });
@@ -503,23 +505,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value = {
-    user,
-    profile,
-    session,
-    loading,
-    unreadNotificationsCount,
+    checkEmailVerification,
+    forceLogout,
     isEmailVerified,
+    loading,
+    markEmailAsVerified,
     pendingVerification,
     pendingVerificationUser,
-    signUp,
-    signIn,
-    signOut,
-    forceLogout,
-    updateProfile,
+    profile,
     refreshProfile,
     refreshUnreadCount,
-    checkEmailVerification,
-    markEmailAsVerified,
+    session,
+    signIn,
+    signOut,
+    signUp,
+    unreadNotificationsCount,
+    updateProfile,
+    user,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -533,4 +535,3 @@ export function useAuth() {
   }
   return context;
 }
-

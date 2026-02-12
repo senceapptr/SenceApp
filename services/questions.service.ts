@@ -377,6 +377,8 @@ export const questionsService = {
           end_date,
           yes_odds,
           no_odds,
+          yes_percentage,
+          no_percentage,
           total_votes,
           categories!questions_category_id_fkey (
             name
@@ -737,4 +739,3 @@ export const questionsService = {
     }
   },
 };
-

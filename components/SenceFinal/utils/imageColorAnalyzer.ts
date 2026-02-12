@@ -81,7 +81,21 @@ const MODERN_PALETTES = {
   },
 };
 
-const FALLBACK_SECOND_COLOR = '#30363D';
+const PALETTE_KEYS = Object.keys(MODERN_PALETTES) as Array<keyof typeof MODERN_PALETTES>;
+
+const hashString = (value: string) => {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+};
+
+const getPaletteByImageHash = (imageUrl: string) => {
+  const key = PALETTE_KEYS[hashString(imageUrl) % PALETTE_KEYS.length];
+  return MODERN_PALETTES[key];
+};
 
 /**
  * Görsel URL'sinden accent rengi döndürür.
@@ -98,56 +112,106 @@ export const getSecondColorFromImage = async (imageUri: string): Promise<string>
  */
 export const analyzeImageColors = async (imageUrl: string): Promise<ColorPalette> => {
   const url = imageUrl.toLowerCase();
-  
+
   // Futbol sahası, yeşil çim, doğa
-  if (url.includes('grass') || url.includes('field') || url.includes('soccer') || 
-      url.includes('football') || url.includes('green') || url.includes('nature') ||
-      url.includes('forest') || url.includes('park') || url.includes('golf') ||
-      url.includes('tennis') || url.includes('çim') || url.includes('saha')) {
+  if (
+    url.includes('grass') ||
+    url.includes('field') ||
+    url.includes('soccer') ||
+    url.includes('football') ||
+    url.includes('green') ||
+    url.includes('nature') ||
+    url.includes('forest') ||
+    url.includes('park') ||
+    url.includes('golf') ||
+    url.includes('tennis') ||
+    url.includes('çim') ||
+    url.includes('saha')
+  ) {
     return MODERN_PALETTES.green;
   }
-  
+
   // Gökyüzü, bina, mavi tonlar
-  if (url.includes('sky') || url.includes('building') || url.includes('blue') || 
-      url.includes('ocean') || url.includes('sea') || url.includes('water') ||
-      url.includes('cloud') || url.includes('gök') || url.includes('deniz')) {
+  if (
+    url.includes('sky') ||
+    url.includes('building') ||
+    url.includes('blue') ||
+    url.includes('ocean') ||
+    url.includes('sea') ||
+    url.includes('water') ||
+    url.includes('cloud') ||
+    url.includes('gök') ||
+    url.includes('deniz')
+  ) {
     return MODERN_PALETTES.blue;
   }
-  
+
   // Stadyum, kırmızı, basketbol
-  if (url.includes('stadium') || url.includes('red') || url.includes('basketball') ||
-      url.includes('boxing') || url.includes('fight') || url.includes('mma') ||
-      url.includes('blood') || url.includes('kırmızı')) {
+  if (
+    url.includes('stadium') ||
+    url.includes('red') ||
+    url.includes('basketball') ||
+    url.includes('boxing') ||
+    url.includes('fight') ||
+    url.includes('mma') ||
+    url.includes('blood') ||
+    url.includes('kırmızı')
+  ) {
     return MODERN_PALETTES.red;
   }
-  
+
   // Gece, teknoloji, oyun, mor tonlar
-  if (url.includes('night') || url.includes('tech') || url.includes('game') ||
-      url.includes('gaming') || url.includes('esport') || url.includes('neon') ||
-      url.includes('purple') || url.includes('cyber') || url.includes('mor')) {
+  if (
+    url.includes('night') ||
+    url.includes('tech') ||
+    url.includes('game') ||
+    url.includes('gaming') ||
+    url.includes('esport') ||
+    url.includes('neon') ||
+    url.includes('purple') ||
+    url.includes('cyber') ||
+    url.includes('mor')
+  ) {
     return MODERN_PALETTES.purple;
   }
-  
+
   // Günbatımı, turuncu, ateş
-  if (url.includes('sunset') || url.includes('orange') || url.includes('fire') ||
-      url.includes('autumn') || url.includes('turuncu') || url.includes('güneş')) {
+  if (
+    url.includes('sunset') ||
+    url.includes('orange') ||
+    url.includes('fire') ||
+    url.includes('autumn') ||
+    url.includes('turuncu') ||
+    url.includes('güneş')
+  ) {
     return MODERN_PALETTES.orange;
   }
-  
+
   // Su, havuz, turkuaz
-  if (url.includes('pool') || url.includes('swim') || url.includes('teal') ||
-      url.includes('turquoise') || url.includes('aqua') || url.includes('havuz')) {
+  if (
+    url.includes('pool') ||
+    url.includes('swim') ||
+    url.includes('teal') ||
+    url.includes('turquoise') ||
+    url.includes('aqua') ||
+    url.includes('havuz')
+  ) {
     return MODERN_PALETTES.teal;
   }
-  
+
   // Pembe, kadın, moda
-  if (url.includes('pink') || url.includes('fashion') || url.includes('beauty') ||
-      url.includes('rose') || url.includes('pembe')) {
+  if (
+    url.includes('pink') ||
+    url.includes('fashion') ||
+    url.includes('beauty') ||
+    url.includes('rose') ||
+    url.includes('pembe')
+  ) {
     return MODERN_PALETTES.pink;
   }
-  
-  // Varsayılan: Modern mor (mevcut tasarıma uygun)
-  return MODERN_PALETTES.purple;
+
+  // Fallback: URL hash tabanlı palette (tek renk mora düşmemesi için)
+  return getPaletteByImageHash(url);
 };
 
 /**
@@ -155,21 +219,21 @@ export const analyzeImageColors = async (imageUrl: string): Promise<ColorPalette
  */
 export const getGradientByCategory = (category: string): string[] => {
   const categoryMap: { [key: string]: keyof typeof MODERN_PALETTES } = {
-    'Spor': 'green',
-    'Futbol': 'green',
-    'Basketbol': 'orange',
-    'Teknoloji': 'purple',
-    'Bilim': 'blue',
-    'Doğa': 'green',
-    'Müzik': 'pink',
-    'Eğlence': 'orange',
-    'Ekonomi': 'indigo',
-    'Politika': 'red',
-    'Sağlık': 'teal',
-    'Genel': 'purple',
-    'Global': 'purple',
+    Spor: 'green',
+    Futbol: 'green',
+    Basketbol: 'orange',
+    Teknoloji: 'purple',
+    Bilim: 'blue',
+    Doğa: 'green',
+    Müzik: 'pink',
+    Eğlence: 'orange',
+    Ekonomi: 'indigo',
+    Politika: 'red',
+    Sağlık: 'teal',
+    Genel: 'purple',
+    Global: 'purple',
   };
-  
+
   const paletteKey = categoryMap[category] || 'purple';
   return MODERN_PALETTES[paletteKey].gradient;
 };
@@ -179,21 +243,21 @@ export const getGradientByCategory = (category: string): string[] => {
  */
 export const getPaletteByCategory = (category: string): ColorPalette => {
   const categoryMap: { [key: string]: keyof typeof MODERN_PALETTES } = {
-    'Spor': 'green',
-    'Futbol': 'green',
-    'Basketbol': 'orange',
-    'Teknoloji': 'purple',
-    'Bilim': 'blue',
-    'Doğa': 'green',
-    'Müzik': 'pink',
-    'Eğlence': 'orange',
-    'Ekonomi': 'indigo',
-    'Politika': 'red',
-    'Sağlık': 'teal',
-    'Genel': 'purple',
-    'Global': 'purple',
+    Spor: 'green',
+    Futbol: 'green',
+    Basketbol: 'orange',
+    Teknoloji: 'purple',
+    Bilim: 'blue',
+    Doğa: 'green',
+    Müzik: 'pink',
+    Eğlence: 'orange',
+    Ekonomi: 'indigo',
+    Politika: 'red',
+    Sağlık: 'teal',
+    Genel: 'purple',
+    Global: 'purple',
   };
-  
+
   const paletteKey = categoryMap[category] || 'purple';
   return MODERN_PALETTES[paletteKey];
 };

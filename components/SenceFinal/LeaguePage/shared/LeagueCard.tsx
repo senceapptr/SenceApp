@@ -1,119 +1,172 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
 import { League } from '../types';
-import { CategoryBadge } from './CategoryBadge';
+import { resolveLeagueIcon } from './leagueIcons';
+import { ACCENT_DARK, PRIMARY_BLUE } from './theme';
+import { formatLeagueRemaining } from '../utils/timeRemaining';
+
+const CARD_CONTENT_PADDING = 20;
+
+const PRIMARY_CTA_EDGE_GAP = CARD_CONTENT_PADDING;
+const PRIMARY_CTA_SHELL_GAP = 1;
+const PRIMARY_CTA_OUTER_RADIUS = PRIMARY_CTA_EDGE_GAP;
+const PRIMARY_CTA_INNER_RADIUS = PRIMARY_CTA_OUTER_RADIUS - PRIMARY_CTA_SHELL_GAP;
+
+const SECONDARY_CTA_EDGE_GAP = CARD_CONTENT_PADDING;
+const SECONDARY_CTA_SHELL_GAP = 1;
+const SECONDARY_CTA_OUTER_RADIUS = SECONDARY_CTA_EDGE_GAP;
+const SECONDARY_CTA_INNER_RADIUS = SECONDARY_CTA_OUTER_RADIUS - SECONDARY_CTA_SHELL_GAP;
+
+const INFO_BOX_SHELL_GAP = 1;
+const INFO_BOX_OUTER_RADIUS = SECONDARY_CTA_OUTER_RADIUS;
+const INFO_BOX_INNER_RADIUS = INFO_BOX_OUTER_RADIUS - INFO_BOX_SHELL_GAP;
 
 interface LeagueCardProps {
   league: League;
+  nowTick: number;
   isMyLeague?: boolean;
   onCardPress: (league: League) => void;
   onJoinPress?: (league: League) => void;
+  onChatPress?: (league: League) => void;
   onQuestionsPress?: (league: League) => void;
   onLeaderboardPress?: (league: League) => void;
-  onChatPress?: (league: League) => void;
 }
 
 export function LeagueCard({
-  league,
   isMyLeague = false,
+  league,
+  nowTick,
   onCardPress,
-  onJoinPress,
-  onQuestionsPress,
-  onLeaderboardPress,
   onChatPress,
+  onJoinPress,
+  onLeaderboardPress,
+  onQuestionsPress,
 }: LeagueCardProps) {
+  const remainingText = formatLeagueRemaining(league.endDateISO, nowTick);
+  const resolvedIcon = resolveLeagueIcon(league.leagueIconName, league.leagueIconColor);
+  const isJoinCompleted = league.status === 'completed';
+  const isAlreadyJoined = !isMyLeague && league.isJoined;
+  const joinCostText = league.joinCost > 0 ? `${league.joinCost.toLocaleString('tr-TR')} kredi` : 'Ücretsiz';
+  const participantsText = `${league.participants} katılımcı`;
+
   return (
     <TouchableOpacity
       style={[
         styles.card,
         (league.isFeatured || (isMyLeague && league.status === 'active')) && styles.featuredCard,
-        league.status === 'completed' && styles.completedCard
+        league.status === 'completed' && styles.completedCard,
       ]}
       onPress={() => onCardPress(league)}
       activeOpacity={0.9}
     >
       <View style={styles.content}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.name}>{league.name}</Text>
-            <Text style={styles.description}>{league.description}</Text>
-            <View style={styles.meta}>
-              <CategoryBadge category={league.category} />
-              <Text style={styles.separator}>•</Text>
-              <Text style={styles.creator}>@{league.creator}</Text>
-            </View>
+        <View style={styles.titleRow}>
+          <View style={[styles.iconWrap, { backgroundColor: resolvedIcon.color }]}>
+            <Ionicons name={resolvedIcon.name} size={18} color="#FFFFFF" />
           </View>
-          <View style={styles.headerRight}>
-            {!isMyLeague ? (
-              <>
-                <Text style={styles.prizeText}>{league.prize}</Text>
-                <Text style={styles.prizeLabel}>Ödül</Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.positionText}>#{league.position}</Text>
-                <Text style={styles.positionLabel}>Sıralama</Text>
-              </>
-            )}
+          <Text style={styles.title} numberOfLines={1}>
+            {league.name}
+          </Text>
+        </View>
+
+        <View style={styles.metaRow}>
+          <View style={styles.metaItem}>
+            <Ionicons name="people-outline" size={15} color="#A7B7D8" />
+            <Text style={styles.metaText}>{participantsText}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Ionicons name="time-outline" size={15} color="#A7B7D8" />
+            <Text style={styles.metaText} numberOfLines={1}>
+              {remainingText}
+            </Text>
           </View>
         </View>
 
-        <View style={styles.stats}>
-          <Text style={styles.statsText}>👥 {league.participants}/{league.maxParticipants}</Text>
-          <Text style={styles.statsText}>📅 {league.endDate}</Text>
+        <View style={styles.footerRow}>
+          <View style={styles.infoBoxOuter}>
+            <View style={styles.infoBoxInner}>
+              <Text style={styles.infoLabel}>Katılım</Text>
+              <Text style={styles.infoValue}>{joinCostText}</Text>
+            </View>
+          </View>
+          <View style={styles.infoBoxOuter}>
+            <View style={styles.infoBoxInner}>
+              <Text style={styles.infoLabel}>Güncel Ödül</Text>
+              <Text style={styles.infoValue}>{league.prize}</Text>
+            </View>
+          </View>
         </View>
 
         {!isMyLeague ? (
-          <TouchableOpacity
-            style={styles.joinButtonWrapper}
-            onPress={(e) => {
-              e.stopPropagation();
-              onJoinPress?.(league);
-            }}
-            disabled={league.status === 'completed'}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={['#10B981', '#059669']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.joinButton}
+          isAlreadyJoined ? (
+            <View style={styles.joinedButtonOuter}>
+              <View style={styles.joinedButtonInner}>
+                <Ionicons name="checkmark-circle-outline" size={18} color="#D6E4FF" />
+                <Text style={styles.joinedButtonText}>Katıldın</Text>
+              </View>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.joinButtonWrapper}
+              onPress={e => {
+                e.stopPropagation();
+                onJoinPress?.(league);
+              }}
+              disabled={isJoinCompleted}
+              activeOpacity={0.8}
             >
-              <Text style={styles.joinButtonText}>Katıl</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <View style={[styles.joinButtonOuter, isJoinCompleted && styles.joinButtonOuterDisabled]}>
+                <View style={[styles.joinButtonInner, isJoinCompleted && styles.joinButtonInnerDisabled]}>
+                  <Ionicons name={isJoinCompleted ? 'time-outline' : 'rocket-outline'} size={18} color="#FFFFFF" />
+                  <Text style={styles.joinText}>{isJoinCompleted ? 'Süre Doldu' : 'Lige Katıl'}</Text>
+                  <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.9)" />
+                </View>
+              </View>
+            </TouchableOpacity>
+          )
         ) : (
           <View style={styles.myLeagueActions}>
             <TouchableOpacity
-              style={styles.raceButton}
-              onPress={(e) => {
+              style={styles.raceButtonOuter}
+              onPress={e => {
                 e.stopPropagation();
                 onQuestionsPress?.(league);
               }}
               activeOpacity={0.8}
             >
-              <Text style={styles.raceButtonText}>🚀 Yarış!</Text>
+              <View style={styles.raceButtonInner}>
+                <Ionicons name="flash-outline" size={16} color="#FFFFFF" />
+                <Text style={styles.raceButtonText}>Yarış!</Text>
+              </View>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={(e) => {
+              onPress={e => {
                 e.stopPropagation();
                 onLeaderboardPress?.(league);
               }}
               activeOpacity={0.8}
             >
-              <Text style={styles.actionButtonText}>🏆 Sıralama</Text>
+              <View style={styles.actionButtonInner}>
+                <Ionicons name="trophy-outline" size={16} color="#F0F6FC" />
+                <Text style={styles.actionButtonText}>Sıralama</Text>
+              </View>
             </TouchableOpacity>
+
             <TouchableOpacity
-              style={styles.chatActionButton}
-              onPress={(e) => {
+              style={styles.chatActionButtonOuter}
+              onPress={e => {
                 e.stopPropagation();
                 onChatPress?.(league);
               }}
               activeOpacity={0.8}
             >
-              <Text style={styles.chatActionButtonText}>💬</Text>
+              <View style={styles.chatActionButtonInner}>
+                <Ionicons name="chatbubble-outline" size={16} color="#FFFFFF" />
+              </View>
             </TouchableOpacity>
           </View>
         )}
@@ -123,150 +176,200 @@ export function LeagueCard({
 }
 
 const styles = StyleSheet.create({
+  actionButton: {
+    backgroundColor: '#30363D',
+    borderRadius: SECONDARY_CTA_OUTER_RADIUS,
+    padding: SECONDARY_CTA_SHELL_GAP,
+    flex: 1,
+  },
+  actionButtonInner: {
+    alignItems: 'center',
+    backgroundColor: '#21262D',
+    borderRadius: SECONDARY_CTA_INNER_RADIUS,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  actionButtonText: {
+    color: '#F0F6FC',
+    fontSize: 14,
+    fontWeight: '700',
+  },
   card: {
-    borderRadius: 24,
     backgroundColor: '#161B22',
-    borderWidth: 1,
-    borderColor: '#30363D',
+    borderColor: 'rgba(47,79,140,0.35)',
+    borderRadius: 24,
+    borderWidth: 1.5,
+    elevation: 8,
     marginBottom: 16,
+    minHeight: 252,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { height: 4, width: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
-    elevation: 8,
   },
-  featuredCard: {
-    borderColor: '#10B981',
+  chatActionButtonOuter: {
+    backgroundColor: '#4766A2',
+    borderRadius: SECONDARY_CTA_OUTER_RADIUS,
+    padding: SECONDARY_CTA_SHELL_GAP,
+  },
+  chatActionButtonInner: {
+    alignItems: 'center',
+    backgroundColor: ACCENT_DARK,
+    borderRadius: SECONDARY_CTA_INNER_RADIUS,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
   completedCard: {
     opacity: 0.6,
   },
   content: {
-    padding: 24,
+    padding: CARD_CONTENT_PADDING,
   },
-  header: {
+  featuredCard: {
+    borderColor: PRIMARY_BLUE,
+  },
+  footerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
+    gap: 10,
+    marginTop: 14,
   },
-  headerLeft: {
-    flex: 1,
-    marginRight: 16,
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#F0F6FC',
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 14,
-    color: '#8B949E',
-    marginBottom: 12,
-  },
-  meta: {
-    flexDirection: 'row',
+  iconWrap: {
     alignItems: 'center',
+    borderRadius: 12,
+    height: 30,
+    justifyContent: 'center',
+    width: 30,
   },
-  separator: {
-    fontSize: 12,
-    color: '#484F58',
-    marginHorizontal: 8,
+  infoBoxInner: {
+    backgroundColor: 'rgba(47,79,140,0.16)',
+    borderRadius: INFO_BOX_INNER_RADIUS,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  creator: {
-    fontSize: 12,
-    color: '#8B949E',
-  },
-  headerRight: {
-    alignItems: 'flex-end',
-  },
-  prizeText: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#10B981',
-    textAlign: 'right',
-  },
-  prizeLabel: {
-    fontSize: 14,
-    color: '#8B949E',
-    marginTop: 4,
-  },
-  positionText: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#10B981',
-  },
-  positionLabel: {
-    fontSize: 14,
-    color: '#8B949E',
-    marginTop: 4,
-  },
-  stats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  statsText: {
-    fontSize: 14,
-    color: '#8B949E',
-  },
-  joinButtonWrapper: {
-    borderRadius: 24,
+  infoBoxOuter: {
+    backgroundColor: 'transparent',
+    borderColor: 'rgba(47,79,140,0.35)',
+    borderRadius: INFO_BOX_OUTER_RADIUS,
+    borderWidth: INFO_BOX_SHELL_GAP,
+    flex: 1,
     overflow: 'hidden',
   },
-  joinButton: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderRadius: 24,
+  infoLabel: {
+    color: '#9CA3AF',
+    fontSize: 12,
+    marginBottom: 4,
   },
-  joinButtonText: {
+  infoValue: {
+    color: '#F0F6FC',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  joinButtonInner: {
+    alignItems: 'center',
+    backgroundColor: PRIMARY_BLUE,
+    borderRadius: PRIMARY_CTA_INNER_RADIUS,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  joinButtonInnerDisabled: {
+    backgroundColor: '#334155',
+  },
+  joinButtonOuter: {
+    backgroundColor: '#3D83FF',
+    borderRadius: PRIMARY_CTA_OUTER_RADIUS,
+    padding: PRIMARY_CTA_SHELL_GAP,
+  },
+  joinButtonOuterDisabled: {
+    backgroundColor: '#334155',
+    opacity: 0.78,
+  },
+  joinButtonWrapper: {
+    borderRadius: PRIMARY_CTA_OUTER_RADIUS,
+    marginTop: 14,
+    overflow: 'hidden',
+  },
+  joinedButtonInner: {
+    alignItems: 'center',
+    backgroundColor: '#2F4F8C',
+    borderRadius: PRIMARY_CTA_INNER_RADIUS,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  joinedButtonOuter: {
+    backgroundColor: 'rgba(214,228,255,0.2)',
+    borderRadius: PRIMARY_CTA_OUTER_RADIUS,
+    marginTop: 14,
+    padding: PRIMARY_CTA_SHELL_GAP,
+  },
+  joinedButtonText: {
+    color: '#D6E4FF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  joinText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '900',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  metaItem: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  metaRow: {
+    gap: 8,
+  },
+  metaText: {
+    color: '#A7B7D8',
+    flexShrink: 1,
+    fontSize: 13,
+    fontWeight: '600',
   },
   myLeagueActions: {
     flexDirection: 'row',
     gap: 8,
+    marginTop: 14,
   },
-  actionButton: {
+  raceButtonInner: {
+    alignItems: 'center',
+    backgroundColor: PRIMARY_BLUE,
+    borderRadius: SECONDARY_CTA_INNER_RADIUS,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  raceButtonOuter: {
+    backgroundColor: '#3D83FF',
+    borderRadius: SECONDARY_CTA_OUTER_RADIUS,
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    backgroundColor: '#21262D',
-    borderRadius: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#30363D',
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#F0F6FC',
-  },
-  chatActionButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    backgroundColor: '#10B981',
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  chatActionButtonText: {
-    fontSize: 16,
-  },
-  raceButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    backgroundColor: '#7C3AED',
-    borderRadius: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#8B5CF6',
+    padding: SECONDARY_CTA_SHELL_GAP,
   },
   raceButtonText: {
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '800',
-    color: '#FFFFFF',
+  },
+  title: {
+    color: '#F0F6FC',
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  titleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
   },
 });
-

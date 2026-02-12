@@ -1,3 +1,4 @@
+import { Json } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
 export interface MarketItem {
@@ -8,32 +9,38 @@ export interface MarketItem {
   original_price: number | null;
   image_url: string | null;
   category_id: string | null;
-  featured: boolean;
+  featured: boolean | null;
   badge: string | null;
-  status: 'active' | 'inactive' | 'out_of_stock';
-  created_at: string;
-  updated_at: string;
-  categories?: {
-    id: string;
-    name: string;
-    slug: string;
-    icon: string;
-  };
+  status: 'active' | 'inactive' | 'out_of_stock' | null;
+  requires_shipping: boolean | null;
+  is_active: boolean | null;
+  stock: number | null;
+  type: string;
+  created_at: string | null;
+  updated_at?: string | null;
 }
 
 export interface MarketCategory {
   id: string;
   name: string;
   slug: string;
-  icon: string;
-  description: string | null;
-  created_at: string;
+  icon_name: string;
+}
+
+export interface ShippingAddressSnapshot {
+  addressLine: string;
+  city: string;
+  country: 'TR';
+  district: string;
+  phone: string;
+  postalCode: string;
+  recipientName: string;
 }
 
 export interface PurchaseItemData {
   item_id: string;
-  user_id: string;
   quantity?: number;
+  shipping_address?: ShippingAddressSnapshot;
 }
 
 export interface UserPurchase {
@@ -42,19 +49,25 @@ export interface UserPurchase {
   item_id: string;
   quantity: number;
   total_price: number;
-  status: 'pending' | 'completed' | 'cancelled';
-  created_at: string;
-  updated_at: string;
+  status: 'pending' | 'completed' | 'cancelled' | 'refunded';
+  requires_shipping: boolean;
+  shipping_status: 'not_required' | 'address_collected' | 'processing' | 'shipped' | 'delivered';
+  shipping_address: Json | null;
+  purchased_at: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
   market_items?: MarketItem;
 }
 
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&h=300&fit=crop&q=80';
+
 /**
  * Market Service
- * Market işlemleri
+ * Market islemleri
  */
 export const marketService = {
   /**
-   * Tüm aktif market ürünlerini getir
+   * Tum aktif market urunlerini getir
    */
   async getMarketItems() {
     try {
@@ -64,13 +77,15 @@ export const marketService = {
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      
-      // Eğer image_url yoksa varsayılan resim ekle
-      const itemsWithImages = data?.map(item => ({
-        ...item,
-        image_url: item.image_url || 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&h=300&fit=crop&q=80'
-      })) || [];
+      if (error) {
+        throw error;
+      }
+
+      const itemsWithImages =
+        data?.map(item => ({
+          ...item,
+          image_url: item.image_url || FALLBACK_IMAGE,
+        })) || [];
 
       return { data: itemsWithImages, error: null };
     } catch (error) {
@@ -80,7 +95,7 @@ export const marketService = {
   },
 
   /**
-   * Kategoriye göre market ürünlerini getir
+   * Kategoriye gore market urunlerini getir
    */
   async getMarketItemsByCategory(categoryId: string) {
     try {
@@ -91,13 +106,15 @@ export const marketService = {
         .eq('type', categoryId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      
-      // Eğer image_url yoksa varsayılan resim ekle
-      const itemsWithImages = data?.map(item => ({
-        ...item,
-        image_url: item.image_url || 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&h=300&fit=crop&q=80'
-      })) || [];
+      if (error) {
+        throw error;
+      }
+
+      const itemsWithImages =
+        data?.map(item => ({
+          ...item,
+          image_url: item.image_url || FALLBACK_IMAGE,
+        })) || [];
 
       return { data: itemsWithImages, error: null };
     } catch (error) {
@@ -111,21 +128,20 @@ export const marketService = {
    */
   async getMarketCategories() {
     try {
-      // Market items tablosundaki farklı type değerlerini kullan
-      const { data, error } = await supabase
-        .from('market_items')
-        .select('type')
-        .eq('is_active', true);
+      const { data, error } = await supabase.from('market_items').select('type').eq('is_active', true);
 
-      if (error) throw error;
-      
-      // Unique type'ları al ve kategorilere dönüştür
-      const uniqueTypes = [...new Set(data?.map(item => item.type) || [])];
-      const categories = uniqueTypes.map(type => ({
+      if (error) {
+        throw error;
+      }
+
+      const uniqueTypes = [
+        ...new Set((data?.map(item => item.type).filter((type): type is string => typeof type === 'string') || [])),
+      ];
+      const categories: MarketCategory[] = uniqueTypes.map(type => ({
         id: type,
         name: this.getCategoryDisplayName(type),
         slug: type,
-        icon: this.getCategoryIcon(type),
+        icon_name: this.getCategoryIconName(type),
       }));
 
       return { data: categories, error: null };
@@ -136,45 +152,44 @@ export const marketService = {
   },
 
   /**
-   * Kategori görüntüleme adını getir
+   * Kategori goruntuleme adini getir
    */
   getCategoryDisplayName(type: string): string {
-    const categoryNames: { [key: string]: string } = {
-      'boost': 'Boostlar',
-      'avatar': 'Avatarlar', 
-      'theme': 'Temalar',
-      'badge': 'Rozetler',
-      'powerup': 'Güçlendirmeler'
+    const categoryNames: Record<string, string> = {
+      avatar: 'Avatarlar',
+      badge: 'Rozetler',
+      boost: 'Boostlar',
+      powerup: 'Güçlendirmeler',
+      theme: 'Temalar',
     };
     return categoryNames[type] || type;
   },
 
   /**
-   * Kategori ikonunu getir
+   * Kategori ikon adini getir
    */
-  getCategoryIcon(type: string): string {
-    const categoryIcons: { [key: string]: string } = {
-      'boost': '⚡',
-      'avatar': '👤',
-      'theme': '🎨',
-      'badge': '🏅',
-      'powerup': '🛡️'
+  getCategoryIconName(type: string): string {
+    const categoryIcons: Record<string, string> = {
+      avatar: 'person-circle-outline',
+      badge: 'ribbon-outline',
+      boost: 'flash-outline',
+      powerup: 'rocket-outline',
+      theme: 'color-palette-outline',
     };
-    return categoryIcons[type] || '🛍️';
+    return categoryIcons[type] || 'pricetag-outline';
   },
 
   /**
-   * Ürün detayını getir
+   * Urun detayini getir
    */
   async getMarketItemById(itemId: string) {
     try {
-      const { data, error } = await supabase
-        .from('market_items')
-        .select('*')
-        .eq('id', itemId)
-        .single();
+      const { data, error } = await supabase.from('market_items').select('*').eq('id', itemId).single();
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+
       return { data, error: null };
     } catch (error) {
       console.error('Get market item by id error:', error);
@@ -183,7 +198,7 @@ export const marketService = {
   },
 
   /**
-   * Ürün satın al
+   * Urun satin al
    */
   async purchaseItem(purchaseData: PurchaseItemData) {
     try {
@@ -195,60 +210,19 @@ export const marketService = {
         throw new Error('User not authenticated');
       }
 
-      // Ürün bilgilerini al
-      const { data: item, error: itemError } = await supabase
-        .from('market_items')
-        .select('*')
-        .eq('id', purchaseData.item_id)
-        .single();
+      const { data, error } = await supabase.rpc('purchase_market_item', {
+        p_item_id: purchaseData.item_id,
+        p_quantity: purchaseData.quantity || 1,
+        p_shipping_address: purchaseData.shipping_address
+          ? ({ ...purchaseData.shipping_address } as Json)
+          : null,
+      });
 
-      if (itemError) throw itemError;
-
-      if (!item.is_active) {
-        throw new Error('Item is not available for purchase');
+      if (error) {
+        throw error;
       }
 
-      // Kullanıcının kredi bilgilerini al
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('credits')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) throw profileError;
-
-      const totalPrice = item.price * (purchaseData.quantity || 1);
-
-      if (profile.credits < totalPrice) {
-        throw new Error('Insufficient credits');
-      }
-
-      // Transaction başlat
-      const { data: purchase, error: purchaseError } = await supabase
-        .from('user_purchases')
-        .insert({
-          user_id: user.id,
-          item_id: purchaseData.item_id,
-          quantity: purchaseData.quantity || 1,
-          total_price: totalPrice,
-          status: 'completed',
-        })
-        .select()
-        .single();
-
-      if (purchaseError) throw purchaseError;
-
-      // Kullanıcının kredilerini güncelle
-      const { error: creditError } = await supabase
-        .from('profiles')
-        .update({ 
-          credits: profile.credits - totalPrice 
-        })
-        .eq('id', user.id);
-
-      if (creditError) throw creditError;
-
-      return { data: purchase, error: null };
+      return { data, error: null };
     } catch (error) {
       console.error('Purchase item error:', error);
       return { data: null, error: error as Error };
@@ -256,21 +230,25 @@ export const marketService = {
   },
 
   /**
-   * Kullanıcının satın alımlarını getir
+   * Kullanicinin satin alimlarini getir
    */
   async getUserPurchases(userId: string) {
     try {
       const { data, error } = await supabase
         .from('user_purchases')
-        .select(`
+        .select(
+          `
           *,
           market_items (*)
-        `)
+        `,
+        )
         .eq('user_id', userId)
-        .eq('status', 'completed')
         .order('purchased_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+
       return { data, error: null };
     } catch (error) {
       console.error('Get user purchases error:', error);
@@ -279,7 +257,7 @@ export const marketService = {
   },
 
   /**
-   * Öne çıkan ürünleri getir
+   * One cikan urunleri getir
    */
   async getFeaturedItems() {
     try {
@@ -287,16 +265,19 @@ export const marketService = {
         .from('market_items')
         .select('*')
         .eq('is_active', true)
+        .eq('featured', true)
         .order('created_at', { ascending: false })
         .limit(5);
 
-      if (error) throw error;
-      
-      // Eğer image_url yoksa varsayılan resim ekle
-      const itemsWithImages = data?.map(item => ({
-        ...item,
-        image_url: item.image_url || 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&h=300&fit=crop&q=80'
-      })) || [];
+      if (error) {
+        throw error;
+      }
+
+      const itemsWithImages =
+        data?.map(item => ({
+          ...item,
+          image_url: item.image_url || FALLBACK_IMAGE,
+        })) || [];
 
       return { data: itemsWithImages, error: null };
     } catch (error) {

@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { ACCENT_DARK, PRIMARY_BLUE } from '../../LeaguePage/shared/theme';
 import { CalendarCardProps } from '../types';
 
 export function CalendarCard(props: CalendarCardProps) {
@@ -11,36 +10,20 @@ export function CalendarCard(props: CalendarCardProps) {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#161B22', '#0D1117']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.card}
-      >
-        {/* Header */}
+      <View style={styles.card}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={styles.iconBox}>
-              <Ionicons name="calendar" size={20} color="#10B981" />
-            </View>
-            <View>
-              <Text style={styles.title}>{monthNames[currentMonth]} {currentYear}</Text>
-              <Text style={styles.subtitle}>Aylık giriş takibin</Text>
-            </View>
+            <Text style={styles.title}>{monthNames[currentMonth]} {currentYear}</Text>
           </View>
 
-          <LinearGradient
-            colors={['#10B981', '#059669']}
-            style={styles.loginBadge}
-          >
+          <View style={styles.loginBadge}>
             <Text style={styles.loginBadgeNumber}>{loginCount}</Text>
-            <Text style={styles.loginBadgeText}>gün</Text>
-          </LinearGradient>
+            <Text style={styles.loginBadgeDivider}>/</Text>
+            <Text style={styles.loginBadgeMax}>{daysInMonth}</Text>
+          </View>
         </View>
 
-        {/* Calendar Grid */}
         <View style={styles.calendarGrid}>
-          {/* Day Names */}
           <View style={styles.dayNamesRow}>
             {dayNames.map((day, index) => (
               <View key={index} style={styles.dayNameCell}>
@@ -49,69 +32,48 @@ export function CalendarCard(props: CalendarCardProps) {
             ))}
           </View>
 
-          {/* Days Grid */}
           <View style={styles.daysGrid}>
-            {/* Empty cells for first week offset */}
             {Array.from({ length: firstDayOfMonth }, (_, index) => (
               <View key={`empty-${index}`} style={styles.dayCell} />
             ))}
 
-            {/* Actual days */}
             {Array.from({ length: daysInMonth }, (_, index) => {
               const day = index + 1;
               const isToday = day === today;
               const hasLogin = loginDays.includes(day) && day <= today;
               const isFuture = day > today;
-              const isPast = day < today && !hasLogin;
+              const isPastWithoutLogin = day < today && !hasLogin;
 
               return (
                 <View key={day} style={styles.dayCell}>
-                  {isToday ? (
-                    <LinearGradient
-                      colors={['#10B981', '#059669']}
-                      style={[styles.dayButton, styles.todayButton]}
+                  <View
+                    style={[
+                      styles.dayButton,
+                      hasLogin && !isToday && styles.loggedDayButton,
+                      isToday && styles.todayDayButton,
+                      isToday && styles.todayButton,
+                      isPastWithoutLogin && styles.missedDayButton,
+                      isFuture && styles.futureDayButton,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.dayText,
+                        (hasLogin || isToday) && styles.loginDayText,
+                        isPastWithoutLogin && styles.missedDayText,
+                        isFuture && styles.futureDayText,
+                      ]}
                     >
-                      <Text style={styles.todayText}>{day}</Text>
-                      <View style={styles.todayIndicator} />
-                    </LinearGradient>
-                  ) : hasLogin ? (
-                    <View style={[styles.dayButton, styles.loginDayButton]}>
-                      <Text style={styles.loginDayText}>{day}</Text>
-                      <View style={styles.checkBadge}>
-                        <Ionicons name="checkmark" size={8} color="white" />
-                      </View>
-                    </View>
-                  ) : isPast ? (
-                    <View style={[styles.dayButton, styles.missedDayButton]}>
-                      <Text style={styles.missedDayText}>{day}</Text>
-                    </View>
-                  ) : (
-                    <View style={[styles.dayButton, isFuture ? styles.futureDayButton : styles.normalDayButton]}>
-                      <Text style={[styles.dayText, isFuture ? styles.futureDayText : styles.normalDayText]}>{day}</Text>
-                    </View>
-                  )}
+                      {day}
+                    </Text>
+                    {hasLogin && !isToday && <View style={styles.loginDot} />}
+                  </View>
                 </View>
               );
             })}
           </View>
         </View>
-
-        {/* Legend */}
-        <View style={styles.legend}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
-            <Text style={styles.legendText}>Giriş yapıldı</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
-            <Text style={styles.legendText}>Kaçırıldı</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#30363D' }]} />
-            <Text style={styles.legendText}>Gelecek</Text>
-          </View>
-        </View>
-      </LinearGradient>
+      </View>
     </View>
   );
 }
@@ -122,83 +84,72 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   card: {
-    borderRadius: 20,
+    backgroundColor: '#141A24',
+    borderColor: 'rgba(120, 148, 191, 0.24)',
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#30363D',
-    padding: 20,
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    padding: 14,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
   title: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#F0F6FC',
-    marginBottom: 2,
-  },
-  subtitle: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#8B949E',
+    color: '#F5F7FA',
+    fontSize: 16,
+    fontWeight: '700',
   },
   loginBadge: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16,
-    alignItems: 'center',
     flexDirection: 'row',
-    gap: 4,
+    alignItems: 'baseline',
+    backgroundColor: 'rgba(37, 110, 255, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(37, 110, 255, 0.28)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
   loginBadgeNumber: {
-    fontSize: 18,
+    color: PRIMARY_BLUE,
+    fontSize: 17,
     fontWeight: '900',
-    color: 'white',
   },
-  loginBadgeText: {
+  loginBadgeDivider: {
+    color: '#7E96BD',
     fontSize: 12,
+    marginHorizontal: 2,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  loginBadgeMax: {
+    color: '#7E96BD',
+    fontSize: 12,
+    fontWeight: '700',
   },
   calendarGrid: {
-    backgroundColor: '#21262D',
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 16,
+    backgroundColor: '#0F1726',
+    borderColor: 'rgba(120, 148, 191, 0.18)',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 10,
   },
   dayNamesRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   dayNameCell: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   dayNameText: {
-    fontSize: 12,
+    color: '#8898B4',
+    fontSize: 11,
     fontWeight: '700',
-    color: '#8B949E',
   },
   daysGrid: {
     flexDirection: 'row',
@@ -211,100 +162,52 @@ const styles = StyleSheet.create({
   },
   dayButton: {
     flex: 1,
-    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
+    borderRadius: 9,
+    backgroundColor: '#172235',
+  },
+  dayText: {
+    color: '#A7B3C7',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  loggedDayButton: {
+    backgroundColor: ACCENT_DARK,
+    borderWidth: 1,
+    borderColor: 'rgba(214, 228, 255, 0.22)',
+  },
+  todayDayButton: {
+    backgroundColor: PRIMARY_BLUE,
+    borderWidth: 1,
+    borderColor: '#3D83FF',
   },
   todayButton: {
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 2,
+    borderColor: '#BBD5FF',
   },
-  todayText: {
-    fontSize: 13,
+  loginDayText: {
+    color: '#FFFFFF',
     fontWeight: '700',
-    color: 'white',
   },
-  todayIndicator: {
-    position: 'absolute',
-    bottom: 4,
+  loginDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'white',
-  },
-  loginDayButton: {
-    backgroundColor: 'rgba(16, 185, 129, 0.25)',
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.4)',
-  },
-  loginDayText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#10B981',
-  },
-  checkBadge: {
+    backgroundColor: '#FFFFFF',
     position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 12,
-    height: 12,
-    backgroundColor: '#10B981',
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
+    bottom: 3,
   },
   missedDayButton: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
+    backgroundColor: '#1E2738',
   },
   missedDayText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#EF4444',
+    color: '#6E7A8F',
   },
   futureDayButton: {
-    backgroundColor: '#21262D',
+    backgroundColor: '#121A2B',
   },
   futureDayText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  normalDayButton: {
-    backgroundColor: '#21262D',
-  },
-  normalDayText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#8B949E',
-  },
-  dayText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  legend: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  legendText: {
-    fontSize: 11,
-    color: '#8B949E',
-    fontWeight: '500',
+    color: '#667489',
   },
 });

@@ -78,9 +78,9 @@ export const mapCouponToActiveCoupon = (coupon: any): ActiveCoupon => {
     endsIn,
     colors: ['#432870', '#5A3A8B'] as [string, string],
     // CouponDetailModal için gerekli alanlar
-    predictions: predictions.map(p => ({
-      id: typeof p.id === 'string' ? parseInt(p.id) || 0 : p.id,
-      questionId: typeof p.questionId === 'string' ? parseInt(p.questionId) || 0 : parseInt(p.questionId) || 0,
+    predictions: predictions.map((p, index) => ({
+      id: String(p.id || `prediction-${index}`),
+      questionId: String(p.questionId || ''),
       question: p.question,
       choice: p.choice,
       odds: p.odds,

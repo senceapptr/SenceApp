@@ -22,7 +22,7 @@ export function ScoringModal({ visible, league, onClose }: ScoringModalProps) {
       <View style={styles.overlay}>
         <View style={styles.content}>
           <LinearGradient
-            colors={['#10B981', '#059669', '#34D399']}
+            colors={['#256EFF', '#256EFF', '#256EFF']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.header}
@@ -82,7 +82,7 @@ export function ScoringModal({ visible, league, onClose }: ScoringModalProps) {
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={['#10B981', '#059669']}
+                colors={['#256EFF', '#256EFF']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.buttonGradient}
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   featureIcon: {
     width: 32,
     height: 32,
-    backgroundColor: '#34C759',
+    backgroundColor: '#256EFF',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF3B30',
   },
   featureIconYellow: {
-    backgroundColor: '#C9F158',
+    backgroundColor: '#256EFF',
   },
   featureIconText: {
     fontSize: 16,

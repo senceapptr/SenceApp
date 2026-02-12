@@ -1,8 +1,47 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { tasksService, TaskWithProgress } from '@/services/tasks.service';
 import { Task, TaskTab } from './types';
+
+const SECOND_MS = 1000;
+const MINUTE_MS = 60 * SECOND_MS;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+const formatTwoDigit = (value: number) => value.toString().padStart(2, '0');
+
+const formatDailyCountdownText = (diffMs: number) => {
+  const safeDiff = Math.max(0, diffMs);
+  const days = Math.floor(safeDiff / DAY_MS);
+  const hours = Math.floor((safeDiff % DAY_MS) / HOUR_MS) + (days * 24);
+  const minutes = Math.floor((safeDiff % HOUR_MS) / MINUTE_MS);
+  const seconds = Math.floor((safeDiff % MINUTE_MS) / SECOND_MS);
+
+  if (hours > 0) {
+    return `${formatTwoDigit(hours)} saat ${formatTwoDigit(minutes)} dakika`;
+  }
+
+  return `${formatTwoDigit(minutes)} dakika ${formatTwoDigit(seconds)} saniye`;
+};
+
+const formatMonthlyCountdownText = (diffMs: number) => {
+  const safeDiff = Math.max(0, diffMs);
+  const days = Math.floor(safeDiff / DAY_MS);
+  const hours = Math.floor((safeDiff % DAY_MS) / HOUR_MS);
+  const minutes = Math.floor((safeDiff % HOUR_MS) / MINUTE_MS);
+  const seconds = Math.floor((safeDiff % MINUTE_MS) / SECOND_MS);
+
+  if (days > 0) {
+    return `${days} gün ${formatTwoDigit(hours)} saat`;
+  }
+
+  if (hours > 0) {
+    return `${formatTwoDigit(hours)} saat ${formatTwoDigit(minutes)} dakika`;
+  }
+
+  return `${formatTwoDigit(minutes)} dakika ${formatTwoDigit(seconds)} saniye`;
+};
 
 export function useTasks() {
   const { user } = useAuth();
@@ -11,7 +50,8 @@ export function useTasks() {
   const [monthlyTasks, setMonthlyTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [loginDays, setLoginDays] = useState<number[]>([]);
-  const [timeRemaining, setTimeRemaining] = useState<string>('');
+  const [dailyResetRemaining, setDailyResetRemaining] = useState<string>('00 dakika 00 saniye');
+  const [monthlyResetRemaining, setMonthlyResetRemaining] = useState<string>('0 gün 00 saat');
 
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth();
@@ -27,46 +67,46 @@ export function useTasks() {
 
   const dayNames = ['P', 'S', 'Ç', 'P', 'C', 'C', 'P'];
 
-  // Countdown timer for daily reset
   useEffect(() => {
     const updateTimer = () => {
       const now = new Date();
-      const midnight = new Date();
-      midnight.setDate(midnight.getDate() + 1);
-      midnight.setHours(0, 0, 0, 0);
 
-      const diff = midnight.getTime() - now.getTime();
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      const nextDay = new Date(now);
+      nextDay.setDate(nextDay.getDate() + 1);
+      nextDay.setHours(0, 0, 0, 0);
 
-      setTimeRemaining(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+      setDailyResetRemaining(formatDailyCountdownText(nextDay.getTime() - now.getTime()));
+      setMonthlyResetRemaining(formatMonthlyCountdownText(nextMonth.getTime() - now.getTime()));
     };
 
     updateTimer();
-    const interval = setInterval(updateTimer, 1000);
+    const interval = setInterval(updateTimer, SECOND_MS);
+
     return () => clearInterval(interval);
   }, []);
 
-  // TaskWithProgress -> Task mapping helper
-  const mapToTask = (taskWithProgress: TaskWithProgress, isDaily: boolean): Task => ({
+  const mapToTask = (taskWithProgress: TaskWithProgress): Task => ({
     id: taskWithProgress.id,
     title: taskWithProgress.title,
     description: taskWithProgress.description || '',
     progress: taskWithProgress.progress,
     maxProgress: taskWithProgress.requirement_value,
     reward: taskWithProgress.reward_credits,
-    icon: taskWithProgress.icon,
+    icon: taskWithProgress.icon || undefined,
+    requirementType: taskWithProgress.requirement_type,
     completed: taskWithProgress.is_completed,
     claimed: taskWithProgress.is_claimed,
-    timeLeft: isDaily ? timeRemaining : `${daysInMonth - today} gün`,
     actionType: taskWithProgress.actionType,
     navigationTarget: taskWithProgress.navigationTarget,
   });
 
-  // Load tasks data from backend
   const loadTasksData = useCallback(async () => {
     if (!user) {
+      setDailyTasks([]);
+      setMonthlyTasks([]);
+      setLoginDays([]);
       setLoading(false);
       return;
     }
@@ -74,47 +114,37 @@ export function useTasks() {
     try {
       setLoading(true);
 
-      // Record user session for login tracking
       await tasksService.recordUserSession(user.id);
 
-      // Load daily tasks, monthly tasks, and login days in parallel
       const [dailyResult, monthlyResult, loginDaysResult] = await Promise.all([
         tasksService.getDailyTasks(user.id),
         tasksService.getMonthlyTasks(user.id),
         tasksService.getUserLoginDays(user.id, currentYear, currentMonth),
       ]);
 
-      // Map daily tasks
       if (dailyResult.data) {
-        const mapped = dailyResult.data.map(t => mapToTask(t, true));
-        setDailyTasks(mapped);
+        setDailyTasks(dailyResult.data.map(mapToTask));
       }
 
-      // Map monthly tasks
       if (monthlyResult.data) {
-        const mapped = monthlyResult.data.map(t => mapToTask(t, false));
-        setMonthlyTasks(mapped);
+        setMonthlyTasks(monthlyResult.data.map(mapToTask));
       }
 
-      // Set login days
       if (loginDaysResult.data) {
         setLoginDays(loginDaysResult.data);
       }
-
     } catch (err) {
       console.error('Tasks data load error:', err);
       Alert.alert('Hata', 'Görev verileri yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
     }
-  }, [user, currentMonth, currentYear, today, timeRemaining, daysInMonth]);
+  }, [currentMonth, currentYear, user]);
 
-  // Load data on mount and when user changes
   useEffect(() => {
     loadTasksData();
-  }, [user]);
+  }, [loadTasksData]);
 
-  // Claim task reward
   const claimReward = useCallback(async (taskId: string) => {
     if (!user) return;
 
@@ -123,7 +153,7 @@ export function useTasks() {
 
       if (result.data) {
         Alert.alert(
-          '🎉 Tebrikler!',
+          'Tebrikler',
           `${result.data.credits} kredi kazandınız!`,
           [{ text: 'Tamam', onPress: () => loadTasksData() }]
         );
@@ -136,24 +166,15 @@ export function useTasks() {
     }
   }, [user, loadTasksData]);
 
-  // Handle task action (navigate or claim)
-  const handleTaskAction = useCallback((task: Task) => {
-    if (task.actionType === 'claim') {
-      claimReward(task.id);
-    }
-    // Navigation will be handled by the parent component
-  }, [claimReward]);
-
-  // Current tasks based on active tab
   const currentTasks = activeTab === 'daily' ? dailyTasks : monthlyTasks;
   const completedTasks = currentTasks.filter(t => t.completed).length;
-  const claimedTasks = currentTasks.filter(t => t.claimed).length;
+  const currentResetLabel = activeTab === 'daily' ? 'Günlük sıfırlama' : 'Aylık sıfırlama';
+  const currentResetRemaining = activeTab === 'daily' ? dailyResetRemaining : monthlyResetRemaining;
 
   return {
     activeTab,
     setActiveTab,
     loading,
-    // calendar
     currentMonth,
     currentYear,
     daysInMonth,
@@ -162,15 +183,12 @@ export function useTasks() {
     monthNames,
     dayNames,
     loginDays,
-    // data
     dailyTasks,
     monthlyTasks,
     currentTasks,
     completedTasks,
-    claimedTasks,
-    timeRemaining,
-    // actions
-    handleTaskAction,
+    currentResetLabel,
+    currentResetRemaining,
     claimReward,
     loadTasksData,
   };

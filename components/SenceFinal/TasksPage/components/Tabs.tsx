@@ -1,57 +1,43 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { ACCENT_DARK } from '../../LeaguePage/shared/theme';
 import { TabsProps } from '../types';
 
 export function Tabs({ activeTab, onChangeTab }: TabsProps) {
+  const renderTab = (
+    key: 'daily' | 'monthly',
+    label: string,
+    iconName: keyof typeof Ionicons.glyphMap
+  ) => {
+    const isActive = activeTab === key;
+
+    return (
+      <TouchableOpacity
+        key={key}
+        activeOpacity={0.85}
+        onPress={() => onChangeTab(key)}
+        style={[
+          styles.tabButton,
+          isActive && styles.activeTab,
+        ]}
+      >
+        <Ionicons
+          name={iconName}
+          size={14}
+          color={isActive ? '#FFFFFF' : '#9CA3AF'}
+        />
+        <Text style={[styles.tabText, isActive && styles.activeTabText]}>{label}</Text>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.tabsWrapper}>
-        {/* Background Track */}
         <View style={styles.track}>
-          {/* Daily Tab */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => onChangeTab('daily')}
-            style={styles.tabButton}
-          >
-            {activeTab === 'daily' ? (
-              <LinearGradient
-                colors={['#8B5CF6', '#7C3AED']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.activeTab}
-              >
-                <Text style={styles.activeTabText}>🌅 Günlük</Text>
-              </LinearGradient>
-            ) : (
-              <View style={styles.inactiveTab}>
-                <Text style={styles.inactiveTabText}>🌅 Günlük</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {/* Monthly Tab */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => onChangeTab('monthly')}
-            style={styles.tabButton}
-          >
-            {activeTab === 'monthly' ? (
-              <LinearGradient
-                colors={['#8B5CF6', '#7C3AED']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.activeTab}
-              >
-                <Text style={styles.activeTabText}>📅 Aylık</Text>
-              </LinearGradient>
-            ) : (
-              <View style={styles.inactiveTab}>
-                <Text style={styles.inactiveTabText}>📅 Aylık</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          {renderTab('daily', 'Günlük', 'sunny-outline')}
+          {renderTab('monthly', 'Aylık', 'calendar-outline')}
         </View>
       </View>
     </View>
@@ -60,47 +46,47 @@ export function Tabs({ activeTab, onChangeTab }: TabsProps) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 12,
+    paddingHorizontal: 24,
+    paddingTop: 8,
   },
   tabsWrapper: {
-    backgroundColor: '#161B22',
-    borderRadius: 16,
-    padding: 4,
+    backgroundColor: '#0F172A',
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#30363D',
+    overflow: 'hidden',
+    padding: 4,
   },
   track: {
     flexDirection: 'row',
     gap: 4,
   },
   tabButton: {
+    alignItems: 'center',
     flex: 1,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    zIndex: 2,
   },
   activeTab: {
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: ACCENT_DARK,
+    borderRadius: 16,
+    shadowColor: 'rgba(0,0,0,0.45)',
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  tabText: {
+    color: '#9CA3AF',
+    fontSize: 13,
+    fontWeight: '700',
   },
   activeTabText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: 'white',
-  },
-  inactiveTab: {
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  inactiveTabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#8B949E',
+    color: '#FFFFFF',
   },
 });

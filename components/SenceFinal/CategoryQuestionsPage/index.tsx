@@ -73,7 +73,7 @@ export function CategoryQuestionsPage({
   onBack,
   handleQuestionDetail,
   handleVote,
-  onMenuToggle
+  onMenuToggle,
 }: CategoryQuestionsPageProps) {
   const { theme, isDarkMode } = useTheme();
   const [sortBy, setSortBy] = useState<SortType>('date');
@@ -130,11 +130,7 @@ export function CategoryQuestionsPage({
         });
       } else {
         // Category-based questions
-        result = await questionsService.getQuestionsByCategory(
-          category.id,
-          20,
-          reset ? 0 : offset
-        );
+        result = await questionsService.getQuestionsByCategory(category.id, 20, reset ? 0 : offset);
       }
 
       if (result.error) {
@@ -169,7 +165,10 @@ export function CategoryQuestionsPage({
           yesOdds: q.yes_odds || 2.0,
           noOdds: q.no_odds || 2.0,
           yesPercentage: q.yes_percentage || 50,
-          image: (q.image_url && String(q.image_url).trim() !== '') ? q.image_url : 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?w=600',
+          image:
+            q.image_url && String(q.image_url).trim() !== ''
+              ? q.image_url
+              : 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?w=600',
           end_date: q.end_date,
           total_amount: q.total_amount || 0,
           is_trending: q.is_trending || false,
@@ -187,7 +186,6 @@ export function CategoryQuestionsPage({
 
       setOffset(prev => prev + 20);
       setHasMore(newQuestions.length === 20);
-
     } catch (error) {
       console.error('Load questions error:', error);
       Alert.alert('Hata', 'Sorular yüklenirken bir hata oluştu.');
@@ -229,7 +227,10 @@ export function CategoryQuestionsPage({
           yesOdds: q.yes_odds || 2.0,
           noOdds: q.no_odds || 2.0,
           yesPercentage: q.yes_percentage || 50,
-          image: (q.image_url && String(q.image_url).trim() !== '') ? q.image_url : 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?w=600',
+          image:
+            q.image_url && String(q.image_url).trim() !== ''
+              ? q.image_url
+              : 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?w=600',
           end_date: q.end_date,
           total_amount: q.total_amount || 0,
           is_trending: q.is_trending || false,
@@ -242,7 +243,6 @@ export function CategoryQuestionsPage({
       setQuestions(transformedQuestions);
       setOffset(20);
       setHasMore(newQuestions.length === 20);
-
     } catch (error) {
       console.error('Search questions error:', error);
     }
@@ -258,11 +258,12 @@ export function CategoryQuestionsPage({
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-    if (days > 0) return `${days}g ${hours}s`;
-    if (hours > 0) return `${hours}s ${minutes}d`;
-    if (minutes > 0) return `${minutes}dk`;
-    return '< 1dk';
+    if (days > 0) return `${days} gün ${hours} saat`;
+    if (hours > 0) return `${hours} saat ${minutes} dakika`;
+    if (minutes > 0) return `${minutes} dakika ${seconds} saniye`;
+    return `${seconds} saniye`;
   };
 
   /** Süre bitmişse Evet/Hayır veya Sonuç Bekleniyor; değilse countdown. */
@@ -295,7 +296,7 @@ export function CategoryQuestionsPage({
       cardScale: Animated.Value;
       yesFillAnim: Animated.Value;
       noFillAnim: Animated.Value;
-    }
+    };
   }>({});
 
   // Load questions on component mount
@@ -481,38 +482,25 @@ export function CategoryQuestionsPage({
       ...styles.loadingText,
       color: theme.textMuted,
     },
-    emptyText: {
-      ...styles.emptyText,
-      color: theme.textMuted,
-    },
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#0D1117"
-      />
+      <StatusBar barStyle="light-content" backgroundColor="#0D1117" />
 
       {/* Header - Animated */}
       <Animated.View style={[styles.animatedHeader, { transform: [{ translateY: headerTranslateY }] }]}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.header}>
-            <TouchableOpacity
-              onPress={onBack}
-              style={styles.backButton}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
               <Ionicons name="chevron-back" size={20} color="#F0F6FC" />
             </TouchableOpacity>
 
-            <Text style={styles.headerTitle}>{category.label} ({filteredQuestions.length})</Text>
+            <Text style={styles.headerTitle}>
+              {category.label} ({filteredQuestions.length})
+            </Text>
 
-            <TouchableOpacity
-              style={styles.menuButton}
-              onPress={onMenuToggle}
-              activeOpacity={0.8}
-            >
+            <TouchableOpacity style={styles.menuButton} onPress={onMenuToggle} activeOpacity={0.8}>
               <View style={styles.hamburgerIcon}>
                 <View style={styles.hamburgerLine} />
                 <View style={styles.hamburgerLine} />
@@ -554,11 +542,7 @@ export function CategoryQuestionsPage({
           </View>
 
           {/* Sort Button */}
-          <TouchableOpacity
-            onPress={() => setShowSortMenu(true)}
-            style={styles.sortButton}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity onPress={() => setShowSortMenu(true)} style={styles.sortButton} activeOpacity={0.8}>
             <LinearGradient
               colors={[theme.accent, theme.success]}
               start={{ x: 0, y: 0 }}
@@ -578,7 +562,7 @@ export function CategoryQuestionsPage({
             </Text>
             <Switch
               value={includeExpired}
-              onValueChange={(value) => {
+              onValueChange={value => {
                 setIncludeExpired(value);
                 setLoading(true);
                 loadQuestions(true, value).finally(() => setLoading(false));
@@ -594,12 +578,8 @@ export function CategoryQuestionsPage({
             <ActivityIndicator size="large" color={theme.accent} />
             <Text style={dynamicStyles.loadingText}>Sorular yükleniyor...</Text>
           </View>
-        ) : filteredQuestions.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={dynamicStyles.emptyText}>Bu kategoride henüz soru bulunmuyor.</Text>
-          </View>
         ) : (
-          filteredQuestions.map((question, index) => (
+          filteredQuestions.map(question => (
             <CategoryQuestionCard
               key={question.id}
               question={question}
@@ -611,12 +591,10 @@ export function CategoryQuestionsPage({
           ))
         )}
 
-        {filteredQuestions.length === 0 && (
+        {!loading && filteredQuestions.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>{category.icon}</Text>
-            <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
-              Henüz Soru Yok
-            </Text>
+            <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>Henüz Soru Yok</Text>
             <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
               {category.label} kategorisinde henüz soru bulunmuyor
             </Text>
@@ -625,25 +603,13 @@ export function CategoryQuestionsPage({
       </ScrollView>
 
       {/* Sort Menu Modal */}
-      <Modal
-        visible={showSortMenu}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSortMenu(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowSortMenu(false)}
-        >
+      <Modal visible={showSortMenu} transparent animationType="fade" onRequestClose={() => setShowSortMenu(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowSortMenu(false)}>
           <View style={styles.sortMenuContainer}>
             <View style={dynamicStyles.sortMenu}>
               <View style={styles.sortMenuHeader}>
                 <Text style={dynamicStyles.sortMenuTitle}>Sıralama Seçenekleri</Text>
-                <TouchableOpacity
-                  onPress={() => setShowSortMenu(false)}
-                  style={styles.sortMenuCloseButton}
-                >
+                <TouchableOpacity onPress={() => setShowSortMenu(false)} style={styles.sortMenuCloseButton}>
                   <Ionicons name="close" size={24} color={theme.textSecondary} />
                 </TouchableOpacity>
               </View>
@@ -655,7 +621,7 @@ export function CategoryQuestionsPage({
                     styles.sortOption,
                     sortBy === option.id && dynamicStyles.sortOptionActive,
                     { borderBottomColor: theme.border },
-                    index === sortOptions.length - 1 && { borderBottomWidth: 0 }
+                    index === sortOptions.length - 1 && { borderBottomWidth: 0 },
                   ]}
                   onPress={() => {
                     setSortBy(option.id);
@@ -666,23 +632,20 @@ export function CategoryQuestionsPage({
                   <View style={styles.sortOptionContent}>
                     <Text style={styles.sortOptionIcon}>{option.icon}</Text>
                     <View style={styles.sortOptionTextContainer}>
-                      <Text style={[
-                        styles.sortOptionLabel,
-                        { color: sortBy === option.id ? theme.accent : theme.textPrimary }
-                      ]}>
+                      <Text
+                        style={[
+                          styles.sortOptionLabel,
+                          { color: sortBy === option.id ? theme.accent : theme.textPrimary },
+                        ]}
+                      >
                         {option.label}
                       </Text>
-                      <Text style={[
-                        styles.sortOptionDescription,
-                        { color: theme.textSecondary }
-                      ]}>
+                      <Text style={[styles.sortOptionDescription, { color: theme.textSecondary }]}>
                         {option.description}
                       </Text>
                     </View>
                   </View>
-                  {sortBy === option.id && (
-                    <Ionicons name="checkmark-circle" size={24} color={theme.accent} />
-                  )}
+                  {sortBy === option.id && <Ionicons name="checkmark-circle" size={24} color={theme.accent} />}
                 </TouchableOpacity>
               ))}
             </View>
@@ -762,9 +725,8 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 0,
     backgroundColor: '#1A1F2A',
-    borderColor: '#30363D',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -780,7 +742,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 2.5,
     borderRadius: 1.25,
-    backgroundColor: '#F0F6FC',
+    backgroundColor: '#FFFFFF',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -955,15 +917,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
 });
-

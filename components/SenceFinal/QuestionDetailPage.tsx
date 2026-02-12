@@ -20,18 +20,16 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import Svg, { Path, Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
-import { LineChart } from 'react-native-chart-kit';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { formatTimeLeftLong } from '@/utils/timeUtils';
 import { questionsService } from '@/services/questions.service';
 import { predictionsService } from '@/services/predictions.service';
 import { commentsService } from '@/services/comments.service';
 import { profileService } from '@/services/profile.service';
 import { QuestionDetailSkeleton } from './QuestionDetailSkeleton';
+import { ACCENT_DARK } from './LeaguePage/shared/theme';
 // Image color analyzer artık kullanılmıyor
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -40,20 +38,21 @@ interface QuestionDetailPageProps {
   onBack: () => void;
   onMenuToggle: () => void;
   question: any;
-  onVote: (questionId: number, vote: 'yes' | 'no', odds: number, questionTitle?: string) => void;
+  onVote: (questionId: string, vote: 'yes' | 'no', odds: number, questionTitle?: string) => void;
   sourceCategory?: any; // Hangi kategoriden geldiğini belirtir
 }
 
 interface RelatedQuestion {
-  id: number;
+  id: string;
   title: string;
   category: string;
   image: string;
   daysLeft: number;
-  odds: number;
-  rating: number;
+  yesOdds: number;
+  noOdds: number;
+  yesPercentage: number;
+  noPercentage: number;
   votes: number;
-  isFavorite: boolean;
 }
 
 interface Comment {
@@ -64,6 +63,7 @@ interface Comment {
   text: string;
   timestamp: Date;
   likes: number;
+  isLiked: boolean;
   parent_id?: string | null;
   replies?: Comment[];
 }
@@ -75,13 +75,41 @@ interface TopInvestor {
   vote: 'yes' | 'no';
 }
 
-export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sourceCategory }: QuestionDetailPageProps) {
+interface PublicProfilePreview {
+  id: string;
+  username: string;
+  fullName: string | null;
+  bio: string | null;
+  avatar: string;
+  followers: number;
+  following: number;
+  isFollowing: boolean;
+}
+
+const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face';
+const DEFAULT_QUESTION_IMAGE = 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?w=800&h=600&fit=crop';
+const DETAIL_TAB_CONFIG = [
+  { key: 'details', label: 'Detay' },
+  { key: 'comments', label: 'Yorumlar' },
+  { key: 'stats', label: 'İstatistik' },
+] as const;
+
+export function QuestionDetailPage({
+  onBack,
+  onMenuToggle: _onMenuToggle,
+  question,
+  onVote,
+  sourceCategory,
+}: QuestionDetailPageProps) {
   const { user, profile } = useAuth();
   const { theme, isDarkMode } = useTheme();
-  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+
   // State tanımlamaları
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [activeQuestionId, setActiveQuestionId] = useState<string>(question?.id?.toString() || '');
+  const [activeQuestionFallbackImage, setActiveQuestionFallbackImage] = useState<string>(
+    question?.image || DEFAULT_QUESTION_IMAGE,
+  );
   const [activeTab, setActiveTab] = useState<'details' | 'comments' | 'stats'>('details');
   const [commentText, setCommentText] = useState('');
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -104,28 +132,105 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
   const [isFollowingCreator, setIsFollowingCreator] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ id: string; username: string } | null>(null);
+  const [commentLikeLoadingMap, setCommentLikeLoadingMap] = useState<Record<string, boolean>>({});
+  const [profilePreviewVisible, setProfilePreviewVisible] = useState(false);
+  const [profilePreviewLoading, setProfilePreviewLoading] = useState(false);
+  const [profilePreviewFollowLoading, setProfilePreviewFollowLoading] = useState(false);
+  const [profilePreviewData, setProfilePreviewData] = useState<PublicProfilePreview | null>(null);
+  const [tabsContainerWidth, setTabsContainerWidth] = useState(0);
 
   // Success modal animation
   const successScaleAnim = useRef(new Animated.Value(0)).current;
   const confettiAnim = useRef(new Animated.Value(0)).current;
 
   const scrollY = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
+  const latestLoadRequestRef = useRef(0);
+  const latestPropQuestionIdRef = useRef<string>(question?.id?.toString() || '');
+  const tabIndicatorTranslateX = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const nextQuestionId = question?.id?.toString() || '';
+
+    // Geçerli ID yoksa yüklemeyi sonlandır ve eski request'leri geçersiz kıl.
+    if (!nextQuestionId) {
+      latestLoadRequestRef.current += 1;
+      latestPropQuestionIdRef.current = '';
+      setActiveQuestionId('');
+      setQuestionDetails(null);
+      setLoading(false);
+      return;
+    }
+
+    // Aynı soruya ait parent güncellemelerinde (ör. sadece image değişimi)
+    // state'i sıfırlama; aksi halde skeleton sonsuz kalabiliyor.
+    if (nextQuestionId === latestPropQuestionIdRef.current) {
+      return;
+    }
+
+    latestPropQuestionIdRef.current = nextQuestionId;
+    setLoading(true);
+    setActiveQuestionId(nextQuestionId);
+    setActiveQuestionFallbackImage(question?.image || DEFAULT_QUESTION_IMAGE);
+    setQuestionDetails(null);
+    setComments([]);
+    setRelatedQuestions([]);
+    setTopInvestors([]);
+    setUserPrediction(null);
+    setCommentLikeLoadingMap({});
+    setProfilePreviewVisible(false);
+    setProfilePreviewData(null);
+    setActiveTab('details');
+    setCommentText('');
+    setReplyingTo(null);
+  }, [question?.id]);
+
+  useEffect(() => {
+    if (question?.image) {
+      setActiveQuestionFallbackImage(question.image);
+    }
+  }, [question?.image]);
+
+  const tabWidth = tabsContainerWidth > 0 ? tabsContainerWidth / DETAIL_TAB_CONFIG.length : 0;
+
+  useEffect(() => {
+    if (!tabWidth) return;
+    const activeIndex = DETAIL_TAB_CONFIG.findIndex(tab => tab.key === activeTab);
+    if (activeIndex < 0) return;
+
+    Animated.spring(tabIndicatorTranslateX, {
+      toValue: activeIndex * tabWidth,
+      useNativeDriver: true,
+      damping: 18,
+      stiffness: 210,
+      mass: 0.75,
+    }).start();
+  }, [activeTab, tabWidth, tabIndicatorTranslateX]);
 
   // Backend'den soru detaylarını yükle
   const loadQuestionDetails = async () => {
-    if (!question?.id) return;
+    if (!activeQuestionId) {
+      setLoading(false);
+      return;
+    }
+    const requestId = ++latestLoadRequestRef.current;
 
     try {
       setLoading(true);
 
       // Paralel olarak tüm verileri yükle
       const [detailsResult, commentsResult, relatedResult, investorsResult, predictionResult] = await Promise.all([
-        questionsService.getQuestionById(question.id.toString()),
-        commentsService.getQuestionComments(question.id.toString()),
-        questionsService.getRelatedQuestions(question.id.toString()),
-        questionsService.getTopInvestors(question.id.toString()),
-        user ? predictionsService.getUserPredictionForQuestion(user.id, question.id.toString()) : { data: null, error: null },
+        questionsService.getQuestionById(activeQuestionId),
+        commentsService.getQuestionComments(activeQuestionId),
+        questionsService.getRelatedQuestions(activeQuestionId),
+        questionsService.getTopInvestors(activeQuestionId),
+        user ? predictionsService.getUserPredictionForQuestion(user.id, activeQuestionId) : { data: null, error: null },
       ]);
+
+      // Yeni bir soru yüklemesi başladıysa eski response'u yok say
+      if (requestId !== latestLoadRequestRef.current) {
+        return;
+      }
 
       // Soru detayları
       if (detailsResult.data) {
@@ -150,21 +255,33 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
 
       // Yorumlar
       if (commentsResult.data) {
-        const rawComments = commentsResult.data.map((c: any, index: number) => ({
+        const rawComments: Comment[] = commentsResult.data.map((c: any, index: number) => ({
           id: c.id?.toString() || index.toString(),
           user_id: c.user_id,
           username: c.profiles?.username || 'Anonim',
-          avatar: c.profiles?.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
+          avatar: c.profiles?.profile_image || DEFAULT_AVATAR,
           text: c.content,
           timestamp: new Date(c.created_at),
           likes: c.likes_count || 0,
+          isLiked: false,
           parent_id: c.parent_id,
-          replies: []
+          replies: [],
         }));
+
+        if (user?.id && rawComments.length > 0) {
+          const { data: likedCommentIds } = await commentsService.getUserLikedCommentIds(
+            rawComments.map(comment => comment.id),
+            user.id,
+          );
+          const likedSet = new Set(likedCommentIds || []);
+          rawComments.forEach(comment => {
+            comment.isLiked = likedSet.has(comment.id);
+          });
+        }
 
         // Yorumları hiyerarşik yapıya dönüştür
         const rootComments: Comment[] = [];
-        const commentMap = new Map();
+        const commentMap = new Map<string, Comment>();
 
         // Önce map'e ekle
         rawComments.forEach(c => {
@@ -174,11 +291,16 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
 
         // Sonra hiyerarşiyi kur
         rawComments.forEach(c => {
-          if (c.parent_id && commentMap.has(c.parent_id.toString())) {
-            commentMap.get(c.parent_id.toString()).replies.push(c);
-          } else {
-            rootComments.push(c);
+          if (c.parent_id) {
+            const parentComment = commentMap.get(c.parent_id.toString());
+            if (parentComment) {
+              parentComment.replies = parentComment.replies || [];
+              parentComment.replies.push(c);
+              return;
+            }
           }
+
+          rootComments.push(c);
         });
 
         // Tarihe göre sırala (en yeni en üstte)
@@ -190,15 +312,19 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       // İlgili sorular
       if (relatedResult.data) {
         const mappedRelated: RelatedQuestion[] = relatedResult.data.map((q: any, index: number) => ({
-          id: parseInt(q.id) || index,
+          id: q.id?.toString() || `related-${index}`,
           title: q.title,
           category: q.categories?.name || 'Genel',
           image: q.image_url || 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=150&h=150&fit=crop',
-          daysLeft: Math.ceil((new Date(q.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
-          odds: q.yes_odds || 1.5,
-          rating: 4.5, // TODO: Rating sistemi eklenince
+          daysLeft: Math.max(
+            0,
+            Math.ceil((new Date(q.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
+          ),
+          yesOdds: q.yes_odds || 1.5,
+          noOdds: q.no_odds || 1.5,
+          yesPercentage: Math.max(0, Math.min(100, Math.round(q.yes_percentage ?? 50))),
+          noPercentage: Math.max(0, Math.min(100, Math.round(q.no_percentage ?? 50))),
           votes: q.total_votes || 0,
-          isFavorite: false, // TODO: Favori sistemi eklenince
         }));
         setRelatedQuestions(mappedRelated);
       }
@@ -207,7 +333,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       if (investorsResult.data) {
         const mappedInvestors: TopInvestor[] = investorsResult.data.map((i: any) => ({
           username: i.profiles?.username || 'Anonim',
-          avatar: i.profiles?.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+          avatar: i.profiles?.profile_image || DEFAULT_AVATAR,
           amount: i.amount || 0,
           vote: i.vote === 'yes' ? 'yes' : 'no',
         }));
@@ -218,19 +344,23 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       if (predictionResult.data) {
         setUserPrediction(predictionResult.data);
       }
-
     } catch (err) {
+      if (requestId !== latestLoadRequestRef.current) {
+        return;
+      }
       console.error('Question details load error:', err);
       Alert.alert('Hata', 'Soru detayları yüklenirken bir hata oluştu');
     } finally {
-      setLoading(false);
+      if (requestId === latestLoadRequestRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   // Sayfa yüklendiğinde veriyi çek
   useEffect(() => {
     loadQuestionDetails();
-  }, [question?.id, user]);
+  }, [activeQuestionId, user?.id]);
 
   // Countdown timer effect - her saniye güncelle
   useEffect(() => {
@@ -266,15 +396,15 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
   // Kategori ikonu (Ionicons adı)
   const getCategoryIconName = (category: string): string => {
     const icons: { [key: string]: string } = {
-      'Teknoloji': 'laptop-outline',
-      'Spor': 'football-outline',
-      'Finans': 'wallet-outline',
-      'Politika': 'business-outline',
-      'Magazin': 'newspaper-outline',
-      'Müzik': 'musical-notes-outline',
-      'Sinema': 'film-outline',
+      Teknoloji: 'laptop-outline',
+      Spor: 'football-outline',
+      Finans: 'wallet-outline',
+      Politika: 'business-outline',
+      Magazin: 'newspaper-outline',
+      Müzik: 'musical-notes-outline',
+      Sinema: 'film-outline',
       'Sosyal Medya': 'phone-portrait-outline',
-      'Genel': 'stats-chart-outline'
+      Genel: 'stats-chart-outline',
     };
     return icons[category] || 'stats-chart-outline';
   };
@@ -295,61 +425,105 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
   const canVote = status === 'active' && !isExpired && !showResultToUser;
   const isPendingResolution = !canVote && !showResultToUser && !displayResult;
 
-  // 2. Countdown format calculation - 2'li gösterim
-  const formatCountdown = () => {
-    if (showResultToUser) return 'Sonuçlandı';
-    if (!questionDetails?.end_date) return '...';
-    // Eğer süre bittiyse ama sonuç gizli veya yoksa (bekleniyor durumu)
-    if (isExpired && !showResultToUser) return 'Sonuç Bekleniyor';
+  const formatCompactCountdown = () => {
+    if (showResultToUser) return displayResult === 'yes' ? 'EVET' : 'HAYIR';
+    if (isPendingResolution || (isExpired && !showResultToUser)) return 'Beklemede';
+    if (timeLeft.days > 0) return `${timeLeft.days} gün ${timeLeft.hours} saat`;
+    if (timeLeft.hours > 0) return `${timeLeft.hours} saat ${timeLeft.minutes} dakika`;
+    if (timeLeft.minutes > 0) return `${timeLeft.minutes} dakika ${timeLeft.seconds} saniye`;
+    return `${timeLeft.seconds} saniye`;
+  };
 
-    // 2'li format: gün+saat, saat+dakika, dakika+saniye
-    if (timeLeft.days > 0) {
-      return `${timeLeft.days} gün ${timeLeft.hours} saat`;
-    } else if (timeLeft.hours > 0) {
-      return `${timeLeft.hours} saat ${timeLeft.minutes} dk`;
-    } else {
-      return `${timeLeft.minutes} dk ${timeLeft.seconds} sn`;
+  const formatCompactVotes = (value: number) => {
+    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+    return `${value}`;
+  };
+
+  const updateCommentLikeState = (
+    list: Comment[],
+    commentId: string,
+    updater: (comment: Comment) => Comment,
+  ): Comment[] => {
+    return list.map(comment => {
+      if (comment.id === commentId) {
+        return updater(comment);
+      }
+
+      if (comment.replies && comment.replies.length > 0) {
+        return {
+          ...comment,
+          replies: updateCommentLikeState(comment.replies, commentId, updater),
+        };
+      }
+
+      return comment;
+    });
+  };
+
+  const findCommentById = (list: Comment[], commentId: string): Comment | null => {
+    for (const comment of list) {
+      if (comment.id === commentId) {
+        return comment;
+      }
+      if (comment.replies && comment.replies.length > 0) {
+        const nested = findCommentById(comment.replies, commentId);
+        if (nested) return nested;
+      }
     }
+    return null;
   };
 
   // 3. Main question object for UI
-  const mainQuestion = questionDetails ? {
-    title: questionDetails.title,
-    category: sourceCategory?.name || questionDetails.categories?.name || 'Genel',
-    categoryIconName: getCategoryIconName(sourceCategory?.name || questionDetails.categories?.name || 'Genel'),
-    image: (questionDetails.image_url && String(questionDetails.image_url).trim() !== '')
-      ? questionDetails.image_url
-      : (question?.image && String(question.image).trim() !== '')
-        ? question.image
-        : 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?w=600',
-    description: questionDetails.description || '',
-    fullDescription: questionDetails.description || '',
-    rating: 4.8,
-    totalVotes: questionDetails.total_votes || 0,
-    yesPercentage: questionDetails.yes_percentage || 50,
-    noPercentage: 100 - (questionDetails.yes_percentage || 50),
-    yesOdds: questionDetails.yes_odds || 1.5,
-    noOdds: questionDetails.no_odds || 1.5,
-    publishedAt: new Date(questionDetails.created_at),
-    endDate: questionDetails.end_date,
-    daysLeft: timeLeft.days,
-    creator: {
-      id: questionDetails.created_by || questionDetails.profiles?.id || null,
-      username: questionDetails.profiles?.username || 'Anonim',
-      avatar: questionDetails.profiles?.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face'
-    },
-    totalPool: questionDetails.total_pool || 0,
-    yesInvestment: questionDetails.yes_investment || 0,
-    noInvestment: questionDetails.no_investment || 0,
-    status: status,
-    result: displayResult,
-    resolvedAt: questionDetails.resolved_at,
-    suggestedResult: questionDetails.suggested_result,
-    suggestedResultSource: questionDetails.suggested_result_source,
-    suggestedResultSourceDetail: questionDetails.suggested_result_source_detail,
-    resolutionAdminNote: questionDetails.resolution_admin_note,
-    resolutionSourceDisplay: questionDetails.resolution_source_display,
-  } : null;
+  const mainQuestion: any = questionDetails
+    ? {
+        title: questionDetails.title,
+        category: questionDetails.categories?.name || sourceCategory?.name || 'Genel',
+        categoryIconName: getCategoryIconName(questionDetails.categories?.name || sourceCategory?.name || 'Genel'),
+        image:
+          questionDetails.image_url && String(questionDetails.image_url).trim() !== ''
+            ? questionDetails.image_url
+            : activeQuestionFallbackImage,
+        description: questionDetails.description || '',
+        fullDescription: questionDetails.description || '',
+        rating: 4.8,
+        totalVotes: questionDetails.total_votes || 0,
+        yesPercentage: Math.max(0, Math.min(100, Math.round(questionDetails.yes_percentage ?? 50))),
+        noPercentage: Math.max(
+          0,
+          Math.min(100, Math.round(questionDetails.no_percentage ?? 100 - (questionDetails.yes_percentage ?? 50))),
+        ),
+        yesOdds: questionDetails.yes_odds || 1.5,
+        noOdds: questionDetails.no_odds || 1.5,
+        publishedAt: new Date(questionDetails.created_at),
+        endDate: questionDetails.end_date,
+        daysLeft: timeLeft.days,
+        creator: {
+          id: questionDetails.created_by || questionDetails.profiles?.id || null,
+          username: questionDetails.profiles?.username || 'Anonim',
+          avatar: questionDetails.profiles?.profile_image || DEFAULT_AVATAR,
+        },
+        totalPool: questionDetails.total_pool || 0,
+        yesInvestment: questionDetails.yes_investment || 0,
+        noInvestment: questionDetails.no_investment || 0,
+        status: status,
+        result: displayResult,
+        resolvedAt: questionDetails.resolved_at,
+        suggestedResult: questionDetails.suggested_result,
+        suggestedResultSource: questionDetails.suggested_result_source,
+        suggestedResultSourceDetail: questionDetails.suggested_result_source_detail,
+        resolutionAdminNote: questionDetails.resolution_admin_note,
+        resolutionSourceDisplay: questionDetails.resolution_source_display,
+      }
+    : null;
+
+  const yesPercentageValue = mainQuestion ? Math.max(0, Math.min(100, mainQuestion.yesPercentage)) : 50;
+  const noPercentageValue = mainQuestion ? Math.max(0, Math.min(100, mainQuestion.noPercentage)) : 50;
+  const leadingVoteLabel = yesPercentageValue >= noPercentageValue ? 'Evet önde' : 'Hayır önde';
+  const leadingVotePercentage = Math.max(yesPercentageValue, noPercentageValue);
+  const semiCurveLength = Math.PI * 100;
+  const yesDashLength = (semiCurveLength * yesPercentageValue) / 100;
+  const noDashLength = (semiCurveLength * noPercentageValue) / 100;
 
   // 4. Check if user is following the creator
   useEffect(() => {
@@ -393,6 +567,77 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
     }
   };
 
+  const openProfilePreview = async (userId?: string | null) => {
+    if (!userId) return;
+
+    setProfilePreviewVisible(true);
+    setProfilePreviewLoading(true);
+
+    try {
+      const [profileResult, followersResult, followingResult, followingState] = await Promise.all([
+        profileService.getProfile(userId),
+        profileService.getFollowerCount(userId),
+        profileService.getFollowingCount(userId),
+        user && user.id !== userId
+          ? profileService.isFollowing(userId)
+          : Promise.resolve({ isFollowing: false, error: null }),
+      ]);
+
+      if (!profileResult.data) {
+        Alert.alert('Hata', 'Kullanıcı profili yüklenemedi');
+        return;
+      }
+
+      setProfilePreviewData({
+        id: profileResult.data.id,
+        username: profileResult.data.username || 'Anonim',
+        fullName: profileResult.data.full_name,
+        bio: profileResult.data.bio,
+        avatar: profileResult.data.profile_image || DEFAULT_AVATAR,
+        followers: followersResult.count || 0,
+        following: followingResult.count || 0,
+        isFollowing: followingState.isFollowing,
+      });
+    } catch (error) {
+      console.error('openProfilePreview error:', error);
+      Alert.alert('Hata', 'Profil açılırken bir sorun oluştu');
+    } finally {
+      setProfilePreviewLoading(false);
+    }
+  };
+
+  const closeProfilePreview = () => {
+    setProfilePreviewVisible(false);
+    setProfilePreviewData(null);
+  };
+
+  const handleProfilePreviewFollowToggle = async () => {
+    if (!profilePreviewData || !user || user.id === profilePreviewData.id || profilePreviewFollowLoading) return;
+
+    setProfilePreviewFollowLoading(true);
+    try {
+      const { isFollowing, error } = await profileService.toggleFollow(profilePreviewData.id);
+      if (error) {
+        Alert.alert('Hata', 'Takip işlemi tamamlanamadı');
+        return;
+      }
+
+      setProfilePreviewData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          isFollowing,
+          followers: Math.max(0, prev.followers + (isFollowing ? 1 : -1)),
+        };
+      });
+    } catch (error) {
+      console.error('handleProfilePreviewFollowToggle error:', error);
+      Alert.alert('Hata', 'Takip işlemi tamamlanamadı');
+    } finally {
+      setProfilePreviewFollowLoading(false);
+    }
+  };
+
   // Refresh fonksiyonu
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -402,28 +647,16 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
 
   // Ticket Modal'ı aç
   const openTicketModal = (vote: 'yes' | 'no') => {
-    if (!user || !mainQuestion) {
-      Alert.alert('Hata', 'Ticket almak için giriş yapmalısınız');
+    if (!mainQuestion || !activeQuestionId) {
       return;
     }
+
     if (!canVote) {
-      Alert.alert('Bilgi', 'Bu sorunun süresi doldu veya sonuçlandı. Ticket alamazsınız.');
       return;
     }
 
-    // Kullanıcının bu soruya daha önce tahmin yapıp yapmadığını kontrol et
-    if (userPrediction) {
-      Alert.alert(
-        'Uyarı',
-        'Bu soruya zaten ticket aldınız. Aynı soruya birden fazla ticket alamazsınız.',
-        [{ text: 'Tamam', style: 'default' }]
-      );
-      return;
-    }
-
-    setSelectedVote(vote);
-    setBetAmount('100');
-    setTicketModalVisible(true);
+    const odds = vote === 'yes' ? mainQuestion.yesOdds : mainQuestion.noOdds;
+    onVote(activeQuestionId, vote, odds, mainQuestion.title);
   };
 
   // Potansiyel kazanç hesaplama
@@ -436,7 +669,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
 
   // Ticket alma işlemi
   const handleConfirmTicket = async () => {
-    if (!user || !mainQuestion || !selectedVote) return;
+    if (!user || !mainQuestion || !selectedVote || !activeQuestionId) return;
 
     const amount = parseFloat(betAmount) || 0;
     if (amount < 10) {
@@ -449,7 +682,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
     try {
       const odds = selectedVote === 'yes' ? mainQuestion.yesOdds : mainQuestion.noOdds;
       const result = await predictionsService.createPrediction({
-        question_id: question.id.toString(),
+        question_id: activeQuestionId,
         vote: selectedVote,
         amount: amount,
         odds: odds,
@@ -483,11 +716,9 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       } else if (result.error) {
         const errorMessage = result.error.message || 'Ticket alınırken bir hata oluştu';
         if (errorMessage.includes('already') || errorMessage.includes('duplicate') || errorMessage.includes('zaten')) {
-          Alert.alert(
-            'Uyarı',
-            'Bu soruya zaten ticket aldınız. Aynı soruya birden fazla ticket alamazsınız.',
-            [{ text: 'Tamam', style: 'default' }]
-          );
+          Alert.alert('Uyarı', 'Bu soruya zaten ticket aldınız. Aynı soruya birden fazla ticket alamazsınız.', [
+            { text: 'Tamam', style: 'default' },
+          ]);
         } else {
           Alert.alert('Hata', errorMessage);
         }
@@ -496,11 +727,9 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       console.error('Ticket error:', err);
       const errorMessage = err?.message || 'Ticket alınırken bir hata oluştu';
       if (errorMessage.includes('already') || errorMessage.includes('duplicate') || errorMessage.includes('zaten')) {
-        Alert.alert(
-          'Uyarı',
-          'Bu soruya zaten ticket aldınız. Aynı soruya birden fazla ticket alamazsınız.',
-          [{ text: 'Tamam', style: 'default' }]
-        );
+        Alert.alert('Uyarı', 'Bu soruya zaten ticket aldınız. Aynı soruya birden fazla ticket alamazsınız.', [
+          { text: 'Tamam', style: 'default' },
+        ]);
       } else {
         Alert.alert('Hata', errorMessage);
       }
@@ -514,34 +743,6 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
     setShowSuccessModal(false);
     successScaleAnim.setValue(0);
     confettiAnim.setValue(0);
-  };
-
-  // Odds change chart data
-  const oddsChartData = {
-    labels: ['7d', '6d', '5d', '4d', '3d', '2d', '1d', 'Bugün'],
-    datasets: [
-      {
-        data: [1.45, 1.42, 1.38, 1.35, 1.32, 1.30, 1.29, 1.28],
-        color: () => '#34C759', // EVET color
-        strokeWidth: 3,
-      },
-      {
-        data: [2.80, 2.95, 3.20, 3.35, 3.45, 3.55, 3.60, 3.64],
-        color: () => theme.error, // HAYIR color
-        strokeWidth: 3,
-      },
-    ],
-    legend: ['EVET Oranı', 'HAYIR Oranı'],
-  };
-
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-  };
-
-  const toggleRelatedFavorite = (id: number) => {
-    setRelatedQuestions(prev =>
-      prev.map(q => q.id === id ? { ...q, isFavorite: !q.isFavorite } : q)
-    );
   };
 
   const formatTimeAgo = (timestamp: Date) => {
@@ -566,12 +767,12 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
   };
 
   const handleSendComment = async () => {
-    if (!commentText.trim() || !user || !question?.id) return;
+    if (!commentText.trim() || !user || !activeQuestionId) return;
 
     try {
       const result = await commentsService.createComment({
         user_id: user.id,
-        question_id: question.id.toString(),
+        question_id: activeQuestionId,
         content: commentText.trim(),
         parent_id: replyingTo?.id || undefined,
       });
@@ -581,21 +782,27 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
           id: result.data.id?.toString() || Math.random().toString(),
           user_id: user.id,
           username: profile?.username || user.user_metadata?.username || 'Anonim',
-          avatar: profile?.profile_image || user.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
+          avatar:
+            profile?.profile_image ||
+            user.user_metadata?.avatar_url ||
+            'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
           text: commentText.trim(),
           timestamp: new Date(),
           likes: 0,
+          isLiked: false,
           parent_id: replyingTo?.id || null,
-          replies: []
+          replies: [],
         };
 
         if (replyingTo) {
-          setComments(prev => prev.map(c => {
-            if (c.id === replyingTo.id) {
-              return { ...c, replies: [newComment, ...(c.replies || [])] };
-            }
-            return c;
-          }));
+          setComments(prev =>
+            prev.map(c => {
+              if (c.id === replyingTo.id) {
+                return { ...c, replies: [...(c.replies || []), newComment] };
+              }
+              return c;
+            }),
+          );
           setReplyingTo(null);
         } else {
           setComments([newComment, ...comments]);
@@ -606,6 +813,101 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
     } catch (err) {
       console.error('Comment error:', err);
       Alert.alert('Hata', 'Yorum gönderilirken bir hata oluştu');
+    }
+  };
+
+  const handleRelatedQuestionPress = (relatedQuestion: RelatedQuestion) => {
+    if (!relatedQuestion?.id || relatedQuestion.id === activeQuestionId) return;
+
+    setLoading(true);
+    setActiveQuestionId(relatedQuestion.id);
+    setActiveQuestionFallbackImage(relatedQuestion.image || DEFAULT_QUESTION_IMAGE);
+    setQuestionDetails(null);
+    setComments([]);
+    setRelatedQuestions([]);
+    setTopInvestors([]);
+    setCommentLikeLoadingMap({});
+    setActiveTab('details');
+    setCommentText('');
+    setReplyingTo(null);
+    setUserPrediction(null);
+    setProfilePreviewVisible(false);
+    setProfilePreviewData(null);
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
+  const handleToggleCommentLike = async (commentId: string) => {
+    if (!user) {
+      Alert.alert('Giriş gerekli', 'Yorum beğenmek için giriş yapmalısın');
+      return;
+    }
+
+    if (commentLikeLoadingMap[commentId]) {
+      return;
+    }
+
+    const currentComment = findCommentById(comments, commentId);
+    if (!currentComment) return;
+
+    const optimisticLiked = !currentComment.isLiked;
+    const optimisticLikes = Math.max(0, currentComment.likes + (optimisticLiked ? 1 : -1));
+
+    setCommentLikeLoadingMap(prev => ({ ...prev, [commentId]: true }));
+    setComments(prev =>
+      updateCommentLikeState(prev, commentId, comment => ({
+        ...comment,
+        isLiked: optimisticLiked,
+        likes: optimisticLikes,
+      })),
+    );
+
+    try {
+      const { data, error } = await commentsService.toggleCommentLike(commentId, user.id);
+
+      if (error || !data) {
+        const errorCode = (error as any)?.code;
+        if (errorCode === '42501') {
+          Alert.alert(
+            'Yetki Hatası',
+            'Beğeni kaydı yazılamadı. Veritabanında comment_likes RLS politikalarının güncel migration ile uygulanması gerekiyor.',
+          );
+        } else {
+          Alert.alert('Hata', 'Yorum beğenisi güncellenemedi');
+        }
+        setComments(prev =>
+          updateCommentLikeState(prev, commentId, comment => ({
+            ...comment,
+            isLiked: currentComment.isLiked,
+            likes: currentComment.likes,
+          })),
+        );
+        return;
+      }
+
+      setComments(prev =>
+        updateCommentLikeState(prev, commentId, comment => ({
+          ...comment,
+          isLiked: data.liked,
+          likes:
+            typeof data.likesCount === 'number' ? data.likesCount : Math.max(0, comment.likes + (data.liked ? 1 : -1)),
+        })),
+      );
+    } catch (error) {
+      console.error('handleToggleCommentLike error:', error);
+      Alert.alert('Hata', 'Yorum beğenisi güncellenemedi');
+      setComments(prev =>
+        updateCommentLikeState(prev, commentId, comment => ({
+          ...comment,
+          isLiked: currentComment.isLiked,
+          likes: currentComment.likes,
+        })),
+      );
+    } finally {
+      setCommentLikeLoadingMap(prev => {
+        const next = { ...prev };
+        delete next[commentId];
+        return next;
+      });
     }
   };
 
@@ -622,8 +924,6 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
     }
   };
 
-  const yesProgressAnim = useRef(new Animated.Value(0)).current;
-  const noProgressAnim = useRef(new Animated.Value(0)).current;
   const renderDetailsTab = () => (
     <View style={styles.detailsTabContainer}>
       {/* WINNER BANNER - Apple Vibe */}
@@ -642,11 +942,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
           }}
         >
           <LinearGradient
-            colors={
-              mainQuestion.result === 'yes'
-                ? ['#34C759', '#2E8B57']
-                : ['#FF3B30', '#C41E3A']
-            }
+            colors={mainQuestion.result === 'yes' ? ['#34C759', '#2E8B57'] : ['#FF3B30', '#C41E3A']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{
@@ -665,61 +961,66 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
               style={{ position: 'absolute', right: -40, bottom: -60, transform: [{ rotate: '-15deg' }] }}
             />
 
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              marginBottom: 12,
-              backgroundColor: 'rgba(0,0,0,0.2)',
-              paddingVertical: 6,
-              paddingHorizontal: 16,
-              borderRadius: 20
-            }}>
-              <Ionicons
-                name="trophy"
-                size={20}
-                color="#FFD700"
-                style={{ marginRight: 8 }}
-              />
-              <Text style={{
-                color: '#FFD700',
-                fontSize: 13,
-                fontWeight: '800',
-                letterSpacing: 1.5,
-                textTransform: 'uppercase'
-              }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: 12,
+                backgroundColor: 'rgba(0,0,0,0.2)',
+                paddingVertical: 6,
+                paddingHorizontal: 16,
+                borderRadius: 20,
+              }}
+            >
+              <Ionicons name="trophy" size={20} color="#FFD700" style={{ marginRight: 8 }} />
+              <Text
+                style={{
+                  color: '#FFD700',
+                  fontSize: 13,
+                  fontWeight: '800',
+                  letterSpacing: 1.5,
+                  textTransform: 'uppercase',
+                }}
+              >
                 SONUÇ AÇIKLANDI
               </Text>
             </View>
 
-            <Text style={{
-              color: '#FFF',
-              fontSize: 36,
-              fontWeight: '900',
-              textAlign: 'center',
-              letterSpacing: 0.5,
-              textShadowColor: 'rgba(0,0,0,0.3)',
-              textShadowOffset: { width: 0, height: 4 },
-              textShadowRadius: 8,
-              marginBottom: 8
-            }}>
+            <Text
+              style={{
+                color: '#FFF',
+                fontSize: 36,
+                fontWeight: '900',
+                textAlign: 'center',
+                letterSpacing: 0.5,
+                textShadowColor: 'rgba(0,0,0,0.3)',
+                textShadowOffset: { width: 0, height: 4 },
+                textShadowRadius: 8,
+                marginBottom: 8,
+              }}
+            >
               {mainQuestion.result === 'yes' ? 'EVET' : 'HAYIR'} KAZANDI
             </Text>
 
-            <View style={{
-              height: 4,
-              width: 60,
-              backgroundColor: 'rgba(255,255,255,0.4)',
-              borderRadius: 2,
-              marginBottom: 12
-            }} />
+            <View
+              style={{
+                height: 4,
+                width: 60,
+                backgroundColor: 'rgba(255,255,255,0.4)',
+                borderRadius: 2,
+                marginBottom: 12,
+              }}
+            />
 
-            <Text style={{
-              color: 'rgba(255,255,255,0.95)',
-              fontSize: 15,
-              fontWeight: '600',
-              textAlign: 'center',
-              lineHeight: 22
-            }}>
+            <Text
+              style={{
+                color: 'rgba(255,255,255,0.95)',
+                fontSize: 15,
+                fontWeight: '600',
+                textAlign: 'center',
+                lineHeight: 22,
+              }}
+            >
               Bu tahmin etkinliği sona ermiştir.{'\n'}Kazananlar ödüllerini profil sayfasından talep edebilir.
             </Text>
           </LinearGradient>
@@ -736,17 +1037,10 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         <TouchableOpacity
           style={styles.creatorTouchable}
           activeOpacity={0.7}
-          onPress={() => {
-            if (mainQuestion.creator?.id) {
-              (navigation as any).navigate('OtherProfilePage', { userId: mainQuestion.creator.id });
-            }
-          }}
+          onPress={() => openProfilePreview(mainQuestion.creator?.id)}
         >
           <View style={styles.creatorAvatarWrapper}>
-            <Image
-              source={{ uri: mainQuestion.creator.avatar }}
-              style={styles.creatorAvatar}
-            />
+            <Image source={{ uri: mainQuestion.creator.avatar }} style={styles.creatorAvatar} />
           </View>
           <View style={styles.creatorInfo}>
             <Text style={styles.creatorLabel}>Soruyu Yazan</Text>
@@ -755,10 +1049,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         </TouchableOpacity>
         {user?.id !== mainQuestion.creator?.id && (
           <TouchableOpacity
-            style={[
-              styles.followButton,
-              isFollowingCreator && styles.followButtonFollowing,
-            ]}
+            style={[styles.followButton, isFollowingCreator && styles.followButtonFollowing]}
             activeOpacity={0.7}
             onPress={handleFollowToggle}
             disabled={followLoading}
@@ -766,10 +1057,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
             {followLoading ? (
               <ActivityIndicator size="small" color="#8B949E" />
             ) : (
-              <Text style={[
-                styles.followButtonText,
-                isFollowingCreator && styles.followButtonTextFollowing,
-              ]}>
+              <Text style={[styles.followButtonText, isFollowingCreator && styles.followButtonTextFollowing]}>
                 {isFollowingCreator ? 'Takiptesin' : 'Takip Et'}
               </Text>
             )}
@@ -777,95 +1065,72 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         )}
       </View>
 
-      {/* Vote Distribution - Semi-Circle Gauge Apple Vibe */}
+      {/* Vote Distribution - Semi-Circle Gauge */}
       <View style={styles.semiCircleContainer}>
-        <Text style={styles.semiCircleTitle}>Oy Dağılımı</Text>
+        <Text style={styles.detailsSectionTitle}>Oy Dağılımı</Text>
 
         <View style={styles.semiCircleWrapper}>
-          <Svg width={220} height={120} viewBox="0 0 220 120">
-            <Defs>
-              <SvgLinearGradient id="gradYes" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0" stopColor="#10B981" stopOpacity="1" />
-                <Stop offset="1" stopColor="#34D399" stopOpacity="1" />
-              </SvgLinearGradient>
-              <SvgLinearGradient id="gradNo" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0" stopColor="#EF4444" stopOpacity="1" />
-                <Stop offset="1" stopColor="#F87171" stopOpacity="1" />
-              </SvgLinearGradient>
-            </Defs>
+          <View style={styles.semiCircleChartOnly}>
+            <Svg width={256} height={186} viewBox="0 0 256 186">
+              <Defs>
+                <SvgLinearGradient id="semiTrackGradient" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor="rgba(148,163,184,0.18)" stopOpacity="1" />
+                  <Stop offset="1" stopColor="rgba(148,163,184,0.3)" stopOpacity="1" />
+                </SvgLinearGradient>
+                <SvgLinearGradient id="semiYesGradient" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor="#16A34A" stopOpacity="1" />
+                  <Stop offset="1" stopColor="#22C55E" stopOpacity="1" />
+                </SvgLinearGradient>
+                <SvgLinearGradient id="semiNoGradient" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor="#DC2626" stopOpacity="1" />
+                  <Stop offset="1" stopColor="#EF4444" stopOpacity="1" />
+                </SvgLinearGradient>
+              </Defs>
 
-            {/* Background Arc (Gray) */}
-            <Path
-              d={`M 10 110 A 100 100 0 0 1 210 110`}
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth="12"
-              fill="none"
-              strokeLinecap="round"
-            />
+              <Path
+                d="M 28 152 A 100 100 0 0 1 228 152"
+                stroke="url(#semiTrackGradient)"
+                strokeWidth="20"
+                fill="none"
+                strokeLinecap="round"
+              />
 
-            {/* Yes Arc */}
-            <Path
-              d={`M 10 110 A 100 100 0 0 1 ${110 - 100 * Math.cos(Math.PI * (mainQuestion.yesPercentage / 100))} ${110 - 100 * Math.sin(Math.PI * (mainQuestion.yesPercentage / 100))}`}
-              stroke="url(#gradYes)"
-              strokeWidth="12"
-              fill="none"
-              strokeLinecap="round"
-            />
+              {yesPercentageValue > 0 && (
+                <Path
+                  d="M 28 152 A 100 100 0 0 1 228 152"
+                  stroke="url(#semiYesGradient)"
+                  strokeWidth="20"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeDasharray={`${yesDashLength} ${semiCurveLength}`}
+                  strokeDashoffset={0}
+                />
+              )}
 
-            {/* No Arc (starts where Yes ends generally, but for simple gauge we can just draw from right if we want, or better: separate them slightly) */}
-            {/* Actually, let's draw No arc from the end? Or just draw two separate arcs meeting? */}
-            {/* For exact percentage: Yes arc from 180 deg to (180 - yesAngle), No arc from (180 - yesAngle) to 0. */}
-            {/* Let's simplify: Green arc from left, Red arc from right? No, they should meet. */}
+              {noPercentageValue > 0 && (
+                <Path
+                  d="M 28 152 A 100 100 0 0 1 228 152"
+                  stroke="url(#semiNoGradient)"
+                  strokeWidth="20"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeDasharray={`${noDashLength} ${semiCurveLength}`}
+                  strokeDashoffset={-yesDashLength}
+                />
+              )}
+            </Svg>
 
-            <Path
-              d={`M ${110 - 100 * Math.cos(Math.PI * (mainQuestion.yesPercentage / 100))} ${110 - 100 * Math.sin(Math.PI * (mainQuestion.yesPercentage / 100))} A 100 100 0 0 1 210 110`}
-              stroke="url(#gradNo)"
-              strokeWidth="12"
-              fill="none"
-              strokeLinecap="round"
-            />
-
-          </Svg>
-
-          <View style={styles.semiCircleCenterContent}>
-            <Text style={styles.semiCircleTotalVotes}>{mainQuestion.totalVotes}</Text>
-            <Text style={styles.semiCircleTotalVotesLabel}>toplam oy</Text>
-          </View>
-
-          {/* Labels below */}
-          <View style={styles.semiCircleLabels}>
-            <View style={styles.semiCircleLabelItem}>
-              <View style={[styles.semiCircleLabelDot, { backgroundColor: '#10B981' }]} />
-              <View>
-                <Text style={styles.semiCircleLabelPercent}>%{mainQuestion.yesPercentage}</Text>
-                <Text style={styles.semiCircleLabelText}>Evet</Text>
-                <Text style={styles.semiCircleLabelOdds}>
-                  x{mainQuestion.yesOdds.toFixed(2)}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.semiCircleLabelDivider} />
-
-            <View style={styles.semiCircleLabelItem}>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={[styles.semiCircleLabelPercent, { color: '#EF4444' }]}>%{mainQuestion.noPercentage}</Text>
-                <Text style={styles.semiCircleLabelText}>Hayır</Text>
-                <Text style={styles.semiCircleLabelOdds}>
-                  x{mainQuestion.noOdds.toFixed(2)}
-                </Text>
-              </View>
-              <View style={[styles.semiCircleLabelDot, { backgroundColor: '#EF4444' }]} />
+            <View style={styles.semiCircleCenterContent}>
+              <Text style={styles.semiCircleLeadPercent}>%{leadingVotePercentage}</Text>
+              <Text style={styles.semiCircleLeadText}>{leadingVoteLabel}</Text>
             </View>
           </View>
         </View>
       </View>
 
-      {/* Vote Buttons moved to fixed bottom */}
-
-      {/* Related Questions - Compact TrendQuestionCard Style */}
+      {/* Related Questions */}
       <View style={styles.relatedSection}>
-        <Text style={styles.relatedTitle}>Benzer Sorular</Text>
+        <Text style={styles.detailsSectionTitle}>Benzer Sorular</Text>
 
         <ScrollView
           horizontal
@@ -875,43 +1140,24 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
           {relatedQuestions.map((rq, index) => (
             <TouchableOpacity
               key={`related-${rq.id}-${index}`}
-              style={styles.compactQuestionCard}
-              activeOpacity={0.8}
+              style={styles.relatedMiniCard}
+              activeOpacity={0.9}
+              onPress={() => handleRelatedQuestionPress(rq)}
             >
-              <Image
-                source={{ uri: rq.image }}
-                style={styles.compactQuestionImage}
-              />
-              <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.85)']}
-                style={styles.compactQuestionGradient}
-              />
-
-              {/* Stats row */}
-              <View style={styles.compactQuestionContent}>
-                <View style={styles.compactQuestionStats}>
-                  <View style={styles.compactQuestionStatItem}>
-                    <Ionicons name="people" size={12} color="rgba(255,255,255,0.9)" />
-                    <Text style={styles.compactQuestionStatText}>{rq.votes}</Text>
-                  </View>
-                  <View style={styles.compactQuestionStatItem}>
-                    <Ionicons name="time" size={12} color="rgba(255,255,255,0.9)" />
-                    <Text style={styles.compactQuestionStatText}>{rq.daysLeft}g</Text>
-                  </View>
-                </View>
-
-                <Text style={styles.compactQuestionTitle} numberOfLines={2}>
+              <Image source={{ uri: rq.image }} style={styles.relatedMiniImage} />
+              <View style={styles.relatedMiniContent}>
+                <Text style={styles.relatedMiniTitle} numberOfLines={2}>
                   {rq.title}
                 </Text>
-
-                {/* Percentage bar */}
-                <View style={styles.compactQuestionPercentBar}>
-                  <View style={[styles.compactQuestionPercentYes, { flex: 65 }]} />
-                  <View style={[styles.compactQuestionPercentNo, { flex: 35 }]} />
+                <View style={styles.relatedMiniPercentRow}>
+                  <Text style={styles.relatedMiniYesText}>Evet %{rq.yesPercentage}</Text>
+                  <Text style={styles.relatedMiniNoText}>Hayır %{rq.noPercentage}</Text>
                 </View>
-                <View style={styles.compactQuestionPercentLabels}>
-                  <Text style={styles.compactQuestionYesLabel}>Evet 65%</Text>
-                  <Text style={styles.compactQuestionNoLabel}>Hayır 35%</Text>
+                <View style={styles.relatedMiniTimeRow}>
+                  <Ionicons name="time-outline" size={13} color="#9CA3AF" />
+                  <Text style={styles.relatedMiniTimeText}>
+                    {rq.daysLeft > 0 ? `${rq.daysLeft} gün kaldı` : 'Bugün bitiyor'}
+                  </Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -928,7 +1174,9 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       <View style={styles.commentInputSectionNoPadding}>
         {replyingTo && (
           <View style={styles.replyIndicator}>
-            <Text style={styles.replyIndicatorText}>Yanıtlanıyor: <Text style={{ fontWeight: '700', color: '#FFF' }}>{replyingTo.username}</Text></Text>
+            <Text style={styles.replyIndicatorText}>
+              Yanıtlanıyor: <Text style={{ fontWeight: '700', color: '#FFF' }}>{replyingTo.username}</Text>
+            </Text>
             <TouchableOpacity onPress={() => setReplyingTo(null)}>
               <Ionicons name="close-circle" size={20} color="#EF4444" />
             </TouchableOpacity>
@@ -936,14 +1184,19 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         )}
         <View style={styles.commentInputCardModern}>
           <Image
-            source={{ uri: profile?.profile_image || user?.user_metadata?.avatar_url || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face" }}
+            source={{
+              uri:
+                profile?.profile_image ||
+                user?.user_metadata?.avatar_url ||
+                'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+            }}
             style={styles.commentUserAvatarModern}
           />
           <View style={styles.commentInputWrapper}>
             <TextInput
               value={commentText}
               onChangeText={setCommentText}
-              placeholder={replyingTo ? `@${replyingTo.username} yanıtla...` : "Yorum ekle..."}
+              placeholder={replyingTo ? `@${replyingTo.username} yanıtla...` : 'Yorum ekle...'}
               placeholderTextColor={theme.textMuted + '99'}
               style={styles.commentInputModern}
               multiline
@@ -973,73 +1226,98 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
             <Text style={styles.commentsEmptySubtext}>İlk yorumu sen yap</Text>
           </View>
         ) : (
-          comments.map((comment, index) => (
-            <View key={`comment-${comment.id}-${index}`} style={styles.commentCardModern}>
-              <View style={{ flexDirection: 'row' }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    if (comment.user_id) {
-                      (navigation as any).navigate('OtherProfilePage', { userId: comment.user_id });
-                    }
-                  }}
-                >
+          comments.map((comment, index) => {
+            const isLikePending = !!commentLikeLoadingMap[comment.id];
+
+            return (
+              <View key={`comment-${comment.id}-${index}`} style={styles.commentCardModern}>
+                <TouchableOpacity onPress={() => openProfilePreview(comment.user_id)} hitSlop={8} activeOpacity={0.82}>
                   <Image source={{ uri: comment.avatar }} style={styles.commentAvatarModern} />
                 </TouchableOpacity>
+
                 <View style={styles.commentContentModern}>
                   <View style={styles.commentHeaderModern}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (comment.user_id) {
-                          (navigation as any).navigate('OtherProfilePage', { userId: comment.user_id });
-                        }
-                      }}
-                    >
+                    <TouchableOpacity onPress={() => openProfilePreview(comment.user_id)} activeOpacity={0.82}>
                       <Text style={styles.commentUsernameModern}>{comment.username}</Text>
                     </TouchableOpacity>
                     <Text style={styles.commentTimeModern}>{formatTimeAgo(comment.timestamp)}</Text>
                   </View>
+
                   <Text style={styles.commentTextModern}>{comment.text}</Text>
+
                   <View style={styles.commentActionsModern}>
                     <TouchableOpacity
-                      style={styles.commentLikeButton}
-                      onPress={() => {
-                        // Toggle like functionality
-                        setComments(prev => prev.map(c =>
-                          c.id === comment.id
-                            ? { ...c, likes: c.likes + 1 }
-                            : c
-                        ));
-                      }}
+                      style={[
+                        styles.commentLikeButton,
+                        comment.isLiked && styles.commentLikeButtonActive,
+                        isLikePending && styles.commentActionPending,
+                      ]}
+                      onPress={() => handleToggleCommentLike(comment.id)}
+                      disabled={isLikePending}
+                      activeOpacity={0.86}
                     >
-                      <Ionicons name="heart-outline" size={14} color={theme.textMuted + '99'} />
-                      <Text style={styles.commentLikeCount}>{comment.likes}</Text>
+                      <Ionicons
+                        name={comment.isLiked ? 'heart' : 'heart-outline'}
+                        size={15}
+                        color={comment.isLiked ? '#FB7185' : '#9CA3AF'}
+                      />
+                      <Text style={[styles.commentLikeCount, comment.isLiked && styles.commentLikeCountActive]}>
+                        {comment.likes}
+                      </Text>
                     </TouchableOpacity>
+
                     <TouchableOpacity
+                      style={styles.commentReplyChip}
                       onPress={() => {
                         setReplyingTo({ id: comment.id, username: comment.username });
                         setCommentText(`@${comment.username} `);
                       }}
+                      activeOpacity={0.86}
                     >
                       <Text style={styles.commentReplyButton}>Yanıtla</Text>
                     </TouchableOpacity>
                   </View>
 
-                  {/* Nested Replies */}
                   {comment.replies && comment.replies.length > 0 && (
                     <View style={styles.repliesContainer}>
                       <View style={styles.replyLine} />
                       <View style={{ flex: 1 }}>
                         {comment.replies.map((reply, rIndex) => (
                           <View key={`reply-${reply.id}-${rIndex}`} style={styles.nestedReplyCard}>
-                            <TouchableOpacity onPress={() => (navigation as any).navigate('OtherProfilePage', { userId: reply.user_id })}>
+                            <TouchableOpacity onPress={() => openProfilePreview(reply.user_id)} hitSlop={6}>
                               <Image source={{ uri: reply.avatar }} style={styles.nestedReplyAvatar} />
                             </TouchableOpacity>
-                            <View style={{ flex: 1 }}>
+                            <View style={styles.nestedReplyContent}>
                               <View style={styles.commentHeaderModern}>
-                                <Text style={styles.commentUsernameModern}>{reply.username}</Text>
+                                <TouchableOpacity onPress={() => openProfilePreview(reply.user_id)} activeOpacity={0.8}>
+                                  <Text style={styles.commentUsernameModern}>{reply.username}</Text>
+                                </TouchableOpacity>
                                 <Text style={styles.commentTimeModern}>{formatTimeAgo(reply.timestamp)}</Text>
                               </View>
                               <Text style={styles.commentTextModern}>{reply.text}</Text>
+                              <View style={styles.commentActionsModern}>
+                                <TouchableOpacity
+                                  style={[
+                                    styles.commentLikeButton,
+                                    reply.isLiked && styles.commentLikeButtonActive,
+                                    !!commentLikeLoadingMap[reply.id] && styles.commentActionPending,
+                                  ]}
+                                  onPress={() => handleToggleCommentLike(reply.id)}
+                                  disabled={!!commentLikeLoadingMap[reply.id]}
+                                  activeOpacity={0.86}
+                                >
+                                  <Ionicons
+                                    name={reply.isLiked ? 'heart' : 'heart-outline'}
+                                    size={14}
+                                    color={reply.isLiked ? '#FB7185' : '#9CA3AF'}
+                                  />
+                                  <Text
+                                    style={[styles.commentLikeCount, reply.isLiked && styles.commentLikeCountActive]}
+                                  >
+                                    {reply.likes}
+                                  </Text>
+                                </TouchableOpacity>
+                              </View>
                             </View>
                           </View>
                         ))}
@@ -1048,18 +1326,28 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                   )}
                 </View>
               </View>
-            </View>
-          ))
+            );
+          })
         )}
       </View>
     </View>
   );
 
+  const yesTopInvestors = topInvestors
+    .filter(investor => investor.vote === 'yes')
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5);
+
+  const noTopInvestors = topInvestors
+    .filter(investor => investor.vote === 'no')
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5);
+
   const renderStatsTab = () => (
     <View style={styles.detailsTabContainer}>
       {/* Total Pool Card - Modern Dark Theme (Polymarket Blue) */}
       <LinearGradient
-        colors={['#1e3a8a', '#2563eb', '#1d4ed8']}
+        colors={['#256EFF', '#256EFF', '#256EFF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.totalPoolCard}
@@ -1072,9 +1360,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
             <View style={styles.totalPoolInfo}>
               <Text style={styles.totalPoolLabel}>TOPLAM ÖDÜL HAVUZU</Text>
               <View style={styles.totalPoolAmountRow}>
-                <Text style={styles.totalPoolAmount}>
-                  {mainQuestion.totalPool.toLocaleString('tr-TR')}
-                </Text>
+                <Text style={styles.totalPoolAmount}>{mainQuestion.totalPool.toLocaleString('tr-TR')}</Text>
                 <Text style={styles.totalPoolCurrency}>₺</Text>
               </View>
             </View>
@@ -1085,131 +1371,68 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
           <View style={styles.totalPoolFooter}>
             <View style={styles.totalPoolStat}>
               <Text style={styles.totalPoolStatLabel}>EVET Yatırım</Text>
-              <Text style={styles.totalPoolStatValue}>
-                {mainQuestion.yesInvestment.toLocaleString('tr-TR')} ₺
-              </Text>
+              <Text style={styles.totalPoolStatValue}>{mainQuestion.yesInvestment.toLocaleString('tr-TR')} ₺</Text>
             </View>
             <View style={styles.totalPoolDividerVertical} />
             <View style={styles.totalPoolStat}>
               <Text style={styles.totalPoolStatLabel}>HAYIR Yatırım</Text>
-              <Text style={styles.totalPoolStatValue}>
-                {mainQuestion.noInvestment.toLocaleString('tr-TR')} ₺
-              </Text>
+              <Text style={styles.totalPoolStatValue}>{mainQuestion.noInvestment.toLocaleString('tr-TR')} ₺</Text>
             </View>
           </View>
         </View>
       </LinearGradient>
 
-      {/* Line Chart */}
-      <View style={styles.chartSection}>
-        <View style={styles.chartHeader}>
-          <Ionicons name="trending-up" size={20} color="#10B981" />
-          <Text style={styles.chartTitle}>Oran Değişimi Grafiği</Text>
-        </View>
-        <View style={styles.chartCard}>
-          <LineChart
-            data={oddsChartData}
-            width={SCREEN_WIDTH - 64}
-            height={250}
-            chartConfig={{
-              backgroundColor: theme.surface,
-              backgroundGradientFrom: theme.surface,
-              backgroundGradientTo: theme.surface,
-              decimalPlaces: 2,
-              color: (opacity = 1) => `rgba(67, 40, 112, ${opacity})`,
-              labelColor: (opacity = 1) => `rgba(32, 32, 32, ${opacity})`,
-              style: {
-                borderRadius: 16,
-              },
-              propsForDots: {
-                r: '5',
-                strokeWidth: '2',
-              },
-              propsForLabels: {
-                fontSize: 10,
-                fontWeight: 'bold',
-              },
-            }}
-            bezier
-            style={styles.chart}
-            withShadow={false}
-            withInnerLines={true}
-            withOuterLines={true}
-            withVerticalLines={true}
-            withHorizontalLines={true}
-            withVerticalLabels={true}
-            withHorizontalLabels={true}
-          />
-          <View style={styles.chartFooter}>
-            <Text style={styles.chartFooterText}>
-              Oranlar, toplam yatırım miktarlarına göre dinamik olarak değişmektedir
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Top Investors - Premium Redesign */}
+      {/* Top Investors - Minimal Modern */}
       <View style={styles.topInvestorsSection}>
-        <View style={styles.topInvestorsHeader}>
-          <LinearGradient
-            colors={['#1e3a8a', '#3b82f6']} // Polymarket blue icon bg
-            style={{ padding: 6, borderRadius: 8, marginRight: 10 }}
-          >
-            <Ionicons name="trophy" size={16} color="#FFF" />
-          </LinearGradient>
-          <Text style={styles.topInvestorsTitle}>En Çok Yatırım Yapanlar</Text>
-        </View>
+        <Text style={styles.detailsSectionTitle}>En Çok Yatırım Yapanlar</Text>
 
-        {topInvestors.map((investor, index) => (
-          <View key={`investor-${index}-${investor.username}`} style={[
-            styles.investorCardModern,
-            index === 0 && styles.investorCardGold,
-            index === 1 && styles.investorCardSilver,
-            index === 2 && styles.investorCardBronze,
-          ]}>
-            {/* Rank Badge */}
-            <View style={styles.investorRankModern}>
-              {index < 3 ? (
-                <LinearGradient
-                  colors={
-                    index === 0 ? ['#FFD700', '#FDB931'] :
-                      index === 1 ? ['#E0E0E0', '#BDBDBD'] :
-                        ['#CD7F32', '#A0522D']
-                  }
-                  style={styles.rankBadgeGradient}
-                >
-                  <Text style={[styles.rankTextModern, { color: '#FFF', fontWeight: 'bold' }]}>{index + 1}</Text>
-                </LinearGradient>
-              ) : (
-                <Text style={styles.rankTextModern}>#{index + 1}</Text>
-              )}
+        <View style={styles.investorColumnsRow}>
+          <View style={styles.investorColumn}>
+            <View style={[styles.investorColumnHeader, styles.investorColumnHeaderYes]}>
+              <Text style={styles.investorColumnTitle}>EVET</Text>
+              <Text style={styles.investorColumnCount}>{yesTopInvestors.length}</Text>
             </View>
-
-            <Image
-              source={{ uri: investor.avatar }}
-              style={styles.investorAvatarModern}
-            />
-
-            <View style={styles.investorInfoModern}>
-              <Text style={styles.investorUsernameModern}>{investor.username}</Text>
-              <Text style={styles.investorAmountModern}>
-                {investor.amount.toLocaleString('tr-TR')} ₺
-              </Text>
-            </View>
-
-            <View style={[
-              styles.investorVoteBadgeModern,
-              investor.vote === 'yes' ? styles.investorVoteBadgeYesModern : styles.investorVoteBadgeNoModern
-            ]}>
-              <Text style={[
-                styles.investorVoteTextModern,
-                investor.vote === 'yes' ? styles.investorVoteTextYesModern : styles.investorVoteTextNoModern
-              ]}>
-                {investor.vote === 'yes' ? 'EVET' : 'HAYIR'}
-              </Text>
-            </View>
+            {yesTopInvestors.length === 0 ? (
+              <Text style={styles.investorColumnEmpty}>Henüz yok</Text>
+            ) : (
+              yesTopInvestors.map((investor, index) => (
+                <View key={`investor-yes-${index}-${investor.username}`} style={styles.investorColumnCard}>
+                  <Text style={styles.investorColumnRank}>{index + 1}</Text>
+                  <Image source={{ uri: investor.avatar }} style={styles.investorColumnAvatar} />
+                  <View style={styles.investorColumnMeta}>
+                    <Text style={styles.investorColumnName} numberOfLines={1}>
+                      {investor.username}
+                    </Text>
+                    <Text style={styles.investorColumnAmount}>{investor.amount.toLocaleString('tr-TR')} ₺</Text>
+                  </View>
+                </View>
+              ))
+            )}
           </View>
-        ))}
+
+          <View style={styles.investorColumn}>
+            <View style={[styles.investorColumnHeader, styles.investorColumnHeaderNo]}>
+              <Text style={styles.investorColumnTitle}>HAYIR</Text>
+              <Text style={styles.investorColumnCount}>{noTopInvestors.length}</Text>
+            </View>
+            {noTopInvestors.length === 0 ? (
+              <Text style={styles.investorColumnEmpty}>Henüz yok</Text>
+            ) : (
+              noTopInvestors.map((investor, index) => (
+                <View key={`investor-no-${index}-${investor.username}`} style={styles.investorColumnCard}>
+                  <Text style={styles.investorColumnRank}>{index + 1}</Text>
+                  <Image source={{ uri: investor.avatar }} style={styles.investorColumnAvatar} />
+                  <View style={styles.investorColumnMeta}>
+                    <Text style={styles.investorColumnName} numberOfLines={1}>
+                      {investor.username}
+                    </Text>
+                    <Text style={styles.investorColumnAmount}>{investor.amount.toLocaleString('tr-TR')} ₺</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        </View>
       </View>
 
       {/* Vote Distribution */}
@@ -1217,23 +1440,15 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         <Text style={styles.voteDistributionTitle}>Oy Dağılımı</Text>
         <View style={styles.voteDistributionCard}>
           <View style={styles.voteDistributionItem}>
-            <Text style={styles.voteDistributionPercentageYes}>
-              {mainQuestion.yesPercentage}%
-            </Text>
+            <Text style={styles.voteDistributionPercentageYes}>{mainQuestion.yesPercentage}%</Text>
             <Text style={styles.voteDistributionLabel}>EVET</Text>
-            <Text style={styles.voteDistributionAmount}>
-              {mainQuestion.yesInvestment.toLocaleString('tr-TR')} ₺
-            </Text>
+            <Text style={styles.voteDistributionAmount}>{mainQuestion.yesInvestment.toLocaleString('tr-TR')} ₺</Text>
           </View>
           <View style={styles.voteDistributionDivider} />
           <View style={styles.voteDistributionItem}>
-            <Text style={styles.voteDistributionPercentageNo}>
-              {mainQuestion.noPercentage}%
-            </Text>
+            <Text style={styles.voteDistributionPercentageNo}>{mainQuestion.noPercentage}%</Text>
             <Text style={styles.voteDistributionLabel}>HAYIR</Text>
-            <Text style={styles.voteDistributionAmount}>
-              {mainQuestion.noInvestment.toLocaleString('tr-TR')} ₺
-            </Text>
+            <Text style={styles.voteDistributionAmount}>{mainQuestion.noInvestment.toLocaleString('tr-TR')} ₺</Text>
           </View>
         </View>
       </View>
@@ -1275,74 +1490,51 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       {/* Fixed Header Background - Behind content so it scrolls over image */}
       <View style={styles.fixedHeaderBackground} pointerEvents="box-none">
         <Image
-          source={{ uri: mainQuestion.image || question?.image || 'https://images.unsplash.com/photo-1574477942438-5db6de70fd34?w=800&h=600&fit=crop' }}
+          source={{ uri: mainQuestion.image || DEFAULT_QUESTION_IMAGE }}
           style={styles.headerImage}
           resizeMode="cover"
         />
-        <LinearGradient
-          colors={['rgba(0,0,0,0.2)', 'transparent']}
-          style={styles.headerGradient}
-        />
-        {/* Left badge: Vote count - Premium Design (Polymarket Blue) */}
+        <LinearGradient colors={['rgba(0,0,0,0.2)', 'transparent']} style={styles.headerGradient} />
+        {/* Left badge: total votes */}
         <View style={styles.imageBadgeLeft}>
-          <LinearGradient
-            colors={['#1e3a8a', '#3b82f6']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.premiumBadge}
-          >
-            <View style={styles.premiumBadgeGlow} />
+          <View style={styles.premiumBadge}>
             <Ionicons name="people" size={16} color="#FFFFFF" />
-            <Text style={styles.premiumBadgeText}>{mainQuestion.totalVotes} oy</Text>
-          </LinearGradient>
+            <Text style={styles.premiumBadgeText}>{formatCompactVotes(mainQuestion.totalVotes)}</Text>
+          </View>
         </View>
-        {/* Right badge: Countdown veya Sonuç durumu - Premium Design (Polymarket Blue) */}
+
+        {/* Right badge: countdown/status */}
         <View style={styles.categoryBadgeContainer}>
           {showResultToUser ? (
-            <LinearGradient
-              colors={displayResult === 'yes' ? ['rgba(16, 185, 129, 0.9)', 'rgba(5, 150, 105, 0.9)'] : ['rgba(239, 68, 68, 0.9)', 'rgba(185, 28, 28, 0.9)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.premiumBadge}
-            >
-              <Ionicons name={displayResult === 'yes' ? 'checkmark-circle' : 'close-circle'} size={16} color="#FFFFFF" />
-              <Text style={styles.premiumBadgeText} numberOfLines={1}>
-                Sonuç: {displayResult === 'yes' ? 'Evet' : 'Hayır'}
-              </Text>
-            </LinearGradient>
+            <View style={styles.premiumBadge}>
+              <Ionicons
+                name={displayResult === 'yes' ? 'checkmark-circle' : 'close-circle'}
+                size={16}
+                color="#FFFFFF"
+              />
+              <Text style={styles.premiumBadgeText}>{displayResult === 'yes' ? 'EVET' : 'HAYIR'}</Text>
+            </View>
           ) : isPendingResolution || (isExpired && !showResultToUser) ? (
-            <LinearGradient
-              colors={['#1e3a8a', '#3b82f6']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.premiumBadge}
-            >
+            <View style={styles.premiumBadge}>
               <Ionicons name="hourglass-outline" size={16} color="#FFFFFF" />
-              <Text style={styles.premiumBadgeText} numberOfLines={1}>Sonuç Bekleniyor</Text>
-            </LinearGradient>
+              <Text style={styles.premiumBadgeText}>Beklemede</Text>
+            </View>
           ) : (
-            <LinearGradient
-              colors={['#1e3a8a', '#2563eb']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.premiumBadge}
-            >
-              <Ionicons name="time" size={16} color="#fbbf24" />
-              <Text style={[styles.premiumBadgeText, { color: '#fbbf24', fontWeight: '900', fontSize: 13 }]}>{formatCountdown()}</Text>
-            </LinearGradient>
+            <View style={styles.premiumBadge}>
+              <Ionicons name="time-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.premiumBadgeText}>{formatCompactCountdown()}</Text>
+            </View>
           )}
         </View>
       </View>
 
       {/* Scrollable Content - Renders on top so it scrolls over image */}
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
         scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
@@ -1353,7 +1545,6 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
           />
         }
       >
-
         {/* Content Container */}
         <View style={styles.contentContainer}>
           {/* Question Header */}
@@ -1366,9 +1557,7 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
             <View style={styles.metaRow}>
               <View style={styles.metaItem}>
                 <Ionicons name="time-outline" size={16} color={theme.textMuted + '80'} />
-                <Text style={styles.metaText}>
-                  {formatPublishDate(mainQuestion.publishedAt)} yayınlandı
-                </Text>
+                <Text style={styles.metaText}>{formatPublishDate(mainQuestion.publishedAt)} yayınlandı</Text>
               </View>
               <View style={styles.metaCategory}>
                 <Ionicons name={mainQuestion.categoryIconName as any} size={16} color={theme.textMuted} />
@@ -1385,20 +1574,34 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                   {mainQuestion.suggestedResult && (
                     <Text style={styles.resolutionStatusSubtext}>
                       Öneri: {mainQuestion.suggestedResult === 'yes' ? 'Evet' : 'Hayır'}
-                      {mainQuestion.suggestedResultSource ? ` (${mainQuestion.suggestedResultSource === 'rss' ? 'RSS' : 'AI'})` : ''}
+                      {mainQuestion.suggestedResultSource
+                        ? ` (${mainQuestion.suggestedResultSource === 'rss' ? 'RSS' : 'AI'})`
+                        : ''}
                     </Text>
                   )}
                 </View>
               </View>
             )}
             {showResultToUser && (
-              <View style={[styles.resolutionStatusCard, displayResult === 'yes' ? styles.resolutionStatusYes : styles.resolutionStatusNo]}>
-                <Ionicons name={displayResult === 'yes' ? 'checkmark-circle' : 'close-circle'} size={20} color={displayResult === 'yes' ? '#10B981' : '#DC2626'} />
+              <View
+                style={[
+                  styles.resolutionStatusCard,
+                  displayResult === 'yes' ? styles.resolutionStatusYes : styles.resolutionStatusNo,
+                ]}
+              >
+                <Ionicons
+                  name={displayResult === 'yes' ? 'checkmark-circle' : 'close-circle'}
+                  size={20}
+                  color={displayResult === 'yes' ? '#10B981' : '#DC2626'}
+                />
                 <View style={styles.resolutionStatusTextBlock}>
                   <Text style={styles.resolutionStatusTitle}>Sonuç: {displayResult === 'yes' ? 'Evet' : 'Hayır'}</Text>
                   {(mainQuestion.resolutionSourceDisplay || mainQuestion.suggestedResultSourceDetail) && (
                     <Text style={styles.resolutionStatusSubtext} numberOfLines={3}>
-                      Kaynak: {mainQuestion.resolutionSourceDisplay || (mainQuestion.suggestedResultSource === 'rss' ? 'RSS' : 'AI')} — {mainQuestion.suggestedResultSourceDetail || ''}
+                      Kaynak:{' '}
+                      {mainQuestion.resolutionSourceDisplay ||
+                        (mainQuestion.suggestedResultSource === 'rss' ? 'RSS' : 'AI')}{' '}
+                      — {mainQuestion.suggestedResultSourceDetail || ''}
                     </Text>
                   )}
                   {mainQuestion.resolutionAdminNote ? (
@@ -1410,42 +1613,44 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
               </View>
             )}
 
-            {/* Tabs - Apple Segmented Control Style */}
-            <View style={styles.tabsApple}>
-              <TouchableOpacity
-                style={[styles.tabApple, activeTab === 'details' && styles.tabAppleActive]}
-                onPress={() => setActiveTab('details')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.tabAppleText, activeTab === 'details' && styles.tabAppleTextActive]}>
-                  Detay
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tabApple, activeTab === 'comments' && styles.tabAppleActive]}
-                onPress={() => setActiveTab('comments')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.tabAppleWithBadge}>
-                  <Text style={[styles.tabAppleText, activeTab === 'comments' && styles.tabAppleTextActive]}>
-                    Yorumlar
-                  </Text>
-                  <View style={[styles.tabAppleBadge, activeTab === 'comments' && styles.tabAppleBadgeActive]}>
-                    <Text style={[styles.tabAppleBadgeText, activeTab === 'comments' && styles.tabAppleBadgeTextActive]}>
-                      {comments.length}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tabApple, activeTab === 'stats' && styles.tabAppleActive]}
-                onPress={() => setActiveTab('stats')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.tabAppleText, activeTab === 'stats' && styles.tabAppleTextActive]}>
-                  İstatistik
-                </Text>
-              </TouchableOpacity>
+            {/* Tabs - League style + smooth animation */}
+            <View style={styles.tabsLeagueContainer}>
+              <View style={styles.tabsLeague} onLayout={event => setTabsContainerWidth(event.nativeEvent.layout.width)}>
+                {tabWidth > 0 && (
+                  <Animated.View
+                    style={[
+                      styles.tabsLeagueIndicator,
+                      {
+                        width: tabWidth - 8,
+                        left: 4,
+                        transform: [{ translateX: tabIndicatorTranslateX }],
+                      },
+                    ]}
+                  />
+                )}
+                {DETAIL_TAB_CONFIG.map(tab => {
+                  const isActive = activeTab === tab.key;
+                  return (
+                    <TouchableOpacity
+                      key={tab.key}
+                      style={styles.tabLeagueButton}
+                      onPress={() => setActiveTab(tab.key)}
+                      activeOpacity={0.85}
+                    >
+                      <View style={styles.tabLeagueLabelRow}>
+                        <Text style={[styles.tabLeagueText, isActive && styles.tabLeagueTextActive]}>{tab.label}</Text>
+                        {tab.key === 'comments' && comments.length > 0 && (
+                          <View style={[styles.tabLeagueBadge, isActive && styles.tabLeagueBadgeActive]}>
+                            <Text style={[styles.tabLeagueBadgeText, isActive && styles.tabLeagueBadgeTextActive]}>
+                              {comments.length}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
           </View>
 
@@ -1475,7 +1680,11 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
             <View style={styles.stickyActionHalf}>
               <Pressable
                 onPress={() => openTicketModal('yes')}
-                style={({ pressed }) => [styles.stickyActionBtn, styles.stickyActionBtnYes, pressed && styles.stickyActionBtnPressed]}
+                style={({ pressed }) => [
+                  styles.stickyActionBtn,
+                  styles.stickyActionBtnYes,
+                  pressed && styles.stickyActionBtnPressed,
+                ]}
               >
                 <View style={styles.stickyActionBtnContent}>
                   <Ionicons name="checkmark-circle" size={22} color="#10B981" />
@@ -1490,7 +1699,11 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
             <View style={styles.stickyActionHalf}>
               <Pressable
                 onPress={() => openTicketModal('no')}
-                style={({ pressed }) => [styles.stickyActionBtn, styles.stickyActionBtnNo, pressed && styles.stickyActionBtnPressed]}
+                style={({ pressed }) => [
+                  styles.stickyActionBtn,
+                  styles.stickyActionBtnNo,
+                  pressed && styles.stickyActionBtnPressed,
+                ]}
               >
                 <View style={styles.stickyActionBtnContent}>
                   <Ionicons name="close-circle" size={22} color="#DC2626" />
@@ -1505,6 +1718,77 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         </View>
       )}
 
+      {/* Public Profile Preview Modal */}
+      <Modal
+        visible={profilePreviewVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeProfilePreview}
+      >
+        <View style={styles.profilePreviewOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={closeProfilePreview} />
+          <View style={styles.profilePreviewSheet}>
+            {profilePreviewLoading ? (
+              <View style={styles.profilePreviewLoadingState}>
+                <ActivityIndicator size="small" color="#256EFF" />
+                <Text style={styles.profilePreviewLoadingText}>Profil yükleniyor...</Text>
+              </View>
+            ) : profilePreviewData ? (
+              <>
+                <View style={styles.profilePreviewHeader}>
+                  <TouchableOpacity style={styles.profilePreviewCloseButton} onPress={closeProfilePreview}>
+                    <Ionicons name="close" size={18} color="#9CA3AF" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.profilePreviewIdentity}>
+                  <Image source={{ uri: profilePreviewData.avatar }} style={styles.profilePreviewAvatar} />
+                  <Text style={styles.profilePreviewUsername}>{profilePreviewData.username}</Text>
+                  {!!profilePreviewData.fullName && (
+                    <Text style={styles.profilePreviewFullName}>{profilePreviewData.fullName}</Text>
+                  )}
+                  {!!profilePreviewData.bio && <Text style={styles.profilePreviewBio}>{profilePreviewData.bio}</Text>}
+                </View>
+
+                <View style={styles.profilePreviewStats}>
+                  <View style={styles.profilePreviewStatCard}>
+                    <Text style={styles.profilePreviewStatValue}>{profilePreviewData.followers}</Text>
+                    <Text style={styles.profilePreviewStatLabel}>Takipçi</Text>
+                  </View>
+                  <View style={styles.profilePreviewStatCard}>
+                    <Text style={styles.profilePreviewStatValue}>{profilePreviewData.following}</Text>
+                    <Text style={styles.profilePreviewStatLabel}>Takip</Text>
+                  </View>
+                </View>
+
+                {user?.id !== profilePreviewData.id && (
+                  <TouchableOpacity
+                    style={[
+                      styles.profilePreviewFollowButton,
+                      profilePreviewData.isFollowing && styles.profilePreviewFollowButtonActive,
+                    ]}
+                    onPress={handleProfilePreviewFollowToggle}
+                    disabled={profilePreviewFollowLoading}
+                    activeOpacity={0.85}
+                  >
+                    {profilePreviewFollowLoading ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.profilePreviewFollowButtonText}>
+                        {profilePreviewData.isFollowing ? 'Takiptesin' : 'Takip Et'}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </>
+            ) : (
+              <View style={styles.profilePreviewLoadingState}>
+                <Text style={styles.profilePreviewLoadingText}>Profil bulunamadı</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+
       {/* Ticket Alma Modal */}
       <Modal
         visible={ticketModalVisible}
@@ -1512,32 +1796,25 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
         animationType="slide"
         onRequestClose={() => setTicketModalVisible(false)}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
-          <Pressable
-            style={styles.modalBackdrop}
-            onPress={() => setTicketModalVisible(false)}
-          />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setTicketModalVisible(false)} />
           <View style={styles.ticketModalContainer}>
             {/* Modal Header */}
             <View style={styles.ticketModalHeader}>
               <View style={styles.ticketModalHandle} />
               <Text style={styles.ticketModalTitle}>Ticket Al</Text>
-              <TouchableOpacity
-                style={styles.ticketModalCloseBtn}
-                onPress={() => setTicketModalVisible(false)}
-              >
+              <TouchableOpacity style={styles.ticketModalCloseBtn} onPress={() => setTicketModalVisible(false)}>
                 <Ionicons name="close" size={24} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             {/* Seçilen Oy */}
-            <View style={[
-              styles.selectedVoteContainer,
-              selectedVote === 'yes' ? styles.selectedVoteYes : styles.selectedVoteNo
-            ]}>
+            <View
+              style={[
+                styles.selectedVoteContainer,
+                selectedVote === 'yes' ? styles.selectedVoteYes : styles.selectedVoteNo,
+              ]}
+            >
               <View style={styles.selectedVoteIcon}>
                 <Ionicons
                   name={selectedVote === 'yes' ? 'checkmark-circle' : 'close-circle'}
@@ -1547,10 +1824,12 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
               </View>
               <View style={styles.selectedVoteInfo}>
                 <Text style={styles.selectedVoteLabel}>Seçiminiz</Text>
-                <Text style={[
-                  styles.selectedVoteText,
-                  selectedVote === 'yes' ? styles.selectedVoteTextYes : styles.selectedVoteTextNo
-                ]}>
+                <Text
+                  style={[
+                    styles.selectedVoteText,
+                    selectedVote === 'yes' ? styles.selectedVoteTextYes : styles.selectedVoteTextNo,
+                  ]}
+                >
                   {selectedVote === 'yes' ? 'EVET' : 'HAYIR'}
                 </Text>
               </View>
@@ -1579,19 +1858,13 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
 
               {/* Hızlı Seçim Butonları */}
               <View style={styles.quickAmountButtons}>
-                {['50', '100', '250', '500', '1000'].map((amount) => (
+                {['50', '100', '250', '500', '1000'].map(amount => (
                   <TouchableOpacity
                     key={amount}
-                    style={[
-                      styles.quickAmountBtn,
-                      betAmount === amount && styles.quickAmountBtnActive
-                    ]}
+                    style={[styles.quickAmountBtn, betAmount === amount && styles.quickAmountBtnActive]}
                     onPress={() => setBetAmount(amount)}
                   >
-                    <Text style={[
-                      styles.quickAmountBtnText,
-                      betAmount === amount && styles.quickAmountBtnTextActive
-                    ]}>
+                    <Text style={[styles.quickAmountBtnText, betAmount === amount && styles.quickAmountBtnTextActive]}>
                       {amount}
                     </Text>
                   </TouchableOpacity>
@@ -1614,18 +1887,13 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
               <View style={styles.potentialWinDivider} />
               <View style={styles.potentialWinRow}>
                 <Text style={styles.potentialWinTotalLabel}>Potansiyel Kazanç</Text>
-                <Text style={styles.potentialWinTotalValue}>
-                  {calculatePotentialWin().toFixed(0)} Kredi
-                </Text>
+                <Text style={styles.potentialWinTotalValue}>{calculatePotentialWin().toFixed(0)} Kredi</Text>
               </View>
             </View>
 
             {/* Ticket Al Butonu */}
             <TouchableOpacity
-              style={[
-                styles.confirmTicketBtn,
-                isProcessing && styles.confirmTicketBtnDisabled
-              ]}
+              style={[styles.confirmTicketBtn, isProcessing && styles.confirmTicketBtnDisabled]}
               onPress={handleConfirmTicket}
               disabled={isProcessing}
               activeOpacity={0.8}
@@ -1651,23 +1919,25 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
       </Modal>
 
       {/* Success Modal - Happy End */}
-      <Modal
-        visible={showSuccessModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={closeSuccessModal}
-      >
+      <Modal visible={showSuccessModal} transparent={true} animationType="fade" onRequestClose={closeSuccessModal}>
         <View style={styles.successModalOverlay}>
           {/* Confetti Animation */}
-          <Animated.View style={[styles.confettiContainer, {
-            opacity: confettiAnim,
-            transform: [{
-              translateY: confettiAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [-100, 0],
-              })
-            }],
-          }]}>
+          <Animated.View
+            style={[
+              styles.confettiContainer,
+              {
+                opacity: confettiAnim,
+                transform: [
+                  {
+                    translateY: confettiAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-100, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
             {[...Array(20)].map((_, i) => (
               <Animated.View
                 key={i}
@@ -1676,27 +1946,27 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
                   {
                     left: `${Math.random() * 100}%`,
                     backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#9B59B6', '#3498DB'][i % 5],
-                    transform: [{
-                      translateY: confettiAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, SCREEN_HEIGHT * 0.6 + Math.random() * 200],
-                      }),
-                    }, {
-                      rotate: confettiAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['0deg', `${Math.random() * 720}deg`],
-                      }),
-                    }],
-                  }
+                    transform: [
+                      {
+                        translateY: confettiAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, SCREEN_HEIGHT * 0.6 + Math.random() * 200],
+                        }),
+                      },
+                      {
+                        rotate: confettiAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0deg', `${Math.random() * 720}deg`],
+                        }),
+                      },
+                    ],
+                  },
                 ]}
               />
             ))}
           </Animated.View>
 
-          <Animated.View style={[
-            styles.successModalCard,
-            { transform: [{ scale: successScaleAnim }] }
-          ]}>
+          <Animated.View style={[styles.successModalCard, { transform: [{ scale: successScaleAnim }] }]}>
             {/* Success Icon */}
             <View style={styles.successIconContainer}>
               <LinearGradient
@@ -1715,10 +1985,12 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
             <View style={styles.successTicketDetails}>
               <View style={styles.successTicketRow}>
                 <Text style={styles.successTicketLabel}>Tahmin</Text>
-                <Text style={[
-                  styles.successTicketValue,
-                  selectedVote === 'yes' ? styles.successTicketValueYes : styles.successTicketValueNo
-                ]}>
+                <Text
+                  style={[
+                    styles.successTicketValue,
+                    selectedVote === 'yes' ? styles.successTicketValueYes : styles.successTicketValueNo,
+                  ]}
+                >
                   {selectedVote === 'yes' ? 'EVET' : 'HAYIR'}
                 </Text>
               </View>
@@ -1728,24 +2000,17 @@ export function QuestionDetailPage({ onBack, onMenuToggle, question, onVote, sou
               </View>
               <View style={styles.successTicketRow}>
                 <Text style={styles.successTicketLabel}>Potansiyel Kazanç</Text>
-                <Text style={styles.successTicketValueHighlight}>
-                  {calculatePotentialWin().toFixed(0)} Kredi
-                </Text>
+                <Text style={styles.successTicketValueHighlight}>{calculatePotentialWin().toFixed(0)} Kredi</Text>
               </View>
             </View>
 
             {/* Close Button */}
-            <TouchableOpacity
-              style={styles.successCloseBtn}
-              onPress={closeSuccessModal}
-              activeOpacity={0.8}
-            >
+            <TouchableOpacity style={styles.successCloseBtn} onPress={closeSuccessModal} activeOpacity={0.8}>
               <Text style={styles.successCloseBtnText}>Tamam</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
       </Modal>
-
     </View>
   );
 }
@@ -1849,12 +2114,12 @@ const styles = StyleSheet.create({
   },
   imageBadgeLeft: {
     position: 'absolute',
-    bottom: 56,
+    bottom: 52,
     left: 20,
   },
   categoryBadgeContainer: {
     position: 'absolute',
-    bottom: 56,
+    bottom: 52,
     right: 20,
   },
   categoryBadge: {
@@ -1896,42 +2161,32 @@ const styles = StyleSheet.create({
   premiumBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 24,
+    justifyContent: 'center',
+    minWidth: 84,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
     gap: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-    overflow: 'hidden',
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+    backgroundColor: '#256EFF',
     ...Platform.select({
       ios: {
-        shadowColor: '#8B5CF6',
+        shadowColor: '#256EFF',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
+        shadowOpacity: 0.28,
+        shadowRadius: 10,
       },
       android: {
-        elevation: 12,
+        elevation: 7,
       },
     }),
   },
-  premiumBadgeGlow: {
-    position: 'absolute',
-    top: -20,
-    left: -20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-  },
   premiumBadgeText: {
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: 13,
+    fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 0.3,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    letterSpacing: 0.15,
   },
   resolutionBadgeYes: {
     backgroundColor: 'rgba(16, 185, 129, 0.5)',
@@ -2125,6 +2380,76 @@ const styles = StyleSheet.create({
     color: '#8B949E',
     textAlign: 'center',
     letterSpacing: 0.5,
+  },
+  tabsLeagueContainer: {
+    marginBottom: 16,
+  },
+  tabsLeague: {
+    flexDirection: 'row',
+    borderRadius: 20,
+    padding: 4,
+    backgroundColor: '#0F172A',
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  tabsLeagueIndicator: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    borderRadius: 16,
+    backgroundColor: ACCENT_DARK,
+    ...Platform.select({
+      ios: {
+        shadowColor: ACCENT_DARK,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  tabLeagueButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    zIndex: 2,
+  },
+  tabLeagueLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  tabLeagueText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#9CA3AF',
+  },
+  tabLeagueTextActive: {
+    color: '#FFFFFF',
+  },
+  tabLeagueBadge: {
+    minWidth: 18,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 8,
+    backgroundColor: 'rgba(148,163,184,0.28)',
+    alignItems: 'center',
+  },
+  tabLeagueBadgeActive: {
+    backgroundColor: 'rgba(255,255,255,0.26)',
+  },
+  tabLeagueBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#D1D5DB',
+  },
+  tabLeagueBadgeTextActive: {
+    color: '#FFFFFF',
   },
   tabsApple: {
     flexDirection: 'row',
@@ -2323,9 +2648,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   followButton: {
-    backgroundColor: 'rgba(48, 54, 61, 0.8)',
+    backgroundColor: 'rgba(37, 110, 255, 0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(48, 209, 88, 0.5)',
+    borderColor: '#256EFF',
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 20,
@@ -2334,15 +2659,16 @@ const styles = StyleSheet.create({
   },
   followButtonFollowing: {
     opacity: 0.9,
-    borderColor: 'rgba(139, 148, 158, 0.4)',
+    borderColor: '#256EFF',
+    backgroundColor: 'rgba(37, 110, 255, 0.16)',
   },
   followButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#C9D1D9',
+    color: '#DCEBFF',
   },
   followButtonTextFollowing: {
-    color: '#8B949E',
+    color: '#EAF2FF',
   },
   voteDistributionNew: {
     marginBottom: 24,
@@ -2453,6 +2779,13 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#F0F6FC',
     marginBottom: 12,
+  },
+  detailsSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#F8FAFC',
+    letterSpacing: 0.2,
+    marginBottom: 14,
   },
   voteStatsContainer: {
     flexDirection: 'column',
@@ -2792,111 +3125,71 @@ const styles = StyleSheet.create({
     color: '#ffffffE6',
   },
   relatedSection: {
-    marginBottom: 8,
-  },
-  relatedHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  relatedTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#F0F6FC',
-  },
-  seeAllButton: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#10B981',
+    marginBottom: 14,
   },
   relatedScrollContent: {
-    paddingRight: 24,
+    paddingRight: 18,
   },
-  relatedCard: {
-    width: 280,
-    backgroundColor: '#21262D',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#30363D',
+  relatedMiniCard: {
+    width: 252,
+    borderRadius: 20,
+    marginRight: 12,
     overflow: 'hidden',
-    marginRight: 16,
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.2)',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.22,
+        shadowRadius: 10,
       },
-      android: {
-        elevation: 8,
-      },
+      android: { elevation: 6 },
     }),
   },
-  relatedImageContainer: {
-    height: 192,
-    position: 'relative',
-  },
-  relatedImage: {
+  relatedMiniImage: {
     width: '100%',
-    height: '100%',
+    height: 144,
   },
-  relatedFavoriteButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  relatedMiniContent: {
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 12,
   },
-  relatedCardContent: {
-    padding: 16,
-  },
-  relatedCardTitle: {
-    fontSize: 16,
+  relatedMiniTitle: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#F0F6FC',
-    marginBottom: 8,
-    lineHeight: 22,
-  },
-  relatedCardStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    lineHeight: 20,
+    color: '#F8FAFC',
+    minHeight: 42,
     marginBottom: 12,
   },
-  relatedCardStat: {
-    fontSize: 14,
-    color: '#8B949E',
-  },
-  relatedCardFooter: {
+  relatedMiniPercentRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
-  relatedCardRating: {
+  relatedMiniYesText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#256EFF',
+  },
+  relatedMiniNoText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#D1D5DB',
+  },
+  relatedMiniTimeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
   },
-  relatedCardRatingText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#F0F6FC',
-  },
-  relatedCardVotes: {
+  relatedMiniTimeText: {
     fontSize: 12,
-    color: '#8B949E',
-  },
-  relatedCardButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#10B981',
-    alignItems: 'center',
-    justifyContent: 'center',
+    fontWeight: '600',
+    color: '#9CA3AF',
   },
   commentInputSection: {
     paddingHorizontal: 24,
@@ -3014,64 +3307,70 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
   },
-  commentLikeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
   commentLikeCount: {
     fontSize: 12,
     fontWeight: '700',
     color: '#8B949E',
   },
+  commentLikeCountActive: {
+    color: '#FB7185',
+  },
   commentInputCardModern: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     gap: 12,
     marginBottom: 20,
   },
   commentUserAvatarModern: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.32)',
   },
   commentInputWrapper: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#21262D',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    alignItems: 'flex-end',
+    backgroundColor: 'rgba(15, 23, 42, 0.66)',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#30363D',
-    gap: 8,
+    borderColor: 'rgba(148, 163, 184, 0.25)',
+    gap: 10,
   },
   commentInputModern: {
     flex: 1,
-    fontSize: 15,
-    color: '#F0F6FC',
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#E5E7EB',
     maxHeight: 80,
-    paddingVertical: 8,
-  },
-  sendButtonModern: {
-    paddingHorizontal: 12,
     paddingVertical: 6,
   },
+  sendButtonModern: {
+    backgroundColor: 'rgba(37, 110, 255, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(37, 110, 255, 0.38)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
   sendButtonModernText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#10B981',
+    color: '#256EFF',
   },
   sendButtonModernTextDisabled: {
     color: '#8B949E',
     opacity: 0.6,
   },
   commentsListTitleModern: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#8B949E',
-    marginBottom: 16,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#94A3B8',
+    marginBottom: 14,
+    letterSpacing: 0.2,
   },
   commentsEmptyState: {
     alignItems: 'center',
@@ -3092,48 +3391,79 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingVertical: 14,
+    paddingHorizontal: 2,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(48, 54, 61, 0.5)',
-    gap: 12,
+    borderBottomColor: 'rgba(148, 163, 184, 0.16)',
+    gap: 14,
   },
   commentAvatarModern: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.28)',
   },
   commentContentModern: {
     flex: 1,
+    paddingTop: 2,
   },
   commentHeaderModern: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 6,
   },
   commentUsernameModern: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#F0F6FC',
+    fontWeight: '700',
+    color: '#F8FAFC',
   },
   commentTimeModern: {
-    fontSize: 12,
-    color: '#6E7681',
+    fontSize: 11,
+    color: '#94A3B8',
   },
   commentTextModern: {
     fontSize: 14,
-    lineHeight: 20,
-    color: '#C9D1D9',
-    marginBottom: 6,
+    lineHeight: 21,
+    color: '#D1D5DB',
+    marginBottom: 8,
   },
   commentActionsModern: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 8,
+  },
+  commentLikeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(148, 163, 184, 0.13)',
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.22)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  commentLikeButtonActive: {
+    backgroundColor: 'rgba(251, 113, 133, 0.14)',
+    borderColor: 'rgba(251, 113, 133, 0.35)',
+  },
+  commentReplyChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.24)',
+    backgroundColor: 'rgba(148, 163, 184, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  commentActionPending: {
+    opacity: 0.72,
   },
   commentReplyButton: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#8B949E',
+    fontWeight: '600',
+    color: '#CBD5E1',
   },
   totalPoolCard: {
     borderRadius: 24,
@@ -3249,6 +3579,178 @@ const styles = StyleSheet.create({
   },
   topInvestorsSection: {
     marginBottom: 20,
+  },
+  investorColumnsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  investorColumn: {
+    flex: 1,
+    minWidth: 0,
+  },
+  investorColumnHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  investorColumnHeaderYes: {
+    borderColor: 'rgba(16, 185, 129, 0.45)',
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+  },
+  investorColumnHeaderNo: {
+    borderColor: 'rgba(239, 68, 68, 0.45)',
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+  },
+  investorColumnTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#F8FAFC',
+    letterSpacing: 0.2,
+  },
+  investorColumnCount: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#CBD5E1',
+  },
+  investorColumnEmpty: {
+    fontSize: 12,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 6,
+  },
+  investorColumnCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(15, 23, 42, 0.62)',
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    marginBottom: 7,
+  },
+  investorColumnRank: {
+    width: 18,
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
+  investorColumnAvatar: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
+  investorColumnMeta: {
+    flex: 1,
+    minWidth: 0,
+  },
+  investorColumnName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#F1F5F9',
+  },
+  investorColumnAmount: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#256EFF',
+    marginTop: 2,
+  },
+  investorMinimalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 10,
+    borderRadius: 14,
+    backgroundColor: 'rgba(15, 23, 42, 0.58)',
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+  },
+  investorMinimalLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    marginRight: 10,
+  },
+  investorMinimalRank: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(148, 163, 184, 0.2)',
+  },
+  investorMinimalRankTop: {
+    backgroundColor: 'rgba(37, 110, 255, 0.22)',
+    borderWidth: 1,
+    borderColor: 'rgba(37, 110, 255, 0.55)',
+  },
+  investorMinimalRankText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#CBD5E1',
+  },
+  investorMinimalRankTextTop: {
+    color: '#256EFF',
+  },
+  investorMinimalAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
+  investorMinimalName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#F8FAFC',
+    flex: 1,
+  },
+  investorMinimalRight: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  investorMinimalAmount: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#E2E8F0',
+  },
+  investorMinimalVoteChip: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  investorMinimalVoteChipYes: {
+    backgroundColor: 'rgba(16, 185, 129, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.35)',
+  },
+  investorMinimalVoteChipNo: {
+    backgroundColor: 'rgba(239, 68, 68, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.35)',
+  },
+  investorMinimalVoteText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  investorMinimalVoteTextYes: {
+    color: '#34D399',
+  },
+  investorMinimalVoteTextNo: {
+    color: '#FCA5A5',
   },
   topInvestorsHeader: {
     flexDirection: 'row',
@@ -3387,6 +3889,115 @@ const styles = StyleSheet.create({
   },
 
   // Ticket Modal Styles
+  profilePreviewOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  profilePreviewSheet: {
+    backgroundColor: '#111827',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 28,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(148, 163, 184, 0.22)',
+  },
+  profilePreviewLoadingState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+    gap: 10,
+  },
+  profilePreviewLoadingText: {
+    color: '#94A3B8',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  profilePreviewHeader: {
+    alignItems: 'flex-end',
+    marginBottom: 8,
+  },
+  profilePreviewCloseButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(148, 163, 184, 0.12)',
+  },
+  profilePreviewIdentity: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  profilePreviewAvatar: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    marginBottom: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(147, 197, 253, 0.55)',
+  },
+  profilePreviewUsername: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  profilePreviewFullName: {
+    fontSize: 14,
+    color: '#256EFF',
+    marginTop: 2,
+  },
+  profilePreviewBio: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#94A3B8',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  profilePreviewStats: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 18,
+  },
+  profilePreviewStatCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+  },
+  profilePreviewStatValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  profilePreviewStatLabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  profilePreviewFollowButton: {
+    backgroundColor: '#2563EB',
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderWidth: 1,
+    borderColor: 'rgba(147, 197, 253, 0.5)',
+  },
+  profilePreviewFollowButtonActive: {
+    backgroundColor: 'rgba(30, 41, 59, 0.88)',
+    borderColor: 'rgba(148, 163, 184, 0.38)',
+  },
+  profilePreviewFollowButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -3719,142 +4330,99 @@ const styles = StyleSheet.create({
   semiCircleContainer: {
     marginBottom: 24,
   },
-  semiCircleTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#F0F6FC',
-    marginBottom: 20,
-    letterSpacing: 0.3,
-  },
   semiCircleWrapper: {
     alignItems: 'center',
   },
-  semiCircleBackground: {
-    width: 200,
-    height: 100,
-    borderTopLeftRadius: 100,
-    borderTopRightRadius: 100,
-    backgroundColor: 'rgba(48, 54, 61, 0.6)',
-    overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  semiCircleArc: {
-    position: 'absolute',
-    width: 100,
-    height: 200,
-    transformOrigin: 'bottom center',
-  },
-  semiCircleArcYes: {
-    left: 0,
-    bottom: 0,
-    borderTopLeftRadius: 100,
-    borderBottomLeftRadius: 100,
-    overflow: 'hidden',
-  },
-  semiCircleArcNo: {
-    right: 0,
-    bottom: 0,
-    borderTopRightRadius: 100,
-    borderBottomRightRadius: 100,
-    overflow: 'hidden',
-  },
-  semiCircleArcGradient: {
+  semiCircleChartOnly: {
     width: '100%',
-    height: '100%',
-  },
-  semiCircleCenterContent: {
-    position: 'absolute',
-    bottom: 10,
-    left: 0,
-    right: 0,
     alignItems: 'center',
-  },
-  semiCircleTotalVotes: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#F0F6FC',
-  },
-  semiCircleTotalVotesLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#8B949E',
-    textTransform: 'lowercase',
-  },
-  semiCircleLabels: {
-    flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'flex-start',
-    marginTop: 20,
-    gap: 32,
   },
-  semiCircleLabelItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  semiCircleLabelDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginTop: 4,
-  },
-  semiCircleLabelPercent: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#F0F6FC',
-  },
-  semiCircleLabelText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#8B949E',
-    letterSpacing: 0.5,
-  },
-  semiCircleLabelOdds: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6E7681',
-    marginTop: 2,
-  },
-  semiCircleLabelDivider: {
-    width: 1,
-    height: 50,
-    backgroundColor: 'rgba(48, 54, 61, 0.8)',
-  },
-  // Compact Question Card Styles - Updated Size & Aesthetic
-  compactQuestionCard: {
-    width: 220,
-    height: 280,
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginRight: 16,
-    backgroundColor: '#161B22',
+  semiCircleGlass: {
+    width: '100%',
+    borderRadius: 22,
+    paddingTop: 14,
+    paddingBottom: 10,
+    backgroundColor: 'rgba(15, 23, 42, 0.56)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(148, 163, 184, 0.22)',
+    alignItems: 'center',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
+        shadowOpacity: 0.24,
+        shadowRadius: 14,
       },
       android: {
-        elevation: 10,
+        elevation: 6,
       },
     }),
+  },
+  semiCircleCenterContent: {
+    position: 'absolute',
+    bottom: 18,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  semiCircleLeadPercent: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#F8FAFC',
+    letterSpacing: 0.4,
+  },
+  semiCircleLeadText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#256EFF',
+  },
+  semiCircleLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 10,
+    width: '100%',
+  },
+  semiCircleLabelCard: {
+    flex: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.22)',
+  },
+  semiCircleLabelTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  semiCircleLabelDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  semiCircleLabelPercent: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#F8FAFC',
+  },
+  semiCircleLabelPercentNo: {
+    color: '#FCA5A5',
+  },
+  semiCircleLabelText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#CBD5E1',
+  },
+  semiCircleLabelOdds: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#94A3B8',
+    marginTop: 2,
   },
   // Modern Investor Styles
   investorCardModern: {
@@ -3949,32 +4517,47 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(37, 110, 255, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(37, 110, 255, 0.3)',
     marginBottom: 8,
   },
   replyIndicatorText: {
-    color: '#8B949E',
+    color: '#256EFF',
     fontSize: 13,
+    fontWeight: '600',
   },
   repliesContainer: {
     flexDirection: 'row',
-    marginTop: 12,
+    marginTop: 10,
+    paddingTop: 2,
   },
   replyLine: {
     width: 2,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    marginRight: 12,
+    backgroundColor: 'rgba(37, 110, 255, 0.45)',
+    marginRight: 10,
     borderRadius: 1,
   },
   nestedReplyCard: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: 8,
     gap: 10,
+    paddingHorizontal: 0,
+    paddingVertical: 4,
   },
   nestedReplyAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#333',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#334155',
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.28)',
+  },
+  nestedReplyContent: {
+    flex: 1,
+    paddingTop: 0,
   },
   compactQuestionImage: {
     width: '100%',

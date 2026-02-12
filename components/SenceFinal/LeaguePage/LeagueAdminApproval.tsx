@@ -86,7 +86,7 @@ export function LeagueAdminApprovalPage({
           >
             {selectedFilter === 'all' ? (
               <LinearGradient
-                colors={['#10B981', '#DC2626']}
+                colors={['#256EFF', '#DC2626']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.filterButtonGradient}
@@ -107,7 +107,7 @@ export function LeagueAdminApprovalPage({
           >
             {selectedFilter === 'high' ? (
               <LinearGradient
-                colors={['#34C759', '#2ba84a']}
+                colors={['#256EFF', '#256EFF']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.filterButtonGradient}
@@ -204,7 +204,7 @@ export function LeagueAdminApprovalPage({
                       >
                         <View style={styles.statHeader}>
                           <Text style={styles.statIcon}>🎯</Text>
-                          <Text style={[styles.statValue, { color: '#10B981' }]}>
+                          <Text style={[styles.statValue, { color: '#256EFF' }]}>
                             {request.predictionCount}
                           </Text>
                         </View>
@@ -221,7 +221,7 @@ export function LeagueAdminApprovalPage({
                       >
                         <View style={styles.statHeader}>
                           <Text style={styles.statIcon}>✅</Text>
-                          <Text style={[styles.statValue, { color: '#34C759' }]}>
+                          <Text style={[styles.statValue, { color: '#256EFF' }]}>
                             %{request.accuracy}
                           </Text>
                         </View>
@@ -261,7 +261,7 @@ export function LeagueAdminApprovalPage({
                       activeOpacity={0.8}
                     >
                       <LinearGradient
-                        colors={['#34C759', '#2ba84a']}
+                        colors={['#256EFF', '#256EFF']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                         style={styles.actionButtonGradient}
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#10B981',
+    color: '#256EFF',
   },
   headerSpacer: {
     width: 40,
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#10B981',
+    borderColor: '#256EFF',
   },
   accuracyBadge: {
     position: 'absolute',
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   accuracyBadgeHigh: {
-    backgroundColor: '#34C759',
+    backgroundColor: '#256EFF',
   },
   accuracyBadgeMedium: {
     backgroundColor: '#FF9500',
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
   performanceValue: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#10B981',
+    color: '#256EFF',
   },
   performanceBarBg: {
     width: '100%',
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   performanceBarHigh: {
-    backgroundColor: '#34C759',
+    backgroundColor: '#256EFF',
   },
   performanceBarMedium: {
     backgroundColor: '#FF9500',
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
   summaryCount: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#10B981',
+    color: '#256EFF',
   },
   summarySubtitle: {
     fontSize: 14,
@@ -632,6 +632,6 @@ const styles = StyleSheet.create({
   summaryAverage: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#10B981',
+    color: '#256EFF',
   },
 });

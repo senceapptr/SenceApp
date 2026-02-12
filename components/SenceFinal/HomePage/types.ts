@@ -21,8 +21,8 @@ export interface ActiveCoupon {
   colors: [string, string];
   // CouponDetailModal için gerekli alanlar
   predictions?: Array<{
-    id: number;
-    questionId: number;
+    id: string;
+    questionId: string;
     question: string;
     choice: 'yes' | 'no';
     odds: number;
@@ -41,6 +41,7 @@ export interface TrendQuestion {
   title: string;
   category: string;
   categoryId: string | null; // Filtreleme için
+  categoryColor?: string | null;
   image: string;
   votes: number;
   timeLeft: string;
@@ -53,7 +54,3 @@ export interface TrendQuestion {
   status?: string;
   result?: string | null;
 }
-
-
-
-

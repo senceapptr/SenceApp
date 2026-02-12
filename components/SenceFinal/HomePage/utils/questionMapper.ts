@@ -87,6 +87,7 @@ export const mapToTrendQuestion = (q: any): TrendQuestion => {
     title: q.title,
     category: displayCategory?.name || 'Genel',
     categoryId: displayCategory?.id ?? null,
+    categoryColor: displayCategory?.color || null,
     image: getQuestionImage(q.image_url, DEFAULT_TREND_IMAGE),
     votes: q.total_votes || 0,
     timeLeft: calculateTimeLeft(q.end_date),

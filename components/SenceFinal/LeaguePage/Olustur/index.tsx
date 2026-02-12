@@ -122,7 +122,7 @@ export function OlusturTab({ currentUser, onSuccess }: OlusturTabProps) {
           >
             <View style={styles.trophyCircle}>
             <LinearGradient
-              colors={['#10B981', '#059669']}
+              colors={['#256EFF', '#256EFF']}
               style={styles.trophyGradient}
             >
                 <Ionicons name="trophy" size={64} color="#FFD700" />
@@ -144,7 +144,7 @@ export function OlusturTab({ currentUser, onSuccess }: OlusturTabProps) {
           {/* Feature Pills */}
           <View style={styles.featuresContainer}>
             <View style={styles.featurePill}>
-              <Ionicons name="people" size={16} color="#10B981" />
+              <Ionicons name="people" size={16} color="#256EFF" />
               <Text style={styles.featurePillText}>Özel Lig</Text>
             </View>
             <View style={styles.featurePill}>
@@ -152,7 +152,7 @@ export function OlusturTab({ currentUser, onSuccess }: OlusturTabProps) {
               <Text style={styles.featurePillText}>Ödül Havuzu</Text>
             </View>
             <View style={styles.featurePill}>
-              <Ionicons name="stats-chart" size={16} color="#10B981" />
+              <Ionicons name="stats-chart" size={16} color="#256EFF" />
               <Text style={styles.featurePillText}>Sıralama</Text>
             </View>
           </View>
@@ -211,7 +211,7 @@ export function OlusturTab({ currentUser, onSuccess }: OlusturTabProps) {
             />
             <BenefitItem
               icon="stats-chart"
-              iconColor="#10B981"
+              iconColor="#256EFF"
               title="Canlı Sıralama"
               description="Gerçek zamanlı liderlik tablosu"
             />
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 70,
     overflow: 'hidden',
-    shadowColor: '#10B981',
+    shadowColor: '#256EFF',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderRadius: 100,
     borderWidth: 2,
-    borderColor: '#10B981',
+    borderColor: '#256EFF',
     borderStyle: 'dashed',
     opacity: 0.15,
   },
@@ -394,8 +394,8 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: '#10B981',
-    shadowColor: '#10B981',
+    backgroundColor: '#256EFF',
+    shadowColor: '#256EFF',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
     shadowRadius: 16,

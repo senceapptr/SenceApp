@@ -19,18 +19,3 @@ export const formatTimeAgo = (timestamp: Date) => {
   return `${Math.floor(diffInMinutes / 1440)}g`;
 };
 
-// Mock data kaldırıldı - artık backend'den geliyor
-
-// Mock chat messages kaldırıldı - artık backend'den geliyor
-
-// Mock leaderboard data kaldırıldı - artık backend'den geliyor
-
-export const mockCurrentUser = {
-  username: 'mustafa_92',
-  avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face',
-  joinedLeagues: 3,
-  maxLeagues: 5,
-  credits: 8500,
-  tickets: 2
-};
-

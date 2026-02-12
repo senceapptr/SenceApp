@@ -1,23 +1,31 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
+
 import { League, User } from '../types';
 import { SearchBar } from './SearchBar';
+import { ScoringModal } from './ScoringModal';
 import { FeaturedSection } from './FeaturedSection';
 import { CommunitySection } from './CommunitySection';
-import { DiscoverLeagueModal } from './DiscoverLeagueModal';
 import { JoinConfirmModal } from './JoinConfirmModal';
+import { DiscoverLeagueModal } from './DiscoverLeagueModal';
 import { JoinSuccessAnimation } from './JoinSuccessAnimation';
-import { ScoringModal } from './ScoringModal';
 import { LeaderboardModal } from '../shared/LeaderboardModal';
 
 interface KesfetTabProps {
+  nowTick: number;
   leagues: League[];
   currentUser: User;
   onJoinLeague: (league: League) => void;
   onLeaderboard: (league: League) => void;
 }
 
-export function KesfetTab({ leagues, currentUser, onJoinLeague, onLeaderboard }: KesfetTabProps) {
+export function KesfetTab({
+  currentUser,
+  leagues,
+  nowTick,
+  onJoinLeague,
+  onLeaderboard: _onLeaderboard,
+}: KesfetTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -44,6 +52,10 @@ export function KesfetTab({ leagues, currentUser, onJoinLeague, onLeaderboard }:
   };
 
   const handleJoinPress = (league: League) => {
+    if (league.isJoined || league.status === 'completed') {
+      return;
+    }
+
     setSelectedLeague(league);
     setShowJoinConfirm(true);
   };
@@ -59,7 +71,7 @@ export function KesfetTab({ leagues, currentUser, onJoinLeague, onLeaderboard }:
     if (selectedLeague) {
       setShowJoinConfirm(false);
       setShowJoinSuccess(true);
-      
+
       setTimeout(() => {
         setShowJoinSuccess(false);
         onJoinLeague(selectedLeague);
@@ -86,13 +98,15 @@ export function KesfetTab({ leagues, currentUser, onJoinLeague, onLeaderboard }:
   return (
     <View style={styles.container}>
       <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
-      <FeaturedSection 
-        leagues={featuredLeagues} 
+      <FeaturedSection
+        leagues={featuredLeagues}
+        nowTick={nowTick}
         onCardPress={handleCardPress}
         onJoinPress={handleJoinPress}
       />
-      <CommunitySection 
-        leagues={communityLeagues} 
+      <CommunitySection
+        leagues={communityLeagues}
+        nowTick={nowTick}
         onCardPress={handleCardPress}
         onJoinPress={handleJoinPress}
       />
@@ -116,17 +130,9 @@ export function KesfetTab({ leagues, currentUser, onJoinLeague, onLeaderboard }:
 
       <JoinSuccessAnimation visible={showJoinSuccess} />
 
-      <ScoringModal
-        visible={showScoring}
-        league={selectedLeague}
-        onClose={() => setShowScoring(false)}
-      />
+      <ScoringModal visible={showScoring} league={selectedLeague} onClose={() => setShowScoring(false)} />
 
-      <LeaderboardModal
-        visible={showLeaderboard}
-        league={selectedLeague}
-        onClose={() => setShowLeaderboard(false)}
-      />
+      <LeaderboardModal visible={showLeaderboard} league={selectedLeague} onClose={() => setShowLeaderboard(false)} />
     </View>
   );
 }
@@ -136,4 +142,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-

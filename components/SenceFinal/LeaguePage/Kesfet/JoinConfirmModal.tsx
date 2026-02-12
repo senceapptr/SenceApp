@@ -24,7 +24,7 @@ export function JoinConfirmModal({ visible, league, currentUser, onClose, onConf
       <View style={styles.overlay}>
         <View style={styles.content}>
           <LinearGradient
-            colors={['#10B981', '#059669', '#34D399']}
+            colors={['#256EFF', '#256EFF', '#256EFF']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.header}
@@ -69,7 +69,7 @@ export function JoinConfirmModal({ visible, league, currentUser, onClose, onConf
                 activeOpacity={0.8}
               >
                 <LinearGradient
-                  colors={['#10B981', '#059669']}
+                  colors={['#256EFF', '#256EFF']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.confirmGradient}
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#10B981',
+    color: '#256EFF',
   },
   detailValueMain: {
     fontSize: 18,
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   detailValueRemaining: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#10B981',
+    color: '#256EFF',
   },
   actions: {
     flexDirection: 'row',

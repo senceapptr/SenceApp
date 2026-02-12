@@ -2,22 +2,43 @@ import React from 'react';
 import { View, StyleSheet, StatusBar, ScrollView, ActivityIndicator, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { PRIMARY_BLUE } from '../LeaguePage/shared/theme';
 import { PageHeader } from './components/PageHeader';
 import { Tabs } from './components/Tabs';
 import { ProgressSummary } from './components/ProgressSummary';
 import { CalendarCard } from './components/CalendarCard';
 import { TasksList } from './components/TasksList';
 import { useTasks } from './hooks';
-import { Task } from './types';
+import { Task, TasksPageNavigation } from './types';
 
 export interface TasksPageProps {
   onBack: () => void;
   onMenuToggle: () => void;
+  onNavigateToPage?: (page: TasksPageNavigation) => void;
 }
 
-export function TasksPage({ onBack, onMenuToggle }: TasksPageProps) {
+export function TasksPage({ onBack, onMenuToggle, onNavigateToPage }: TasksPageProps) {
   const router = useRouter();
   const state = useTasks();
+
+  const navigateWithFallback = (target: TasksPageNavigation) => {
+    if (onNavigateToPage) {
+      onNavigateToPage(target);
+      return;
+    }
+
+    switch (target) {
+      case 'home':
+        router.push('/(tabs)' as never);
+        break;
+      case 'leagues':
+        router.push('/(tabs)/leagues' as never);
+        break;
+      case 'gameHub':
+        router.push('/(tabs)/gamehub' as never);
+        break;
+    }
+  };
 
   // Handle task action (claim or navigate)
   const handleTaskAction = (task: Task) => {
@@ -28,13 +49,13 @@ export function TasksPage({ onBack, onMenuToggle }: TasksPageProps) {
       // Navigate to target page
       switch (task.navigationTarget) {
         case '/home':
-          router.push('/(tabs)');
+          navigateWithFallback('home');
           break;
         case '/leagues':
-          router.push('/(tabs)/leagues');
+          navigateWithFallback('leagues');
           break;
         case '/gamehub':
-          router.push('/(tabs)/gamehub');
+          navigateWithFallback('gameHub');
           break;
       }
     }
@@ -44,7 +65,7 @@ export function TasksPage({ onBack, onMenuToggle }: TasksPageProps) {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0D1117" />
 
-      <SafeAreaView edges={['top']}>
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
         <PageHeader
           onBack={onBack}
           onMenuToggle={onMenuToggle}
@@ -53,46 +74,45 @@ export function TasksPage({ onBack, onMenuToggle }: TasksPageProps) {
         />
 
         <Tabs activeTab={state.activeTab} onChangeTab={state.setActiveTab} />
-
-        <ProgressSummary
-          completed={state.completedTasks}
-          total={state.currentTasks.length}
-          claimed={state.claimedTasks}
-          showDailyTimer={state.activeTab === 'daily'}
-          timeRemaining={state.timeRemaining}
-        />
-      </SafeAreaView>
-
-      {state.loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#8B5CF6" />
-          <Text style={styles.loadingText}>Görevler yükleniyor...</Text>
-        </View>
-      ) : (
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {state.activeTab === 'monthly' && (
-            <CalendarCard
-              monthNames={state.monthNames}
-              dayNames={state.dayNames}
-              currentMonth={state.currentMonth}
-              currentYear={state.currentYear}
-              today={state.today}
-              daysInMonth={state.daysInMonth}
-              firstDayOfMonth={state.firstDayOfMonth}
-              loginDays={state.loginDays}
+        {state.loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={PRIMARY_BLUE} />
+            <Text style={styles.loadingText}>Görevler yükleniyor...</Text>
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            <ProgressSummary
+              completed={state.completedTasks}
+              total={state.currentTasks.length}
+              showResetTimer
+              resetLabel={state.currentResetLabel}
+              timeRemaining={state.currentResetRemaining}
             />
-          )}
 
-          <TasksList
-            tasks={state.currentTasks}
-            onTaskAction={handleTaskAction}
-          />
-        </ScrollView>
-      )}
+            {state.activeTab === 'monthly' && (
+              <CalendarCard
+                monthNames={state.monthNames}
+                dayNames={state.dayNames}
+                currentMonth={state.currentMonth}
+                currentYear={state.currentYear}
+                today={state.today}
+                daysInMonth={state.daysInMonth}
+                firstDayOfMonth={state.firstDayOfMonth}
+                loginDays={state.loginDays}
+              />
+            )}
+
+            <TasksList
+              tasks={state.currentTasks}
+              onTaskAction={handleTaskAction}
+            />
+          </ScrollView>
+        )}
+      </SafeAreaView>
     </View>
   );
 }
@@ -102,12 +122,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0D1117',
   },
+  safeArea: {
+    flex: 1,
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingBottom: 40,
-    paddingTop: 16,
+    paddingTop: 8,
   },
   loadingContainer: {
     flex: 1,
@@ -119,7 +142,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     fontWeight: '600',
-    color: '#8B5CF6',
+    color: PRIMARY_BLUE,
   },
 });
 

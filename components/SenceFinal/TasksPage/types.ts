@@ -1,3 +1,6 @@
+export type TaskNavigationTarget = '/home' | '/leagues' | '/gamehub' | null;
+export type TasksPageNavigation = 'home' | 'leagues' | 'gameHub';
+
 export interface Task {
   id: string;
   title: string;
@@ -6,11 +9,12 @@ export interface Task {
   maxProgress: number;
   reward: number;
   icon?: string;
+  requirementType?: string;
   completed: boolean;
   claimed: boolean;
   timeLeft?: string;
   actionType: 'navigate' | 'claim';
-  navigationTarget?: '/home' | '/leagues' | '/gamehub' | null;
+  navigationTarget?: TaskNavigationTarget;
 }
 
 export type TaskTab = 'daily' | 'monthly';
@@ -40,8 +44,8 @@ export interface PageHeaderProps {
 export interface ProgressSummaryProps {
   completed: number;
   total: number;
-  claimed: number;
-  showDailyTimer?: boolean;
+  showResetTimer?: boolean;
+  resetLabel?: string;
   timeRemaining?: string;
 }
 

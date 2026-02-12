@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
 import { Animated } from 'react-native';
+import { useCallback, useRef, useEffect } from 'react';
 
 export const useHeaderAnimation = () => {
   const headerTranslateY = useRef(new Animated.Value(0)).current;
@@ -12,46 +12,74 @@ export const useHeaderAnimation = () => {
     const timer = setTimeout(() => {
       isInitialized.current = true;
     }, 300);
-    
+
     return () => clearTimeout(timer);
   }, []);
 
-  const handleScroll = (event: any) => {
-    if (!isInitialized.current) return;
-    
-    const currentScrollY = event.nativeEvent.contentOffset.y;
-    const scrollDiff = currentScrollY - lastScrollY.current;
-    
+  const showHeader = useCallback(
+    (duration: number = 200) => {
+      Animated.timing(headerTranslateY, {
+        duration,
+        toValue: 0,
+        useNativeDriver: true,
+      }).start();
+    },
+    [headerTranslateY],
+  );
+
+  const resetHeaderState = useCallback(() => {
     if (hideTimeout.current) {
       clearTimeout(hideTimeout.current);
+      hideTimeout.current = null;
     }
-    
-    if (scrollDiff > 5 && currentScrollY > 50) {
-      Animated.timing(headerTranslateY, {
-        toValue: -200,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    } else if (scrollDiff < -5) {
-      Animated.timing(headerTranslateY, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-      
-      hideTimeout.current = setTimeout(() => {
-        if (currentScrollY > 50) {
-          Animated.timing(headerTranslateY, {
-            toValue: -200,
-            duration: 300,
-            useNativeDriver: true,
-          }).start();
-        }
-      }, 3000);
-    }
-    
-    lastScrollY.current = currentScrollY;
-  };
+
+    lastScrollY.current = 0;
+    headerTranslateY.stopAnimation();
+    showHeader(120);
+  }, [headerTranslateY, showHeader]);
+
+  const handleScroll = useCallback(
+    (event: any) => {
+      if (!isInitialized.current) return;
+
+      const currentScrollY = event.nativeEvent.contentOffset.y;
+      const scrollDiff = currentScrollY - lastScrollY.current;
+
+      if (hideTimeout.current) {
+        clearTimeout(hideTimeout.current);
+        hideTimeout.current = null;
+      }
+
+      if (scrollDiff > 5 && currentScrollY > 50) {
+        Animated.timing(headerTranslateY, {
+          duration: 200,
+          toValue: -200,
+          useNativeDriver: true,
+        }).start();
+      } else if (scrollDiff < -5) {
+        Animated.timing(headerTranslateY, {
+          duration: 200,
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+
+        hideTimeout.current = setTimeout(() => {
+          if (currentScrollY > 50) {
+            Animated.timing(headerTranslateY, {
+              duration: 300,
+              toValue: -200,
+              useNativeDriver: true,
+            }).start();
+          }
+        }, 3000);
+      } else if (currentScrollY <= 16) {
+        showHeader(160);
+      }
+
+      lastScrollY.current = currentScrollY;
+    },
+    [headerTranslateY, showHeader],
+  );
 
   useEffect(() => {
     return () => {
@@ -61,6 +89,5 @@ export const useHeaderAnimation = () => {
     };
   }, []);
 
-  return { headerTranslateY, handleScroll };
+  return { handleScroll, headerTranslateY, resetHeaderState };
 };
-

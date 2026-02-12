@@ -1,33 +1,42 @@
 export interface MarketPageProps {
   onBack: () => void;
-  onMenuToggle: () => void;
   userCredits: number;
 }
 
 export interface Product {
-  id: number;
+  id: string;
   name: string;
   description: string;
   price: number;
   originalPrice?: number;
   image: string;
   category: ProductCategory;
+  requiresShipping: boolean;
   featured: boolean;
   badge?: string;
 }
 
-export type ProductCategory = 'all' | 'elektronik' | 'ev' | 'hizmet' | 'hediye';
+export type ProductCategory = string;
 
 export interface Category {
   id: ProductCategory;
   name: string;
-  icon: string;
+  iconName: string;
+}
+
+export interface ShippingAddress {
+  addressLine: string;
+  city: string;
+  country: 'TR';
+  district: string;
+  phone: string;
+  postalCode: string;
+  recipientName: string;
 }
 
 // Component Props
 export interface PageHeaderProps {
   onBack: () => void;
-  onMenuToggle: () => void;
 }
 
 export interface CategoriesBarProps {
@@ -85,11 +94,14 @@ export interface PurchaseModalProps {
   visible: boolean;
   product: Product | null;
   userCredits: number;
+  purchaseLoading?: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (shippingAddress?: ShippingAddress) => Promise<void> | void;
 }
 
 export interface EmptyStateProps {
   message: string;
+  iconName?: string;
+  actionLabel?: string;
+  onAction?: () => void;
 }
-

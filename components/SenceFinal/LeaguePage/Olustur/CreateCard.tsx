@@ -23,7 +23,7 @@ export function CreateCard({ onCreatePress }: CreateCardProps) {
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={['#10B981', '#059669']}
+          colors={['#256EFF', '#256EFF']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.buttonGradient}

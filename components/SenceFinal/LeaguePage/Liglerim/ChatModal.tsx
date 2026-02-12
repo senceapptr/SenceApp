@@ -1,66 +1,70 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, TextInput, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  Image,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+
+import type { LeagueChatMessage } from '@/services/league-chat.service';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { leagueChatService } from '@/services/league-chat.service';
+
 import { League } from '../types';
 import { formatTimeAgo } from '../utils';
-import type { LeagueChatMessage } from '@/services/league-chat.service';
 
 interface ChatModalProps {
   visible: boolean;
-  league: League | null;
   onClose: () => void;
+  league: League | null;
 }
 
-export function ChatModal({ visible, league, onClose }: ChatModalProps) {
-  const { user, profile } = useAuth();
+export function ChatModal({ league, onClose, visible }: ChatModalProps) {
+  const { profile, user } = useAuth();
   const insets = useSafeAreaInsets();
   const [message, setMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<LeagueChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const subscriptionRef = useRef<any>(null);
 
   // Backend'den chat mesajlarını yükle
-  const loadChatMessages = async () => {
+  const loadChatMessages = useCallback(async () => {
     if (!league?.id || !user) return;
 
     try {
       setLoading(true);
+      setLoadError(null);
       const { data, error } = await leagueChatService.getLeagueChatMessages(league.id);
 
       if (error) {
-        console.warn('Backend error, using mock data:', error);
-        const mockMessages: LeagueChatMessage[] = [
-          {
-            id: '1',
-            league_id: league.id,
-            user_id: user.id,
-            message: 'Merhaba! Bu ligde nasıl başarılı olabiliriz?',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            profiles: {
-              username: profile?.username || 'Sen',
-              profile_image: profile?.profile_image || null
-            }
-          }
-        ];
-        setChatMessages(mockMessages);
+        console.error('Chat messages load error:', error);
+        setChatMessages([]);
+        setLoadError('Mesajlar yüklenemedi');
         return;
       }
 
       setChatMessages(data || []);
     } catch (err) {
       console.error('Chat messages load error:', err);
+      setChatMessages([]);
+      setLoadError('Mesajlar yüklenemedi');
     } finally {
       setLoading(false);
     }
-  };
+  }, [league?.id, user]);
 
   // Modal açıldığında mesajları yükle ve real-time subscription başlat
   useEffect(() => {
@@ -68,20 +72,17 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
       loadChatMessages();
 
       // Real-time subscription başlat
-      subscriptionRef.current = leagueChatService.subscribeToLeagueChat(
-        league.id,
-        (newMessage) => {
-          setChatMessages(prev => {
-            const exists = prev.some(msg => msg.id === newMessage.id);
-            if (exists) return prev;
-            return [...prev, newMessage];
-          });
-          // Auto-scroll to bottom
-          setTimeout(() => {
-            scrollViewRef.current?.scrollToEnd({ animated: true });
-          }, 100);
-        }
-      );
+      subscriptionRef.current = leagueChatService.subscribeToLeagueChat(league.id, newMessage => {
+        setChatMessages(prev => {
+          const exists = prev.some(msg => msg.id === newMessage.id);
+          if (exists) return prev;
+          return [...prev, newMessage];
+        });
+        // Auto-scroll to bottom
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      });
     } else {
       if (subscriptionRef.current) {
         leagueChatService.unsubscribeFromLeagueChat(subscriptionRef.current);
@@ -95,7 +96,7 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
         subscriptionRef.current = null;
       }
     };
-  }, [visible, league]);
+  }, [visible, league, loadChatMessages]);
 
   if (!league) return null;
 
@@ -106,16 +107,16 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
 
     // Optimistic update
     const optimisticMessage: LeagueChatMessage = {
+      created_at: new Date().toISOString(),
       id: `temp-${Date.now()}`,
       league_id: league.id,
-      user_id: user.id,
       message: messageText,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
       profiles: {
+        profile_image: profile?.profile_image || null,
         username: profile?.username || 'Sen',
-        profile_image: profile?.profile_image || null
-      }
+      },
+      updated_at: new Date().toISOString(),
+      user_id: user.id,
     };
 
     setChatMessages(prev => [...prev, optimisticMessage]);
@@ -130,24 +131,22 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
     try {
       const { data, error } = await leagueChatService.sendChatMessage({
         league_id: league.id,
+        message: messageText,
         user_id: user.id,
-        message: messageText
       });
 
       if (error) {
         console.warn('Backend error:', error);
+        setChatMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
         return;
       }
 
       if (data) {
-        setChatMessages(prev =>
-          prev.map(msg =>
-            msg.id === optimisticMessage.id ? data : msg
-          )
-        );
+        setChatMessages(prev => prev.map(msg => (msg.id === optimisticMessage.id ? data : msg)));
       }
     } catch (err) {
       console.error('Send message error:', err);
+      setChatMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
     } finally {
       setSending(false);
     }
@@ -167,19 +166,13 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
         <View style={styles.container}>
           {/* Modern Header */}
           <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) + 8 }]}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={onClose}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.backButton} onPress={onClose} activeOpacity={0.7}>
               <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
             </TouchableOpacity>
 
             <View style={styles.headerCenter}>
               <Text style={styles.headerTitle}>{league.name}</Text>
-              <Text style={styles.headerSubtitle}>
-                {chatMessages.length} mesaj
-              </Text>
+              <Text style={styles.headerSubtitle}>{chatMessages.length} mesaj</Text>
             </View>
 
             <View style={styles.headerPlaceholder} />
@@ -199,8 +192,16 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
             >
               {loading ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#10B981" />
+                  <ActivityIndicator size="large" color="#256EFF" />
                   <Text style={styles.loadingText}>Mesajlar yükleniyor...</Text>
+                </View>
+              ) : loadError ? (
+                <View style={styles.errorContainer}>
+                  <Ionicons name="alert-circle-outline" size={34} color="#EF4444" />
+                  <Text style={styles.errorTitle}>Mesajlar yüklenemedi</Text>
+                  <TouchableOpacity style={styles.retryButton} onPress={loadChatMessages} activeOpacity={0.8}>
+                    <Text style={styles.retryButtonText}>Tekrar Dene</Text>
+                  </TouchableOpacity>
                 </View>
               ) : chatMessages.length === 0 ? (
                 <View style={styles.emptyContainer}>
@@ -209,48 +210,34 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
                   <Text style={styles.emptySubtitle}>İlk mesajı sen yaz!</Text>
                 </View>
               ) : (
-                chatMessages.map((msg) => {
+                chatMessages.map(msg => {
                   const isOwn = isOwnMessage(msg);
                   return (
                     <View
                       key={msg.id}
-                      style={[
-                        styles.messageRow,
-                        isOwn ? styles.messageRowOwn : styles.messageRowOther
-                      ]}
+                      style={[styles.messageRow, isOwn ? styles.messageRowOwn : styles.messageRowOther]}
                     >
                       {/* Avatar (only for others) */}
                       {!isOwn && (
                         <Image
                           source={{
-                            uri: msg.profiles?.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
+                            uri:
+                              msg.profiles?.profile_image ||
+                              'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
                           }}
                           style={styles.avatar}
                         />
                       )}
 
-                      <View style={[
-                        styles.messageBubble,
-                        isOwn ? styles.bubbleOwn : styles.bubbleOther
-                      ]}>
+                      <View style={[styles.messageBubble, isOwn ? styles.bubbleOwn : styles.bubbleOther]}>
                         {/* Username for others */}
-                        {!isOwn && (
-                          <Text style={styles.bubbleUsername}>
-                            {msg.profiles?.username || 'Bilinmeyen'}
-                          </Text>
-                        )}
+                        {!isOwn && <Text style={styles.bubbleUsername}>{msg.profiles?.username || 'Bilinmeyen'}</Text>}
 
-                        <Text style={[
-                          styles.bubbleText,
-                          isOwn ? styles.bubbleTextOwn : styles.bubbleTextOther
-                        ]}>
+                        <Text style={[styles.bubbleText, isOwn ? styles.bubbleTextOwn : styles.bubbleTextOther]}>
                           {msg.message}
                         </Text>
 
-                        <Text style={[
-                          styles.bubbleTime,
-                          isOwn ? styles.bubbleTimeOwn : styles.bubbleTimeOther
-                        ]}>
+                        <Text style={[styles.bubbleTime, isOwn ? styles.bubbleTimeOwn : styles.bubbleTimeOther]}>
                           {formatTimeAgo(new Date(msg.created_at))}
                         </Text>
                       </View>
@@ -275,10 +262,7 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
               </View>
 
               <TouchableOpacity
-                style={[
-                  styles.sendButton,
-                  (!message.trim() || sending) && styles.sendButtonDisabled
-                ]}
+                style={[styles.sendButton, (!message.trim() || sending) && styles.sendButtonDisabled]}
                 onPress={sendMessage}
                 activeOpacity={0.8}
                 disabled={sending || !message.trim()}
@@ -298,182 +282,208 @@ export function ChatModal({ visible, league, onClose }: ChatModalProps) {
 }
 
 const styles = StyleSheet.create({
-  modalBackground: {
-    flex: 1,
-    backgroundColor: '#0D1117',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#0D1117',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+  avatar: {
+    borderRadius: 16,
+    height: 32,
+    marginRight: 10,
+    width: 32,
   },
   backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 22,
+    height: 44,
     justifyContent: 'center',
-    alignItems: 'center',
+    width: 44,
   },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
+  bubbleOther: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderBottomLeftRadius: 4,
   },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+  bubbleOwn: {
+    backgroundColor: '#256EFF',
+    borderBottomRightRadius: 4,
+  },
+  bubbleText: {
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  bubbleTextOther: {
     color: '#FFFFFF',
   },
-  headerSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.5)',
-    marginTop: 2,
+  bubbleTextOwn: {
+    color: '#FFFFFF',
   },
-  headerPlaceholder: {
-    width: 44,
+  bubbleTime: {
+    alignSelf: 'flex-end',
+    fontSize: 11,
+    marginTop: 4,
   },
-  messagesContainer: {
+  bubbleTimeOther: {
+    color: 'rgba(255,255,255,0.4)',
+  },
+  bubbleTimeOwn: {
+    color: 'rgba(255,255,255,0.7)',
+  },
+  bubbleUsername: {
+    color: '#256EFF',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  container: {
+    backgroundColor: '#0D1117',
     flex: 1,
-  },
-  messages: {
-    flex: 1,
-  },
-  messagesContent: {
-    padding: 16,
-    paddingBottom: 8,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#10B981',
   },
   emptyContainer: {
+    alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
     paddingVertical: 60,
   },
   emptyIcon: {
     fontSize: 48,
     marginBottom: 16,
   },
+  emptySubtitle: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 14,
+  },
   emptyTitle: {
+    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
     marginBottom: 8,
   },
-  emptySubtitle: {
-    fontSize: 14,
+  errorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  errorTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 14,
+    marginTop: 12,
+  },
+  header: {
+    alignItems: 'center',
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerCenter: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  headerPlaceholder: {
+    width: 44,
+  },
+  headerSubtitle: {
     color: 'rgba(255,255,255,0.5)',
+    fontSize: 13,
+    marginTop: 2,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  input: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    maxHeight: 100,
+  },
+  inputContainer: {
+    alignItems: 'flex-end',
+    backgroundColor: '#0D1117',
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: 10,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  inputWrapper: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 24,
+    flex: 1,
+    justifyContent: 'center',
+    maxHeight: 120,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    color: '#256EFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 16,
+  },
+  messageBubble: {
+    borderRadius: 20,
+    maxWidth: '100%',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   messageRow: {
     flexDirection: 'row',
     marginBottom: 12,
     maxWidth: '85%',
   },
+  messageRowOther: {
+    alignSelf: 'flex-start',
+  },
   messageRowOwn: {
     alignSelf: 'flex-end',
     flexDirection: 'row-reverse',
   },
-  messageRowOther: {
-    alignSelf: 'flex-start',
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 10,
-  },
-  messageBubble: {
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    maxWidth: '100%',
-  },
-  bubbleOwn: {
-    backgroundColor: '#10B981',
-    borderBottomRightRadius: 4,
-  },
-  bubbleOther: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderBottomLeftRadius: 4,
-  },
-  bubbleUsername: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#10B981',
-    marginBottom: 4,
-  },
-  bubbleText: {
-    fontSize: 15,
-    lineHeight: 21,
-  },
-  bubbleTextOwn: {
-    color: '#FFFFFF',
-  },
-  bubbleTextOther: {
-    color: '#FFFFFF',
-  },
-  bubbleTime: {
-    fontSize: 11,
-    marginTop: 4,
-    alignSelf: 'flex-end',
-  },
-  bubbleTimeOwn: {
-    color: 'rgba(255,255,255,0.7)',
-  },
-  bubbleTimeOther: {
-    color: 'rgba(255,255,255,0.4)',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingBottom: 24,
-    gap: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: '#0D1117',
-  },
-  inputWrapper: {
+  messages: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 24,
+  },
+  messagesContainer: {
+    flex: 1,
+  },
+  messagesContent: {
+    padding: 16,
+    paddingBottom: 8,
+  },
+  modalBackground: {
+    backgroundColor: '#0D1117',
+    flex: 1,
+  },
+  retryButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(37,110,255,0.16)',
+    borderColor: 'rgba(37,110,255,0.4)',
+    borderRadius: 12,
+    borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    minHeight: 44,
-    maxHeight: 120,
-    justifyContent: 'center',
   },
-  input: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    maxHeight: 100,
+  retryButtonText: {
+    color: '#256EFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#10B981',
-    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#256EFF',
+    borderRadius: 22,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
   },
   sendButtonDisabled: {
     backgroundColor: 'rgba(255,255,255,0.15)',

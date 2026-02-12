@@ -5,11 +5,12 @@ import { LeagueCard } from '../shared/LeagueCard';
 
 interface CommunitySectionProps {
   leagues: League[];
+  nowTick: number;
   onCardPress: (league: League) => void;
   onJoinPress: (league: League) => void;
 }
 
-export function CommunitySection({ leagues, onCardPress, onJoinPress }: CommunitySectionProps) {
+export function CommunitySection({ leagues, nowTick, onCardPress, onJoinPress }: CommunitySectionProps) {
   if (leagues.length === 0) return null;
 
   return (
@@ -19,6 +20,7 @@ export function CommunitySection({ leagues, onCardPress, onJoinPress }: Communit
         <LeagueCard
           key={league.id}
           league={league}
+          nowTick={nowTick}
           onCardPress={onCardPress}
           onJoinPress={onJoinPress}
         />
@@ -38,4 +40,3 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 });
-

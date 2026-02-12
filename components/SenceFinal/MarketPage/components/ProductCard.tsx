@@ -30,14 +30,13 @@ export function ProductCard({ product, userCredits, onPress }: ProductCardProps)
 const styles = StyleSheet.create({
   card: {
     width: '48%',
-    backgroundColor: 'white',
-    borderRadius: 16,
+    backgroundColor: '#161B22',
+    borderRadius: 18,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#F2F3F5',
+    borderColor: '#30363D',
   },
   info: {
     padding: 12,
   },
 });
-

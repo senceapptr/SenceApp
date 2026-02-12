@@ -91,7 +91,7 @@ export function Step3Payment({
       {/* Header Info */}
       <View style={styles.headerInfo}>
         <View style={styles.infoIconContainer}>
-          <Ionicons name="wallet" size={32} color="#10B981" />
+          <Ionicons name="wallet" size={32} color="#256EFF" />
         </View>
         <Text style={styles.headerTitle}>Ödeme Yöntemi Seç</Text>
         <Text style={styles.headerSubtitle}>
@@ -120,7 +120,7 @@ export function Step3Payment({
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={hasEnoughCredits ? ['#10B981', '#059669'] : ['#30363D', '#D1D5DB']}
+              colors={hasEnoughCredits ? ['#256EFF', '#256EFF'] : ['#30363D', '#D1D5DB']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.paymentCardGradient}
@@ -355,7 +355,7 @@ export function Step3Payment({
           </Text>
         </View>
         <View style={styles.infoCard}>
-          <Ionicons name="gift" size={20} color="#10B981" />
+          <Ionicons name="gift" size={20} color="#256EFF" />
           <Text style={styles.infoCardText}>
             Bilet ile oluşturulan ligler tamamen ücretsizdir
           </Text>

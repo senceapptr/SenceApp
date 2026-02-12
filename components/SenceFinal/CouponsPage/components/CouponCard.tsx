@@ -30,7 +30,7 @@ function ClaimGlowButton({ onPress, amount }: { onPress: () => void; amount: num
           duration: 1500,
           useNativeDriver: false,
         }),
-      ])
+      ]),
     ).start();
 
     // Hafif pulse animasyonu
@@ -46,7 +46,7 @@ function ClaimGlowButton({ onPress, amount }: { onPress: () => void; amount: num
           duration: 1000,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
   }, []);
 
@@ -96,6 +96,24 @@ export function CouponCard({ coupon, onPress, onClaim }: CouponCardProps) {
   const isWon = coupon.status === 'won';
   const isClaimed = coupon.claimedReward;
   const canClaim = isWon && !isClaimed;
+  const isLive = coupon.status === 'pending';
+  const cardBorderColor = canClaim ? '#10B981' : isWon && isClaimed ? '#2B5643' : getStatusBorderColor(coupon.status);
+  const cardGradient: [string, string] = canClaim
+    ? ['#0F2419', '#0D1F17']
+    : isWon && isClaimed
+      ? ['#14251B', '#101D16']
+      : getStatusColor(coupon.status);
+  const statusBadgeColor = canClaim ? '#10B981' : isWon && isClaimed ? '#33664F' : statusBadge.color;
+  const oddsColor =
+    coupon.status === 'pending'
+      ? '#7EA8FF'
+      : coupon.status === 'lost'
+        ? '#914444'
+        : coupon.status === 'cancelled'
+          ? '#9CA3AF'
+          : isWon && isClaimed
+            ? '#4E7A65'
+            : '#10B981';
 
   const handleClaim = () => {
     if (canClaim && onClaim) {
@@ -119,26 +137,21 @@ export function CouponCard({ coupon, onPress, onClaim }: CouponCardProps) {
         styles.card,
         {
           borderWidth: 2,
-          borderColor: canClaim ? '#10B981' : isClaimed ? '#1A2E1A' : getStatusBorderColor(coupon.status)
+          borderColor: cardBorderColor,
         },
         canClaim && styles.cardGlow,
       ]}
       onPress={handlePress}
       activeOpacity={0.95}
     >
-      <LinearGradient
-        colors={canClaim ? ['#0F2419', '#0D1F17'] : isClaimed ? ['#1A2E1A', '#152515'] : getStatusColor(coupon.status)}
-        style={styles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
+      <LinearGradient colors={cardGradient} style={styles.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={[styles.statusDot, { backgroundColor: statusBadge.color }]} />
+            <View style={[styles.statusDot, { backgroundColor: statusBadgeColor }]} />
             <Text style={styles.title}>• Ticket #{coupon.id}</Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: statusBadge.color }]}>
+          <View style={[styles.statusBadge, { backgroundColor: statusBadgeColor }]}>
             <Text style={styles.statusBadgeText}>{statusBadge.text}</Text>
           </View>
         </View>
@@ -150,32 +163,33 @@ export function CouponCard({ coupon, onPress, onClaim }: CouponCardProps) {
               <Text style={styles.predictionQuestion}>Tahminler yükleniyor...</Text>
             </View>
           ) : (
-            predictions.slice(0, 3).map((prediction) => (
+            predictions.slice(0, 3).map(prediction => (
               <View key={prediction.id} style={styles.predictionRow}>
                 <View style={styles.predictionLeft}>
                   <Text style={styles.predictionQuestion} numberOfLines={1}>
                     {prediction.question}
                   </Text>
                   <View style={styles.predictionMeta}>
-                    <View style={[
-                      styles.choiceBadge,
-                      prediction.choice === 'yes' ? styles.yesBadge : styles.noBadge
-                    ]}>
-                      <Text style={[
-                        styles.choiceBadgeText,
-                        prediction.choice === 'yes' ? styles.yesBadgeText : styles.noBadgeText
-                      ]}>
+                    <View style={[styles.choiceBadge, prediction.choice === 'yes' ? styles.yesBadge : styles.noBadge]}>
+                      <Text
+                        style={[
+                          styles.choiceBadgeText,
+                          prediction.choice === 'yes' ? styles.yesBadgeText : styles.noBadgeText,
+                        ]}
+                      >
                         {prediction.choice === 'yes' ? 'EVET' : 'HAYIR'}
                       </Text>
                     </View>
                     <Text style={styles.categoryText}>{prediction.category}</Text>
                     {prediction.result && prediction.result !== 'pending' && (
-                      <View style={[
-                        styles.resultIndicator,
-                        prediction.result === 'won' && styles.resultWon,
-                        prediction.result === 'lost' && styles.resultLost,
-                        prediction.result === 'cancelled' && styles.resultCancelled,
-                      ]}>
+                      <View
+                        style={[
+                          styles.resultIndicator,
+                          prediction.result === 'won' && styles.resultWon,
+                          prediction.result === 'lost' && styles.resultLost,
+                          prediction.result === 'cancelled' && styles.resultCancelled,
+                        ]}
+                      >
                         <Text style={styles.resultIndicatorText}>
                           {prediction.result === 'won' ? '✓' : prediction.result === 'lost' ? '✗' : '−'}
                         </Text>
@@ -183,16 +197,14 @@ export function CouponCard({ coupon, onPress, onClaim }: CouponCardProps) {
                     )}
                   </View>
                 </View>
-                <Text style={styles.oddsText}>{prediction.odds}x</Text>
+                <Text style={[styles.oddsText, isLive && styles.oddsTextLive]}>{prediction.odds}x</Text>
               </View>
             ))
           )}
 
           {predictions.length > 3 && (
             <View style={styles.morePredictions}>
-              <Text style={styles.morePredictionsText}>
-                +{predictions.length - 3} tahmin daha
-              </Text>
+              <Text style={styles.morePredictionsText}>+{predictions.length - 3} tahmin daha</Text>
             </View>
           )}
         </View>
@@ -210,7 +222,7 @@ export function CouponCard({ coupon, onPress, onClaim }: CouponCardProps) {
             </View>
             <View style={styles.footerRight}>
               <Text style={styles.footerLabel}>Toplam Oran</Text>
-              <Text style={styles.totalOdds}>{coupon.totalOdds.toFixed(2)}x</Text>
+              <Text style={[styles.totalOdds, { color: oddsColor }]}>{coupon.totalOdds.toFixed(2)}x</Text>
             </View>
           </View>
         )}
@@ -350,6 +362,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#10B981',
   },
+  oddsTextLive: {
+    color: '#7EA8FF',
+  },
   morePredictions: {
     alignItems: 'center',
     paddingVertical: 8,
@@ -423,13 +438,13 @@ const styles = StyleSheet.create({
   claimedContainer: {
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#1A3D29',
+    borderTopColor: '#264136',
   },
   claimedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: 'rgba(51, 102, 79, 0.24)',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
@@ -438,11 +453,11 @@ const styles = StyleSheet.create({
   claimedText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#10B981',
+    color: '#4E7A65',
   },
   claimedAmount: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#059669',
+    color: '#456F5B',
   },
 });

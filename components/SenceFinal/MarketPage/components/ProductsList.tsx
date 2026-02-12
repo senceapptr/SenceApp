@@ -52,13 +52,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '900',
-    color: '#202020',
+    fontWeight: '800',
+    color: '#F0F6FC',
   },
   count: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#432870',
+    color: '#256EFF',
   },
   grid: {
     flexDirection: 'row',
@@ -67,4 +67,3 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
 });
-

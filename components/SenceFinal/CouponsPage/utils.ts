@@ -1,5 +1,7 @@
 import { Coupon, CouponStatus, PredictionResult } from './types';
 
+const LIVE_BLUE = '#256EFF';
+
 export const calculateStatistics = (coupons: Coupon[]) => {
   const totalCoupons = coupons.length;
   const pendingCoupons = coupons.filter(c => c.status === 'pending').length;
@@ -22,21 +24,33 @@ export const calculateStatistics = (coupons: Coupon[]) => {
 
 export const getStatusColor = (status: CouponStatus | 'live'): [string, string] => {
   switch (status) {
-    case 'pending': case 'live': return ['#21262D', '#1A1F2A'];
-    case 'won': return ['#1A2E1A', '#243524'];
-    case 'lost': return ['#2E1A1A', '#352424'];
-    case 'cancelled': return ['#1F2937', '#111827'];
-    default: return ['#21262D', '#1A1F2A'];
+    case 'pending':
+    case 'live':
+      return ['#1A2D52', '#14233F'];
+    case 'won':
+      return ['#0D1A12', '#132016'];
+    case 'lost':
+      return ['#190D0D', '#221212'];
+    case 'cancelled':
+      return ['#1F2937', '#111827'];
+    default:
+      return ['#1A2D52', '#14233F'];
   }
 };
 
 export const getStatusBorderColor = (status: CouponStatus | 'live'): string => {
   switch (status) {
-    case 'pending': case 'live': return '#30363D';
-    case 'won': return '#10B981';
-    case 'lost': return '#DC2626';
-    case 'cancelled': return '#6B7280';
-    default: return '#30363D';
+    case 'pending':
+    case 'live':
+      return LIVE_BLUE;
+    case 'won':
+      return '#086347';
+    case 'lost':
+      return '#7D1F1F';
+    case 'cancelled':
+      return '#6B7280';
+    default:
+      return LIVE_BLUE;
   }
 };
 
@@ -64,7 +78,9 @@ export const calculateTimeRemaining = (endDate: Date): string => {
 };
 
 /** Henüz sonuçlanmamış (pending) tahminlerden en geç bitiş tarihini bul */
-export const getLatestPendingEndDate = (predictions: { result?: PredictionResult; endDate?: Date | null }[]): Date | null => {
+export const getLatestPendingEndDate = (
+  predictions: { result?: PredictionResult; endDate?: Date | null }[],
+): Date | null => {
   if (!predictions || predictions.length === 0) return null;
   const pending = predictions.filter(p => (p.result ?? 'pending') === 'pending');
   const validEndDates = pending
@@ -78,30 +94,44 @@ export const getLatestPendingEndDate = (predictions: { result?: PredictionResult
  * Status badge metni ve rengi
  * Emoji'ler kaldırıldı
  */
-export const getStatusBadge = (status: CouponStatus | 'live', predictions?: { result?: PredictionResult; endDate?: Date | null }[]) => {
+export const getStatusBadge = (
+  status: CouponStatus | 'live',
+  predictions?: { result?: PredictionResult; endDate?: Date | null }[],
+) => {
   switch (status) {
-    case 'pending': case 'live':
+    case 'pending':
+    case 'live':
       if (predictions && predictions.length > 0) {
         const latestEndDate = getLatestPendingEndDate(predictions);
         if (latestEndDate) {
           const timeRemaining = calculateTimeRemaining(latestEndDate);
-          return { text: timeRemaining, color: '#8B5CF6' };
+          return { text: timeRemaining, color: LIVE_BLUE };
         }
       }
-      return { text: 'Bekliyor', color: '#8B5CF6' };
-    case 'won': return { text: 'Kazandı', color: '#10B981' };
-    case 'lost': return { text: 'Kaybetti', color: '#DC2626' };
-    case 'cancelled': return { text: 'İptal', color: '#6B7280' };
-    default: return { text: 'Bekliyor', color: '#8B5CF6' };
+      return { text: 'Bekliyor', color: LIVE_BLUE };
+    case 'won':
+      return { text: 'Kazandı', color: '#086347' };
+    case 'lost':
+      return { text: 'Kaybetti', color: '#7D1F1F' };
+    case 'cancelled':
+      return { text: 'İptal', color: '#6B7280' };
+    default:
+      return { text: 'Bekliyor', color: LIVE_BLUE };
   }
 };
 
 export const getModalGradientColors = (status: CouponStatus | 'live'): [string, string] => {
   switch (status) {
-    case 'pending': case 'live': return ['#8B5CF6', '#A855F7'];
-    case 'won': return ['#047857', '#065f46'];
-    case 'lost': return ['#B91C1C', '#991B1B'];
-    case 'cancelled': return ['#4B5563', '#374151'];
-    default: return ['#8B5CF6', '#A855F7'];
+    case 'pending':
+    case 'live':
+      return [LIVE_BLUE, '#1D5EDB'];
+    case 'won':
+      return ['#03412F', '#033527'];
+    case 'lost':
+      return ['#681818', '#531313'];
+    case 'cancelled':
+      return ['#4B5563', '#374151'];
+    default:
+      return [LIVE_BLUE, '#1D5EDB'];
   }
 };

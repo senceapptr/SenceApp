@@ -1,82 +1,139 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, ScrollView, Text, Alert } from 'react-native';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { leaguesService } from '@/services/leagues.service';
-import { TabType, League } from './types';
-import { mockCurrentUser } from './utils';
-import { useHeaderAnimation } from './hooks';
+
+import { RaceArena } from './Arena';
+import { KesfetTab } from './Kesfet';
+import { OlusturTab } from './Olustur';
 import { Header } from './shared/Header';
 import { TabBar } from './shared/TabBar';
-import { KesfetTab } from './Kesfet';
 import { LiglerimTab } from './Liglerim';
-import { OlusturTab } from './Olustur';
-import { RaceArena } from './Arena';
-import { LeaderboardModal } from './shared/LeaderboardModal';
+import { TabType, League } from './types';
+import { useHeaderAnimation } from './hooks';
 import { LeaguePageSkeleton } from './LeaguePageSkeleton';
+import { LeaderboardModal } from './shared/LeaderboardModal';
+import { DEFAULT_LEAGUE_ICON_NAME, getLeagueIconColorByName, isLeagueIconName } from './shared/leagueIcons';
+
+const formatLeagueEndDate = (endDateISO?: string | null) => {
+  if (!endDateISO) return 'Süresiz';
+
+  const endDate = new Date(endDateISO);
+  if (Number.isNaN(endDate.getTime())) return 'Süresiz';
+
+  return endDate.toLocaleDateString('tr-TR', {
+    day: 'numeric',
+    month: 'long',
+  });
+};
+
+const extractLeagueCategories = (league: any) => {
+  const mappedCategories = Array.isArray(league?.league_categories)
+    ? league.league_categories
+        .map((item: any) => item?.categories?.name)
+        .filter((name: unknown): name is string => typeof name === 'string' && name.trim().length > 0)
+    : [];
+
+  if (mappedCategories.length > 0) {
+    return [...new Set(mappedCategories)];
+  }
+
+  if (league?.categories?.name) {
+    return [league.categories.name];
+  }
+
+  return [];
+};
 
 interface LeaguePageProps {
   onBack: () => void;
+  onMenuToggle: () => void;
+  onRaceModeChange?: (isActive: boolean) => void;
   handleQuestionDetail: (questionId: string) => void;
   handleVote: (questionId: string, vote: 'yes' | 'no', odds: number, questionTitle?: string) => void;
-  onMenuToggle: () => void;
 }
 
 export function LeaguePage({
-  onBack,
-  handleQuestionDetail,
-  handleVote,
-  onMenuToggle
+  handleQuestionDetail: _handleQuestionDetail,
+  handleVote: _handleVote,
+  onBack: _onBack,
+  onMenuToggle,
+  onRaceModeChange,
 }: LeaguePageProps) {
-  const { user, profile } = useAuth();
+  const { profile, user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('discover');
   const [leagues, setLeagues] = useState<League[]>([]);
   const [userLeagues, setUserLeagues] = useState<League[]>([]);
   const [showRaceArena, setShowRaceArena] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
-  const [loading, setLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const { headerTranslateY, handleScroll } = useHeaderAnimation();
+  const [nowTick, setNowTick] = useState(Date.now());
+  const scrollViewRef = useRef<ScrollView>(null);
+  const { handleScroll, headerTranslateY, resetHeaderState } = useHeaderAnimation();
+
+  useEffect(() => {
+    const intervalId = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Backend'den lig verilerini yükle
-  const loadLeaguesData = async () => {
+  const loadLeaguesData = useCallback(async () => {
     if (!user) {
-      setLoading(false);
       setShowSkeleton(false);
       return;
     }
 
     try {
-      setLoading(true);
       setShowSkeleton(true);
 
       // Paralel olarak public ligler ve kullanıcının liglerini yükle
-      const [publicLeaguesResult, userLeaguesResult] = await Promise.all([
+      const [publicLeaguesResult, userLeaguesResult, joinedLeagueIdsResult] = await Promise.all([
         leaguesService.getPublicLeagues(),
         leaguesService.getUserLeagues(user.id),
+        leaguesService.getUserJoinedLeagueIds(user.id),
       ]);
+
+      const joinedLeagueIds = new Set(
+        (
+          (joinedLeagueIdsResult.data && joinedLeagueIdsResult.data.length > 0
+            ? joinedLeagueIdsResult.data
+            : (userLeaguesResult.data || []).map((member: any) => member?.leagues?.id) || []) as (string | undefined)[]
+        ).filter((leagueId: unknown): leagueId is string => typeof leagueId === 'string'),
+      );
 
       // Public ligler
       if (publicLeaguesResult.data) {
-        const mappedPublicLeagues: League[] = publicLeaguesResult.data.map((league: any) => ({
-          id: league.id, // UUID string olarak kullan
-          name: league.name,
-          description: league.description || '',
-          category: league.categories?.name || 'Genel',
-          categories: [league.categories?.name || 'Genel'],
-          icon: league.categories?.icon || '🏆',
-          participants: league.current_members || 0,
-          maxParticipants: league.max_members || 100,
-          prize: `${league.prize_pool || 0} kredi`,
-          endDate: league.end_date ? new Date(league.end_date).toLocaleDateString('tr-TR') : 'Süresiz',
-          isJoined: false, // Public liglerde isJoined false
-          creator: league.creator_id || 'Anonim',
-          joinCost: league.entry_fee || 0,
-          isFeatured: false,
-          status: league.status === 'active' ? 'active' : 'completed',
-          isPrivate: league.type !== 'public',
-          pointSystem: 'Her doğru tahmin için puan kazanırsın.',
-        }));
+        const mappedPublicLeagues: League[] = publicLeaguesResult.data.map((league: any) => {
+          const leagueCategories = extractLeagueCategories(league);
+          const leagueIconName = isLeagueIconName(league.icon_name) ? league.icon_name : DEFAULT_LEAGUE_ICON_NAME;
+          const prizePool = typeof league.prize_pool === 'number' ? league.prize_pool : null;
+
+          return {
+            categories: leagueCategories,
+            category: leagueCategories[0] || '',
+            creator: league.creator_profile?.username || 'Anonim',
+            creatorId: league.creator_id || undefined,
+            description: league.description || '',
+            endDate: formatLeagueEndDate(league.end_date),
+            endDateISO: league.end_date || null,
+            icon: league.categories?.icon || '🏆',
+            id: league.id,
+            isFeatured: league.is_featured === true,
+            isJoined: joinedLeagueIds.has(league.id),
+            isPrivate: league.type !== 'public',
+            joinCost: league.entry_fee || 0,
+            leagueIconColor: league.icon_color || getLeagueIconColorByName(leagueIconName),
+            leagueIconName,
+            maxParticipants: league.max_members || 100,
+            name: league.name,
+            participants: league.current_members || 0,
+            pointSystem: 'Her doğru tahmin için puan kazanırsın.',
+            prize: prizePool === null ? '—' : `${prizePool} kredi`,
+            status: league.status === 'active' ? 'active' : 'completed',
+          };
+        });
         setLeagues(mappedPublicLeagues);
       }
 
@@ -84,43 +141,49 @@ export function LeaguePage({
       if (userLeaguesResult.data) {
         const mappedUserLeagues: League[] = userLeaguesResult.data.map((member: any) => {
           const league = member.leagues;
+          const leagueCategories = extractLeagueCategories(league);
+          const leagueIconName = isLeagueIconName(league.icon_name) ? league.icon_name : DEFAULT_LEAGUE_ICON_NAME;
+          const prizePool = typeof league.prize_pool === 'number' ? league.prize_pool : null;
+
           return {
-            id: league.id, // UUID string olarak kullan
-            name: league.name,
+            categories: leagueCategories,
+            category: leagueCategories[0] || '',
+            creator: league.creator_profile?.username || 'Anonim',
+            creatorId: league.creator_id || undefined,
             description: league.description || '',
-            category: league.categories?.name || 'Genel',
-            categories: [league.categories?.name || 'Genel'],
+            endDate: formatLeagueEndDate(league.end_date),
+            endDateISO: league.end_date || null,
             icon: league.categories?.icon || '🏆',
-            participants: league.current_members || 0,
-            maxParticipants: league.max_members || 100,
-            prize: `${league.prize_pool || 0} kredi`,
-            endDate: league.end_date ? new Date(league.end_date).toLocaleDateString('tr-TR') : 'Süresiz',
+            id: league.id,
+            isFeatured: league.is_featured === true,
             isJoined: true,
-            position: member.rank || 0,
-            creator: league.creator_id || 'Anonim',
-            joinCost: league.entry_fee || 0,
-            isFeatured: false,
-            status: league.status === 'active' ? 'active' : 'completed',
             isPrivate: league.type !== 'public',
+            joinCost: league.entry_fee || 0,
+            leagueIconColor: league.icon_color || getLeagueIconColorByName(leagueIconName),
+            leagueIconName,
+            maxParticipants: league.max_members || 100,
+            name: league.name,
+            participants: league.current_members || 0,
             pointSystem: 'Her doğru tahmin için puan kazanırsın.',
+            position: member.rank ?? null,
+            prize: prizePool === null ? '—' : `${prizePool} kredi`,
+            status: league.status === 'active' ? 'active' : 'completed',
           };
         });
         setUserLeagues(mappedUserLeagues);
       }
-
     } catch (err) {
       console.error('Leagues load error:', err);
       Alert.alert('Hata', 'Ligler yüklenirken bir hata oluştu');
     } finally {
-      setLoading(false);
       setShowSkeleton(false);
     }
-  };
+  }, [user]);
 
   // Sayfa yüklendiğinde veriyi çek
   useEffect(() => {
     loadLeaguesData();
-  }, [user]);
+  }, [loadLeaguesData]);
 
   const handleJoinLeague = async (league: League) => {
     if (!user) {
@@ -132,12 +195,7 @@ export function LeaguePage({
       const result = await leaguesService.joinLeague(league.id);
 
       if (result.data) {
-        // Başarılı katılım
-        setLeagues(prev => prev.map(l =>
-          l.id === league.id
-            ? { ...l, isJoined: true, participants: l.participants + 1, position: Math.floor(Math.random() * 50) + 1 }
-            : l
-        ));
+        await loadLeaguesData();
         setActiveTab('my-leagues');
         Alert.alert('Başarılı', 'Lige başarıyla katıldınız!');
       }
@@ -165,6 +223,11 @@ export function LeaguePage({
   const handleCloseRaceArena = () => {
     setShowRaceArena(false);
     setSelectedLeague(null);
+
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollTo({ animated: false, y: 0 });
+      resetHeaderState();
+    });
   };
 
   const handleShowLeaderboard = (league: League) => {
@@ -176,6 +239,25 @@ export function LeaguePage({
     setShowLeaderboard(false);
     setSelectedLeague(null);
   };
+
+  useEffect(() => {
+    if (!showRaceArena) {
+      resetHeaderState();
+    }
+  }, [resetHeaderState, showRaceArena]);
+
+  useEffect(() => {
+    onRaceModeChange?.(showRaceArena);
+
+    return () => {
+      onRaceModeChange?.(false);
+    };
+  }, [onRaceModeChange, showRaceArena]);
+
+  useEffect(() => {
+    scrollViewRef.current?.scrollTo({ animated: false, y: 0 });
+    resetHeaderState();
+  }, [activeTab, resetHeaderState]);
 
   // Giriş yapılmamış
   if (!user) {
@@ -193,22 +275,19 @@ export function LeaguePage({
 
   // Show Race Arena
   if (showRaceArena && selectedLeague) {
-    return (
-      <RaceArena
-        league={selectedLeague}
-        onClose={handleCloseRaceArena}
-      />
-    );
+    return <RaceArena league={selectedLeague} onClose={handleCloseRaceArena} />;
   }
 
   // Current user data - backend'den gelen verilerle merge et
   const currentUser = {
-    username: profile?.username || user?.email?.split('@')[0] || 'kullanici',
-    avatar: profile?.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face',
-    joinedLeagues: userLeagues.length,
-    maxLeagues: 5, // TODO: Backend'den al
+    avatar:
+      profile?.profile_image ||
+      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face',
     credits: profile?.credits || 0,
-    tickets: 2 // TODO: Backend'den al
+    joinedLeagues: userLeagues.length,
+    maxLeagues: profile?.league_quota ?? 5,
+    tickets: profile?.tickets ?? 2,
+    username: profile?.username || user?.email?.split('@')[0] || 'kullanici',
   };
 
   return (
@@ -226,6 +305,7 @@ export function LeaguePage({
       ) : (
         /* Tab Content */
         <ScrollView
+          ref={scrollViewRef}
           style={styles.content}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -236,6 +316,7 @@ export function LeaguePage({
             {activeTab === 'discover' && (
               <KesfetTab
                 leagues={leagues}
+                nowTick={nowTick}
                 currentUser={currentUser}
                 onJoinLeague={handleJoinLeague}
                 onLeaderboard={handleShowLeaderboard}
@@ -245,67 +326,58 @@ export function LeaguePage({
             {activeTab === 'my-leagues' && (
               <LiglerimTab
                 leagues={userLeagues}
+                nowTick={nowTick}
                 currentUser={currentUser}
                 onDiscoverTab={handleDiscoverTab}
                 onShowRaceArena={handleShowRaceArena}
               />
             )}
 
-            {activeTab === 'create' && (
-              <OlusturTab
-                currentUser={currentUser}
-                onSuccess={handleCreateSuccess}
-              />
-            )}
+            {activeTab === 'create' && <OlusturTab currentUser={currentUser} onSuccess={handleCreateSuccess} />}
           </View>
         </ScrollView>
       )}
 
       {/* Leaderboard Modal */}
-      <LeaderboardModal
-        visible={showLeaderboard}
-        league={selectedLeague}
-        onClose={handleCloseLeaderboard}
-      />
+      <LeaderboardModal visible={showLeaderboard} league={selectedLeague} onClose={handleCloseLeaderboard} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: '#0D1117',
-  },
-  skeletonContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 100,
+    flex: 1,
   },
   content: {
     flex: 1,
   },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 16,
+    fontWeight: '600',
+    paddingHorizontal: 32,
+    textAlign: 'center',
+  },
+  loadingContent: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+  },
   scrollContent: {
     paddingTop: 180,
   },
+  skeletonContainer: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 100,
+  },
   tabContent: {
+    paddingBottom: 60,
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 60,
-  },
-  loadingContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#DC2626',
-    textAlign: 'center',
-    paddingHorizontal: 32,
   },
 });
-

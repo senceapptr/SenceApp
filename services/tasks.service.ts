@@ -4,14 +4,14 @@ export interface Task {
   id: string;
   title: string;
   description: string | null;
-  type: 'daily' | 'monthly';
+  type: 'daily' | 'monthly' | string;
   requirement_type: string;
   requirement_value: number;
   reward_credits: number;
-  reward_experience: number;
-  icon: string;
-  is_active: boolean;
-  reset_period: string;
+  reward_experience: number | null;
+  icon: string | null;
+  is_active: boolean | null;
+  reset_period: string | null;
 }
 
 export interface UserTaskProgress {
@@ -46,7 +46,7 @@ export const tasksService = {
   async recordUserSession(userId: string) {
     try {
       const { error } = await supabase
-        .from('user_sessions')
+        .from('user_sessions' as any)
         .upsert({
           user_id: userId,
           session_date: new Date().toISOString().split('T')[0],
@@ -74,7 +74,7 @@ export const tasksService = {
       const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
 
       const { data, error } = await supabase
-        .from('user_sessions')
+        .from('user_sessions' as any)
         .select('session_date')
         .eq('user_id', userId)
         .gte('session_date', startDate)
@@ -82,7 +82,7 @@ export const tasksService = {
 
       if (error) throw error;
 
-      const loginDays = data?.map(s => new Date(s.session_date).getDate()) || [];
+      const loginDays = (data || []).map((session: any) => new Date(session.session_date).getDate());
       return { data: loginDays, error: null };
     } catch (error) {
       console.error('Get user login days error:', error);
@@ -129,12 +129,14 @@ export const tasksService = {
       ]);
 
       if (tasksResult.error) throw tasksResult.error;
+      if (userTasksResult.error) throw userTasksResult.error;
       const tasks = tasksResult.data || [];
 
       // Bugünün başlangıcı (UTC)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayStr = today.toISOString();
+      const now = new Date();
 
       // Her görev için gerçek ilerlemeyi hesapla
       const tasksWithProgress: TaskWithProgress[] = await Promise.all(
@@ -143,7 +145,7 @@ export const tasksService = {
           const userTask = userTasksResult.data?.find(ut => ut.task_id === task.id);
 
           // Reset kontrolü - günlük görev ve resetlenmesi gerekiyorsa
-          const needsReset = userTask && userTask.reset_at && new Date(userTask.reset_at) < today;
+          const needsReset = !!(userTask?.reset_at && new Date(userTask.reset_at) <= now);
 
           const is_completed = progress >= task.requirement_value;
           const is_claimed = needsReset ? false : (userTask?.is_claimed || false);
@@ -180,6 +182,7 @@ export const tasksService = {
       ]);
 
       if (tasksResult.error) throw tasksResult.error;
+      if (userTasksResult.error) throw userTasksResult.error;
       const tasks = tasksResult.data || [];
 
       // Ayın başlangıcı
@@ -187,16 +190,15 @@ export const tasksService = {
       monthStart.setDate(1);
       monthStart.setHours(0, 0, 0, 0);
       const monthStartStr = monthStart.toISOString();
+      const now = new Date();
 
       const tasksWithProgress: TaskWithProgress[] = await Promise.all(
         tasks.map(async (task) => {
           const progress = await this.calculateTaskProgress(userId, task, monthStartStr, 'monthly');
           const userTask = userTasksResult.data?.find(ut => ut.task_id === task.id);
 
-          // Reset kontrolü - aylık görev ve ay değişmişse
-          const currentMonth = new Date().getMonth();
-          const resetMonth = userTask?.reset_at ? new Date(userTask.reset_at).getMonth() : null;
-          const needsReset = userTask && resetMonth !== null && resetMonth !== currentMonth;
+          // Reset kontrolü - reset_at geçmişte kaldıysa yeni periyot başlamıştır
+          const needsReset = !!(userTask?.reset_at && new Date(userTask.reset_at) <= now);
 
           const is_completed = progress >= task.requirement_value;
           const is_claimed = needsReset ? false : (userTask?.is_claimed || false);
@@ -327,7 +329,7 @@ export const tasksService = {
       // Günlük için bugün giriş yapılıp yapılmadığını kontrol et
       startDate = now.toISOString().split('T')[0];
       const { count, error } = await supabase
-        .from('user_sessions')
+        .from('user_sessions' as any)
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
         .eq('session_date', startDate);
@@ -339,7 +341,7 @@ export const tasksService = {
       startDate = monthStart.toISOString().split('T')[0];
 
       const { count, error } = await supabase
-        .from('user_sessions')
+        .from('user_sessions' as any)
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
         .gte('session_date', startDate);
@@ -424,15 +426,40 @@ export const tasksService = {
         throw new Error('Görev bulunamadı');
       }
 
+      if (!task.is_active) {
+        throw new Error('Görev aktif değil');
+      }
+
       // user_tasks kaydını kontrol et veya oluştur
-      const { data: existingUserTask } = await supabase
+      const { data: existingUserTask, error: userTaskError } = await supabase
         .from('user_tasks')
         .select('*')
         .eq('user_id', userId)
         .eq('task_id', taskId)
-        .single();
+        .maybeSingle();
 
-      if (existingUserTask?.is_claimed) {
+      if (userTaskError) {
+        throw userTaskError;
+      }
+
+      const nowDate = new Date();
+      const periodStart = task.type === 'daily'
+        ? new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate()).toISOString()
+        : new Date(nowDate.getFullYear(), nowDate.getMonth(), 1).toISOString();
+      const period = task.type === 'daily' ? 'daily' : 'monthly';
+      const liveProgress = await this.calculateTaskProgress(userId, task, periodStart, period);
+
+      if (liveProgress < task.requirement_value) {
+        throw new Error('Görev henüz tamamlanmadı');
+      }
+
+      const claimExpired = !!(
+        existingUserTask?.is_claimed &&
+        existingUserTask.reset_at &&
+        new Date(existingUserTask.reset_at) <= nowDate
+      );
+
+      if (existingUserTask?.is_claimed && !claimExpired) {
         throw new Error('Ödül zaten alındı');
       }
 
@@ -445,21 +472,26 @@ export const tasksService = {
 
       if (profileError) throw profileError;
 
-      await supabase
+      const { error: profileUpdateError } = await supabase
         .from('profiles')
         .update({ credits: (profile?.credits || 0) + task.reward_credits })
         .eq('id', userId);
+      if (profileUpdateError) throw profileUpdateError;
 
       // user_tasks güncelle veya oluştur
-      const now = new Date().toISOString();
+      const now = nowDate.toISOString();
+      const nextDailyReset = new Date(nowDate);
+      nextDailyReset.setDate(nextDailyReset.getDate() + 1);
+      nextDailyReset.setHours(0, 0, 0, 0);
       const resetAt = task.type === 'daily'
-        ? new Date(new Date().setDate(new Date().getDate() + 1)).toISOString()
-        : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString();
+        ? nextDailyReset.toISOString()
+        : new Date(nowDate.getFullYear(), nowDate.getMonth() + 1, 1).toISOString();
 
       if (existingUserTask) {
-        await supabase
+        const { error: userTaskUpdateError } = await supabase
           .from('user_tasks')
           .update({
+            progress: task.requirement_value,
             is_completed: true,
             is_claimed: true,
             completed_at: now,
@@ -467,8 +499,9 @@ export const tasksService = {
             reset_at: resetAt,
           })
           .eq('id', existingUserTask.id);
+        if (userTaskUpdateError) throw userTaskUpdateError;
       } else {
-        await supabase
+        const { error: userTaskInsertError } = await supabase
           .from('user_tasks')
           .insert({
             user_id: userId,
@@ -480,6 +513,7 @@ export const tasksService = {
             claimed_at: now,
             reset_at: resetAt,
           });
+        if (userTaskInsertError) throw userTaskInsertError;
       }
 
       return {
