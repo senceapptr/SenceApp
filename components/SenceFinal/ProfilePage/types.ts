@@ -1,34 +1,34 @@
 export interface ProfileData {
-  name: string;
-  username: string;
   bio: string;
-  profileImage: string;
-  coverImage: string;
-  predictions: number;
+  name: string;
+  credits: number;
+  username: string;
   followers: number;
   following: number;
-  credits: number;
+  coverImage: string;
+  predictions: number;
+  profileImage: string;
   isFollowing: boolean;
 }
 
 export interface Prediction {
   id: number;
+  odds: number;
   image: string;
   question: string;
   selectedOption: 'EVET' | 'HAYIR';
-  odds: number;
   status: 'won' | 'lost' | 'pending';
 }
 
 export interface ProfileStats {
-  totalPredictions: number;
-  correctPredictions: number;
+  wonCoupons: number;
   accuracyRate: number;
-  totalEarnings: number;
-  highestOddsWon: number;
   maxWinAmount: number;
   totalCoupons: number;
-  wonCoupons: number;
+  totalEarnings: number;
+  highestOddsWon: number;
+  totalPredictions: number;
+  correctPredictions: number;
   couponAccuracyRate: number;
   couponTotalEarnings: number;
 }
@@ -36,9 +36,9 @@ export interface ProfileStats {
 export interface Badge {
   id: number;
   name: string;
-  description: string;
   icon: string;
   earned: boolean;
+  description: string;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
 }
 
@@ -50,18 +50,19 @@ export interface CreditHistoryItem {
 export type TabType = 'tickets' | 'statistics';
 
 export interface UserProfile {
-  username: string;
-  fullName: string;
   bio: string;
   email: string;
-  profileImage: string;
+  username: string;
+  fullName: string;
   coverImage: string;
+  profileImage: string;
 }
 
 export interface ProfilePageProps {
   onBack: () => void;
   onMenuToggle: () => void;
   userProfile: UserProfile;
+  onOpenQuestionDetail?: (questionId: string) => void;
 }
 
 // Animation constants
@@ -74,10 +75,9 @@ export interface AnimationConstants {
 
 export interface ProfileAnimations {
   scrollY: any;
+  handleScroll: any;
   followButtonScale: any;
   profileImageScale: any;
-  handleScroll: any;
   animateButtonPress: (animValue: any) => void;
   animateButtonHover: (animValue: any, pressed: boolean) => void;
 }
-

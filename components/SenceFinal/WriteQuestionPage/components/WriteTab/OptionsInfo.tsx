@@ -6,7 +6,6 @@ export const OptionsInfo: React.FC = () => {
   return (
     <View style={styles.optionsInfo}>
       <View style={styles.optionsHeader}>
-        <Text style={styles.optionsIcon}>🎯</Text>
         <Text style={styles.optionsTitle}>Seçenekler</Text>
       </View>
       <View style={styles.optionsList}>
@@ -25,25 +24,19 @@ export const OptionsInfo: React.FC = () => {
 
 const styles = StyleSheet.create({
   optionsInfo: {
-    backgroundColor: 'rgba(67,40,112,0.1)',
+    backgroundColor: 'rgba(30, 64, 175, 0.14)',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(67,40,112,0.2)',
+    borderColor: 'rgba(59, 130, 246, 0.35)',
   },
   optionsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
     marginBottom: 12,
-  },
-  optionsIcon: {
-    fontSize: 18,
   },
   optionsTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#202020',
+    color: '#DBEAFE',
   },
   optionsList: {
     gap: 8,
@@ -60,12 +53,12 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 14,
-    color: 'rgba(32,32,32,0.8)',
+    color: '#BFDBFE',
     flex: 1,
   },
   optionBold: {
     fontWeight: '700',
+    color: '#F8FAFC',
   },
 });
-
 

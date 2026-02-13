@@ -9,7 +9,7 @@ import { SuccessMessage } from './components/SuccessMessage';
 import { WriteTab } from './components/WriteTab';
 import { StatusTab } from './components/StatusTab';
 
-export function WriteQuestionPage({ onBack, onMenuToggle }: WriteQuestionPageProps) {
+export function WriteQuestionPage({ onBack, onOpenQuestionDetail }: WriteQuestionPageProps) {
   const { activeTab, setActiveTab, submittedQuestions, loading, refreshQuestions } = useWriteQuestionState();
   
   const {
@@ -34,7 +34,7 @@ export function WriteQuestionPage({ onBack, onMenuToggle }: WriteQuestionPagePro
     >
       <StatusBar barStyle="light-content" backgroundColor="#0D1117" />
       
-      <WriteQuestionHeader onBack={onBack} onMenuToggle={onMenuToggle} />
+      <WriteQuestionHeader onBack={onBack} />
       
       <WriteQuestionTabs activeTab={activeTab} onTabChange={setActiveTab} />
       
@@ -57,7 +57,11 @@ export function WriteQuestionPage({ onBack, onMenuToggle }: WriteQuestionPagePro
             isSubmitting={isSubmitting}
           />
         ) : (
-          <StatusTab questions={submittedQuestions} loading={loading} />
+          <StatusTab
+            questions={submittedQuestions}
+            loading={loading}
+            onOpenQuestionDetail={onOpenQuestionDetail}
+          />
         )}
       </ScrollView>
     </KeyboardAvoidingView>
@@ -78,5 +82,3 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
 });
-
-

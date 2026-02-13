@@ -7,9 +7,14 @@ import { EmptyState } from './EmptyState';
 interface StatusTabProps {
   questions: SubmittedQuestion[];
   loading?: boolean;
+  onOpenQuestionDetail?: (questionId: string) => void;
 }
 
-export const StatusTab: React.FC<StatusTabProps> = ({ questions, loading = false }) => {
+export const StatusTab: React.FC<StatusTabProps> = ({
+  questions,
+  loading = false,
+  onOpenQuestionDetail,
+}) => {
   return (
     <View style={styles.statusTabContent}>
       <View style={styles.statusCard}>
@@ -25,7 +30,11 @@ export const StatusTab: React.FC<StatusTabProps> = ({ questions, loading = false
         ) : (
           <View style={styles.questionsList}>
             {questions.map((question) => (
-              <QuestionStatusCard key={question.id} question={question} />
+              <QuestionStatusCard
+                key={question.id}
+                question={question}
+                onOpenQuestionDetail={onOpenQuestionDetail}
+              />
             ))}
           </View>
         )}
@@ -71,5 +80,4 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
-
 

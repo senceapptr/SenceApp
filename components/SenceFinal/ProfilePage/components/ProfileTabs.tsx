@@ -1,72 +1,115 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
 import { TabType } from '../types';
+import { ACCENT_DARK } from '../../LeaguePage/shared/theme';
 
 interface ProfileTabsProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
 }
 
+const TAB_CONFIG: { key: TabType; label: string }[] = [
+  { key: 'tickets', label: 'Ticketlar' },
+  { key: 'statistics', label: 'İstatistikler' },
+];
+
 export const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange }) => {
+  const [tabsContainerWidth, setTabsContainerWidth] = useState(0);
+  const indicatorTranslateX = useRef(new Animated.Value(0)).current;
+  const tabWidth = tabsContainerWidth > 0 ? tabsContainerWidth / TAB_CONFIG.length : 0;
+
+  const activeIndex = useMemo(() => TAB_CONFIG.findIndex(tab => tab.key === activeTab), [activeTab]);
+
+  useEffect(() => {
+    if (!tabWidth || activeIndex < 0) return;
+
+    Animated.spring(indicatorTranslateX, {
+      damping: 18,
+      mass: 0.75,
+      stiffness: 210,
+      toValue: activeIndex * tabWidth,
+      useNativeDriver: true,
+    }).start();
+  }, [activeIndex, indicatorTranslateX, tabWidth]);
+
   return (
-    <View style={styles.tabsContainer}>
-      <TouchableOpacity
-        onPress={() => onTabChange('tickets')}
-        style={[styles.tab, activeTab === 'tickets' && styles.activeTab]}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="ticket" size={16} color={activeTab === 'tickets' ? '#fff' : '#8B949E'} />
-        <Text style={[styles.tabText, activeTab === 'tickets' && styles.activeTabText]}>
-          Ticketlar
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => onTabChange('statistics')}
-        style={[styles.tab, activeTab === 'statistics' && styles.activeTab]}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="trending-up" size={16} color={activeTab === 'statistics' ? '#fff' : '#8B949E'} />
-        <Text style={[styles.tabText, activeTab === 'statistics' && styles.activeTabText]}>
-          İstatistikler
-        </Text>
-      </TouchableOpacity>
+    <View style={styles.container}>
+      <View style={styles.tabs} onLayout={event => setTabsContainerWidth(event.nativeEvent.layout.width)}>
+        {tabWidth > 0 && (
+          <Animated.View
+            style={[
+              styles.activeIndicator,
+              {
+                left: 4,
+                transform: [{ translateX: indicatorTranslateX }],
+                width: tabWidth - 8,
+              },
+            ]}
+          />
+        )}
+
+        {TAB_CONFIG.map(tab => {
+          const isActive = activeTab === tab.key;
+
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={styles.tab}
+              onPress={() => onTabChange(tab.key)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.tabText, isActive && styles.activeTabText]}>{tab.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  tabsContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#161B22',
-    borderWidth: 1,
-    borderColor: '#30363D',
+  activeIndicator: {
+    backgroundColor: ACCENT_DARK,
     borderRadius: 16,
-    padding: 4,
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 24,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  activeTab: {
-    backgroundColor: '#10B981',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#8B949E',
+    bottom: 4,
+    elevation: 2,
+    position: 'absolute',
+    shadowColor: 'rgba(0,0,0,0.45)',
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    top: 4,
   },
   activeTabText: {
-    color: '#fff',
+    color: '#FFFFFF',
+  },
+  container: {
+    marginBottom: 24,
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  tab: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    zIndex: 2,
+  },
+  tabs: {
+    backgroundColor: '#0F172A',
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    padding: 4,
+    position: 'relative',
+  },
+  tabText: {
+    color: '#9CA3AF',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
-

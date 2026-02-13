@@ -3,27 +3,28 @@ export type CouponStatus = 'pending' | 'won' | 'lost' | 'cancelled';
 
 export interface CouponPrediction {
   id: string;
-  questionId: string;
-  question: string;
-  choice: 'yes' | 'no';
   odds: number;
+  question: string;
   category: string;
-  result?: PredictionResult;
+  questionId: string;
+  choice: 'yes' | 'no';
   endDate?: Date | null;
+  result?: PredictionResult;
+  questionImage?: string | null;
 }
 
 export interface Coupon {
   id: number;
   rawId: string; // Backend'den gelen gerçek UUID
-  predictions: CouponPrediction[];
-  totalOdds: number;
-  potentialEarnings: number;
-  status: CouponStatus;
   createdAt: Date;
-  claimedReward?: boolean;
+  totalOdds: number;
   username?: string;
-  investmentAmount?: number;
   display_id?: number;
+  status: CouponStatus;
+  claimedReward?: boolean;
+  potentialEarnings: number;
+  investmentAmount?: number;
+  predictions: CouponPrediction[];
 }
 
 // Tek seçim için - 'all' geri eklendi

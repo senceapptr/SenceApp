@@ -1,40 +1,41 @@
 import { supabase, supabaseService } from '@/lib/supabase';
+
 import { notificationsService } from './notifications.service'; // Import notification service
 
 export interface Coupon {
   id: string;
-  display_id: number;
   user_id: string;
-  coupon_code: string;
+  display_id: number;
   total_odds: number;
+  created_at: string;
+  coupon_code: string;
   stake_amount: number;
   potential_win: number;
-  status: 'pending' | 'won' | 'lost' | 'partially_won' | 'cancelled';
   selections_count: number;
   correct_selections: number;
-  created_at: string;
   resolved_at: string | null;
+  status: 'pending' | 'won' | 'lost' | 'partially_won' | 'cancelled';
 }
 
 export interface CouponSelection {
   id: string;
-  coupon_id: string;
-  question_id: string;
-  vote: 'yes' | 'no';
   odds: number;
+  coupon_id: string;
+  vote: 'yes' | 'no';
+  created_at: string;
+  question_id: string;
   is_boosted: boolean;
   status: 'pending' | 'won' | 'lost' | 'cancelled';
-  created_at: string;
 }
 
 export interface CreateCouponData {
+  stake_amount: number;
   selections: {
     question_id: string;
     vote: 'yes' | 'no';
     odds: number;
     is_boosted?: boolean;
   }[];
-  stake_amount: number;
 }
 
 /**
@@ -64,7 +65,7 @@ export const couponsService = {
 
       // 2) Her kupon için coupon_selections (düz kolonlar)
       const couponsWithSelections = await Promise.all(
-        couponsData.map(async (coupon) => {
+        couponsData.map(async coupon => {
           const { data: selectionsData, error: selectionsError } = await client
             .from('coupon_selections')
             .select('id, question_id, vote, odds, status')
@@ -75,43 +76,55 @@ export const couponsService = {
             return { ...coupon, coupon_selections: [] };
           }
 
-          const rawSelections: Array<{ id: string; question_id: string; vote: string; odds: number; status: string }> = Array.isArray(selectionsData) ? selectionsData : [];
+          const rawSelections: { id: string; question_id: string; vote: string; odds: number; status: string }[] =
+            Array.isArray(selectionsData) ? selectionsData : [];
 
           // 3) Her selection için question bilgisini ayrı çek
           const selectionsWithQuestions = await Promise.all(
-            rawSelections.map(async (sel) => {
+            rawSelections.map(async sel => {
               const { data: questionData, error: qError } = await client
                 .from('questions')
-                .select('id, title, category_id, status, result, end_date')
+                .select('id, title, image_url, category_id, status, result, end_date')
                 .eq('id', sel.question_id)
                 .maybeSingle();
 
               if (qError || !questionData) {
-                return { id: sel.id, question_id: sel.question_id, vote: sel.vote, odds: sel.odds, status: sel.status, questions: null };
+                return {
+                  id: sel.id,
+                  odds: sel.odds,
+                  question_id: sel.question_id,
+                  questions: null,
+                  status: sel.status,
+                  vote: sel.vote,
+                };
               }
 
               let categoryName = 'Genel';
               if (questionData.category_id) {
-                const { data: catData } = await client.from('categories').select('name').eq('id', questionData.category_id).maybeSingle();
+                const { data: catData } = await client
+                  .from('categories')
+                  .select('name')
+                  .eq('id', questionData.category_id)
+                  .maybeSingle();
                 if (catData?.name) categoryName = catData.name;
               }
 
               return {
                 id: sel.id,
-                question_id: sel.question_id,
-                vote: sel.vote,
                 odds: sel.odds,
-                status: sel.status,
+                question_id: sel.question_id,
                 questions: { ...questionData, categories: { name: categoryName } },
+                status: sel.status,
+                vote: sel.vote,
               };
-            })
+            }),
           );
 
           return {
             ...coupon,
             coupon_selections: selectionsWithQuestions,
           };
-        })
+        }),
       );
 
       return { data: couponsWithSelections, error: null };
@@ -129,7 +142,8 @@ export const couponsService = {
       // Service role ile RLS bypass
       const { data, error } = await supabaseService
         .from('coupons')
-        .select(`
+        .select(
+          `
           *,
           display_id,
           coupon_selections!left (
@@ -141,6 +155,7 @@ export const couponsService = {
             questions (
               id,
               title,
+              image_url,
               category_id,
               status,
               result,
@@ -151,7 +166,8 @@ export const couponsService = {
               )
             )
           )
-        `)
+        `,
+        )
         .eq('user_id', userId)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
@@ -175,7 +191,8 @@ export const couponsService = {
     try {
       const { data, error } = await supabase
         .from('coupons')
-        .select(`
+        .select(
+          `
           *,
           coupon_selections (
             *,
@@ -189,7 +206,8 @@ export const couponsService = {
               end_date
             )
           )
-        `)
+        `,
+        )
         .eq('id', couponId)
         .single();
 
@@ -225,13 +243,13 @@ export const couponsService = {
       const { data: coupon, error: couponError } = await supabaseService
         .from('coupons')
         .insert({
-          user_id: user.id,
           coupon_code,
-          total_odds: Number(total_odds.toFixed(2)),
-          stake_amount,
           potential_win,
           selections_count: selections.length,
+          stake_amount,
           status: 'pending',
+          total_odds: Number(total_odds.toFixed(2)),
+          user_id: user.id,
         })
         .select()
         .single();
@@ -239,18 +257,16 @@ export const couponsService = {
       if (couponError) throw couponError;
 
       // Seçimleri ekle (Service role ile RLS bypass)
-      const selectionsData = selections.map((sel) => ({
+      const selectionsData = selections.map(sel => ({
         coupon_id: coupon.id,
-        question_id: sel.question_id,
-        vote: sel.vote,
-        odds: sel.odds,
         is_boosted: sel.is_boosted || false,
+        odds: sel.odds,
+        question_id: sel.question_id,
         status: 'pending' as const,
+        vote: sel.vote,
       }));
 
-      const { error: selectionsError } = await supabaseService
-        .from('coupon_selections')
-        .insert(selectionsData);
+      const { error: selectionsError } = await supabaseService.from('coupon_selections').insert(selectionsData);
 
       if (selectionsError) throw selectionsError;
 
@@ -276,17 +292,15 @@ export const couponsService = {
 
           // Eğer prediction yoksa ekle
           if (!existingPrediction) {
-            const { error: insertError } = await supabaseService
-              .from('predictions')
-              .insert({
-                user_id: user.id,
-                question_id: sel.question_id,
-                vote: sel.vote,
-                odds: sel.odds,
-                amount: amountPerQuestion,
-                potential_win: Math.floor(amountPerQuestion * sel.odds),
-                status: 'pending' as const,
-              });
+            const { error: insertError } = await supabaseService.from('predictions').insert({
+              amount: amountPerQuestion,
+              odds: sel.odds,
+              potential_win: Math.floor(amountPerQuestion * sel.odds),
+              question_id: sel.question_id,
+              status: 'pending' as const,
+              user_id: user.id,
+              vote: sel.vote,
+            });
 
             if (insertError) {
               console.error('Prediction insert error for question:', sel.question_id, insertError);
@@ -300,8 +314,8 @@ export const couponsService = {
 
       // Kullanıcının kredisini düş (Service role ile RLS bypass)
       const { error: creditError } = await supabaseService.rpc('decrease_user_credits', {
-        user_id_param: user.id,
         amount_param: stake_amount,
+        user_id_param: user.id,
       });
 
       if (creditError) {
@@ -324,7 +338,7 @@ export const couponsService = {
     try {
       // 1. Durumu güncelle
       const { error } = await supabaseService.rpc('resolve_coupon', {
-        coupon_id_param: couponId
+        coupon_id_param: couponId,
       });
 
       if (error) throw error;
@@ -345,9 +359,9 @@ export const couponsService = {
       // Coupon Won
       if (coupon.status === 'won') {
         await notificationsService.createCouponWonNotification(coupon.user_id, {
+          couponId: coupon.id,
           matchCount: coupon.selections_count,
           reward: coupon.potential_win,
-          couponId: coupon.id
         });
         console.log('Coupon won notification sent for', coupon.id);
       }
@@ -388,10 +402,9 @@ export const couponsService = {
         // Şimdilik doğrudan atıyoruz (basit logic)
         await notificationsService.createCouponStatusNotification(coupon.user_id, {
           couponId: coupon.id,
-          remainingQuestions: 1
+          remainingQuestions: 1,
         });
       }
-
     } catch (err) {
       console.error('Check coupon status error:', err);
     }
@@ -423,7 +436,7 @@ export const couponsService = {
   async claimCouponReward(couponId: string) {
     try {
       const { data, error } = await supabaseService.rpc('claim_coupon_reward', {
-        coupon_id_param: couponId
+        coupon_id_param: couponId,
       });
 
       if (error) throw error;

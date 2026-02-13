@@ -1,15 +1,17 @@
 export interface WriteQuestionPageProps {
   onBack: () => void;
-  onMenuToggle: () => void;
+  onOpenQuestionDetail: (questionId: string) => void;
 }
 
 export interface SubmittedQuestion {
-  id: number;
+  id: string;
   title: string;
   description: string;
   endDate: string;
   status: QuestionStatus;
   submittedAt: string;
+  isPublished: boolean;
+  isApprovedAndPublished: boolean;
   rejectionReason?: string;
 }
 
@@ -36,5 +38,3 @@ export interface StatusBadgeColors {
   textColor: string;
   label: string;
 }
-
-

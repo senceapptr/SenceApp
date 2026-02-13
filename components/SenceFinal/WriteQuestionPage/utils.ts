@@ -3,28 +3,34 @@ import { SubmittedQuestion, StatusBadgeColors } from './types';
 // Mock submitted questions data
 export const submittedQuestionsData: SubmittedQuestion[] = [
   {
-    id: 1,
+    id: '1',
     title: "2024 yılında Türkiye'de elektrikli araç satışları %50 artacak mı?",
     description: "Türkiye'de elektrikli araç pazarının büyüme trendi devam edecek mi?",
     endDate: "2024-12-31",
     status: 'approved',
-    submittedAt: "2024-01-15"
+    submittedAt: "2024-01-15",
+    isPublished: true,
+    isApprovedAndPublished: true,
   },
   {
-    id: 2,
+    id: '2',
     title: "ChatGPT-5 2024 yılında çıkacak mı?",
     description: "OpenAI'ın yeni modeli bu yıl piyasaya çıkacak mı?",
     endDate: "2024-12-31",
     status: 'pending',
-    submittedAt: "2024-01-20"
+    submittedAt: "2024-01-20",
+    isPublished: false,
+    isApprovedAndPublished: false,
   },
   {
-    id: 3,
+    id: '3',
     title: "Bitcoin 2024'te 100.000$ seviyesini görecek mi?",
     description: "Kripto para piyasasındaki gelişmeler",
     endDate: "2024-12-31",
     status: 'rejected',
     submittedAt: "2024-01-10",
+    isPublished: false,
+    isApprovedAndPublished: false,
     rejectionReason: "Soru çok spekülatiif ve belirsiz kriterler içeriyor."
   }
 ];
@@ -41,6 +47,27 @@ export const formatDate = (dateString: string): string => {
 export const getMinDate = (): string => {
   const today = new Date();
   return today.toISOString().split('T')[0];
+};
+
+const parseDateInput = (dateString: string): Date | null => {
+  const [yearString, monthString, dayString] = dateString.split('-');
+  const year = Number(yearString);
+  const month = Number(monthString);
+  const day = Number(dayString);
+
+  if (!Number.isNaN(year) && !Number.isNaN(month) && !Number.isNaN(day)) {
+    const parsed = new Date(year, month - 1, day);
+    if (
+      parsed.getFullYear() === year &&
+      parsed.getMonth() === month - 1 &&
+      parsed.getDate() === day
+    ) {
+      return parsed;
+    }
+  }
+
+  const fallback = new Date(dateString);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
 };
 
 // Status badge colors (dark theme)
@@ -80,20 +107,27 @@ export const getStatusBadgeColors = (status: string): StatusBadgeColors => {
 // Form validation
 export const validateQuestionForm = (
   question: string,
-  description: string,
+  _description: string,
   endDate: string
 ): boolean => {
   if (!question.trim() || !endDate) {
     return false;
   }
-  
-  // Check if the end date is in the future
+
+  const selectedDate = parseDateInput(endDate);
+  if (!selectedDate) {
+    return false;
+  }
+
   const today = new Date();
-  const selectedDate = new Date(endDate);
-  const oneWeekFromNow = new Date();
-  oneWeekFromNow.setDate(today.getDate() + 7);
-  
-  return selectedDate >= oneWeekFromNow;
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const selectedDateStart = new Date(
+    selectedDate.getFullYear(),
+    selectedDate.getMonth(),
+    selectedDate.getDate()
+  );
+
+  return selectedDateStart >= todayStart;
 };
 
 // Guidelines data
@@ -101,7 +135,7 @@ export const guidelines = [
   "Sorular net ve anlaşılır olmalı",
   "Ölçülebilir ve doğrulanabilir kriterler içermeli",
   "Küfür, hakaret ve uygunsuz içerik yasak",
-  "Soruların bitiş tarihi en az 1 hafta olmalı"
+  "Bitiş tarihi geçmişte olamaz"
 ];
 
 // Options data
@@ -119,5 +153,4 @@ export const optionsData = [
     description: 'Sorunuzun gerçekleşmeyeceğini düşünenler'
   }
 ];
-
 

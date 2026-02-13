@@ -1,394 +1,355 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Image, Animated, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, Image, Animated, Dimensions } from 'react-native';
+
 import { PodiumProps, LeaderboardUser } from '../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Medal/Crown configurations
-const PODIUM_CONFIG = {
-    1: {
-        icon: '👑',
-        medal: '🥇',
-        colors: ['#FFD700', '#FFA500', '#FF8C00'] as const,
-        glowColor: 'rgba(255, 215, 0, 0.4)',
-        borderColor: '#FFD700',
-        height: 120,
-        avatarSize: 90,
-        fontSize: 18,
-    },
-    2: {
-        icon: '',
-        medal: '🥈',
-        colors: ['#C0C0C0', '#A8A8A8', '#909090'] as const,
-        glowColor: 'rgba(192, 192, 192, 0.3)',
-        borderColor: '#C0C0C0',
-        height: 90,
-        avatarSize: 70,
-        fontSize: 15,
-    },
-    3: {
-        icon: '',
-        medal: '🥉',
-        colors: ['#CD7F32', '#B87333', '#A0522D'] as const,
-        glowColor: 'rgba(205, 127, 50, 0.3)',
-        borderColor: '#CD7F32',
-        height: 70,
-        avatarSize: 70,
-        fontSize: 15,
-    },
+type PodiumPosition = 1 | 2 | 3;
+
+const PODIUM_CONFIG: Record<
+  PodiumPosition,
+  {
+    avatarSize: number;
+    borderColor: string;
+    creditTextColor: string;
+    glowColor: string;
+    pedestalGradient: [string, string];
+    pedestalHeight: number;
+  }
+> = {
+  1: {
+    avatarSize: 86,
+    borderColor: '#F8D768',
+    creditTextColor: '#F8FAFC',
+    glowColor: 'rgba(248, 215, 104, 0.5)',
+    pedestalGradient: ['#FFE08A', '#F2B705'],
+    pedestalHeight: 112,
+  },
+  2: {
+    avatarSize: 70,
+    borderColor: '#E3E8F1',
+    creditTextColor: '#F3F7FD',
+    glowColor: 'rgba(227, 232, 241, 0.3)',
+    pedestalGradient: ['#F1F5F9', '#AAB4C1'],
+    pedestalHeight: 88,
+  },
+  3: {
+    avatarSize: 70,
+    borderColor: '#D59460',
+    creditTextColor: '#F7E6D6',
+    glowColor: 'rgba(213, 148, 96, 0.28)',
+    pedestalGradient: ['#E6A979', '#A7673F'],
+    pedestalHeight: 70,
+  },
+};
+
+const formatCredits = (credits: number) => {
+  if (credits >= 1000000) return `${(credits / 1000000).toFixed(1)}M`;
+  if (credits >= 1000) return `${(credits / 1000).toFixed(1)}K`;
+  return credits.toLocaleString('tr-TR');
 };
 
 interface PodiumItemProps {
-    user: LeaderboardUser;
-    position: 1 | 2 | 3;
-    isCurrentUser?: boolean;
+  user: LeaderboardUser;
+  isCurrentUser?: boolean;
+  position: PodiumPosition;
 }
 
-function PodiumItem({ user, position, isCurrentUser }: PodiumItemProps) {
-    const config = PODIUM_CONFIG[position];
-    const scaleAnim = useRef(new Animated.Value(0)).current;
-    const glowAnim = useRef(new Animated.Value(0)).current;
+function PodiumItem({ isCurrentUser, position, user }: PodiumItemProps) {
+  const config = PODIUM_CONFIG[position];
+  const scaleAnim = useRef(new Animated.Value(0.6)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
-        // Entry animation
+  useEffect(() => {
+    Animated.spring(scaleAnim, {
+      damping: 18,
+      mass: 0.72,
+      stiffness: 185,
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+
+    let pulseAnimation: Animated.CompositeAnimation | undefined;
+
+    if (position === 1) {
+      pulseAnimation = Animated.loop(
         Animated.sequence([
-            Animated.delay(position * 150),
-            Animated.spring(scaleAnim, {
-                toValue: 1,
-                tension: 50,
-                friction: 7,
-                useNativeDriver: true,
-            }),
-        ]).start();
-
-        // Glow pulse animation (only for 1st place)
-        if (position === 1) {
-            Animated.loop(
-                Animated.sequence([
-                    Animated.timing(glowAnim, {
-                        toValue: 1,
-                        duration: 1500,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(glowAnim, {
-                        toValue: 0,
-                        duration: 1500,
-                        useNativeDriver: true,
-                    }),
-                ])
-            ).start();
-        }
-    }, []);
-
-    const glowOpacity = glowAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0.3, 0.7],
-    });
-
-    return (
-        <Animated.View
-            style={[
-                styles.podiumItem,
-                {
-                    transform: [{ scale: scaleAnim }],
-                },
-            ]}
-        >
-            {/* Crown for 1st place */}
-            {position === 1 && (
-                <Animated.Text style={[styles.crown, { opacity: scaleAnim }]}>
-                    {config.icon}
-                </Animated.Text>
-            )}
-
-            {/* Avatar with glow */}
-            <View style={[styles.avatarContainer, { width: config.avatarSize, height: config.avatarSize }]}>
-                {position === 1 && (
-                    <Animated.View
-                        style={[
-                            styles.glowRing,
-                            {
-                                width: config.avatarSize + 20,
-                                height: config.avatarSize + 20,
-                                borderRadius: (config.avatarSize + 20) / 2,
-                                backgroundColor: config.glowColor,
-                                opacity: glowOpacity,
-                            },
-                        ]}
-                    />
-                )}
-                <View
-                    style={[
-                        styles.avatarBorder,
-                        {
-                            width: config.avatarSize + 8,
-                            height: config.avatarSize + 8,
-                            borderRadius: (config.avatarSize + 8) / 2,
-                            borderColor: config.borderColor,
-                        },
-                    ]}
-                >
-                    <Image
-                        source={{
-                            uri: user.profile_image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop&crop=face',
-                        }}
-                        style={[
-                            styles.avatar,
-                            {
-                                width: config.avatarSize,
-                                height: config.avatarSize,
-                                borderRadius: config.avatarSize / 2,
-                            },
-                        ]}
-                    />
-                </View>
-
-                {/* Medal badge */}
-                <View style={styles.medalBadge}>
-                    <Text style={styles.medalText}>{config.medal}</Text>
-                </View>
-            </View>
-
-            {/* Username */}
-            <Text
-                style={[
-                    styles.username,
-                    { fontSize: config.fontSize },
-                    isCurrentUser && styles.currentUserName,
-                ]}
-                numberOfLines={1}
-            >
-                {user.username || user.full_name?.split(' ')[0] || 'User'}
-            </Text>
-
-            {/* Credits */}
-            <View style={styles.creditsContainer}>
-                <LinearGradient
-                    colors={config.colors}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.creditsGradient}
-                >
-                    <Text style={styles.creditsIcon}>💎</Text>
-                    <Text style={styles.creditsText}>
-                        {user.credits >= 1000000
-                            ? `${(user.credits / 1000000).toFixed(1)}M`
-                            : user.credits >= 1000
-                                ? `${(user.credits / 1000).toFixed(1)}K`
-                                : user.credits.toLocaleString('tr-TR')}
-                    </Text>
-                </LinearGradient>
-            </View>
-
-            {/* Podium base */}
-            <LinearGradient
-                colors={config.colors}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={[
-                    styles.podiumBase,
-                    { height: config.height },
-                ]}
-            >
-                <Text style={styles.rankNumber}>{position}</Text>
-            </LinearGradient>
-        </Animated.View>
-    );
-}
-
-export function Podium({ users, currentUserId }: PodiumProps) {
-    if (users.length === 0) {
-        return (
-            <View style={styles.emptyContainer}>
-                <Text style={styles.emptyIcon}>🏆</Text>
-                <Text style={styles.emptyText}>Henüz sıralama yok</Text>
-            </View>
-        );
+          Animated.timing(glowAnim, {
+            duration: 1500,
+            toValue: 1,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowAnim, {
+            duration: 1500,
+            toValue: 0,
+            useNativeDriver: true,
+          }),
+        ]),
+      );
+      pulseAnimation.start();
     }
 
-    // Reorder for visual: [2nd, 1st, 3rd] if 3 users
-    // If fewer, just order them nicely
-    const orderedUsers = users.length === 1
-        ? [users[0]]
-        : users.length === 2
-            ? [users[1], users[0]]
-            : [
-                users[1], // 2nd place (left)
-                users[0], // 1st place (center, highest)
-                users[2], // 3rd place (right)
-            ].filter(Boolean);
+    return () => pulseAnimation?.stop();
+  }, [glowAnim, position, scaleAnim]);
 
-    const getPosition = (index: number): 1 | 2 | 3 => {
-        if (users.length === 1) return 1;
-        if (users.length === 2) {
-            // orderedUsers = [users[1], users[0]]
-            // index 0 -> user[1] (rank 2)
-            // index 1 -> user[0] (rank 1)
-            return index === 0 ? 2 : 1;
-        }
-        // Normal 3 user logic: [2nd, 1st, 3rd]
-        if (index === 0) return 2;
-        if (index === 1) return 1;
-        return 3;
-    };
+  const glowOpacity = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.74],
+  });
 
-    return (
-        <View style={styles.container}>
-            {/* Decorative particles */}
-            <View style={styles.particles}>
-                {[...Array(12)].map((_, i) => (
-                    <View
-                        key={i}
-                        style={[
-                            styles.particle,
-                            {
-                                left: `${(i * 8.5) % 100}%`,
-                                top: `${(i * 13) % 80}%`,
-                                opacity: 0.3 + (i % 3) * 0.2,
-                                transform: [{ scale: 0.5 + (i % 3) * 0.3 }],
-                            },
-                        ]}
-                    >
-                        <Text style={styles.particleText}>✨</Text>
-                    </View>
-                ))}
-            </View>
+  const glowScale = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.96, 1.1],
+  });
 
-            <View style={styles.podiumRow}>
-                {orderedUsers.map((user, index) => (
-                    <PodiumItem
-                        key={user.id}
-                        user={user}
-                        position={getPosition(index)}
-                        isCurrentUser={user.id === currentUserId}
-                    />
-                ))}
-            </View>
+  return (
+    <Animated.View
+      style={[
+        styles.podiumItem,
+        {
+          transform: [{ scale: scaleAnim }],
+        },
+      ]}
+    >
+      <View style={[styles.avatarContainer, { height: config.avatarSize, width: config.avatarSize }]}>
+        {position === 1 && (
+          <Animated.View
+            style={[
+              styles.glowRing,
+              {
+                backgroundColor: config.glowColor,
+                borderRadius: (config.avatarSize + 22) / 2,
+                height: config.avatarSize + 22,
+                opacity: glowOpacity,
+                transform: [{ scale: glowScale }],
+                width: config.avatarSize + 22,
+              },
+            ]}
+          />
+        )}
+
+        <View
+          style={[
+            styles.avatarBorder,
+            {
+              borderColor: config.borderColor,
+              borderWidth: position === 1 ? 2.8 : 2.4,
+            },
+          ]}
+        >
+          <Image
+            source={{
+              uri:
+                user.profile_image ||
+                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop&crop=face',
+            }}
+            style={[
+              styles.avatar,
+              { borderRadius: config.avatarSize / 2, height: config.avatarSize, width: config.avatarSize },
+            ]}
+          />
         </View>
+      </View>
+
+      <Text style={[styles.username, isCurrentUser && styles.currentUserName]} numberOfLines={1}>
+        {user.username || user.full_name?.split(' ')[0] || 'Kullanıcı'}
+      </Text>
+
+      <View style={styles.creditsChip}>
+        <Ionicons name="wallet-outline" size={12} color={config.creditTextColor} />
+        <Text style={[styles.creditsText, { color: config.creditTextColor }]}>{formatCredits(user.credits)}</Text>
+      </View>
+
+      <LinearGradient
+        colors={config.pedestalGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={[styles.pedestal, { height: config.pedestalHeight }]}
+      >
+        <Text style={styles.pedestalNumber}>{position}</Text>
+      </LinearGradient>
+    </Animated.View>
+  );
+}
+
+export function Podium({ currentUserId, users }: PodiumProps) {
+  if (users.length === 0) {
+    return (
+      <View style={styles.emptyContainer}>
+        <View style={styles.emptyIconWrap}>
+          <Ionicons name="bar-chart-outline" size={24} color="#8FA6C8" />
+        </View>
+        <Text style={styles.emptyTitle}>Henüz sıralama verisi yok</Text>
+        <Text style={styles.emptyText}>Veri geldiğinde liderlik burada görünecek.</Text>
+      </View>
     );
+  }
+
+  const visualUsers: { position: PodiumPosition; user: LeaderboardUser }[] =
+    users.length === 1
+      ? [{ position: 1, user: users[0] }]
+      : users.length === 2
+        ? [
+            { position: 2, user: users[1] },
+            { position: 1, user: users[0] },
+          ]
+        : [
+            { position: 2, user: users[1] },
+            { position: 1, user: users[0] },
+            { position: 3, user: users[2] },
+          ];
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.decorLayer} pointerEvents="none">
+        {Array.from({ length: 10 }).map((_, index) => (
+          <View
+            key={`decor-${index}`}
+            style={[
+              styles.decorDot,
+              {
+                left: `${(index * 11) % 94}%`,
+                opacity: 0.14 + (index % 3) * 0.08,
+                top: `${(index * 17) % 82}%`,
+              },
+            ]}
+          />
+        ))}
+      </View>
+
+      <View style={styles.podiumRow}>
+        {visualUsers.map(({ position, user }) => (
+          <PodiumItem key={user.id} user={user} position={position} isCurrentUser={user.id === currentUserId} />
+        ))}
+      </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        paddingHorizontal: 16,
-        paddingTop: 20,
-        paddingBottom: 10,
-        position: 'relative',
-    },
-    particles: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        overflow: 'hidden',
-    },
-    particle: {
-        position: 'absolute',
-    },
-    particleText: {
-        fontSize: 12,
-    },
-    podiumRow: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'flex-end',
-        gap: 8,
-    },
-    podiumItem: {
-        alignItems: 'center',
-        flex: 1,
-        maxWidth: (SCREEN_WIDTH - 48) / 3,
-    },
-    crown: {
-        fontSize: 32,
-        marginBottom: 4,
-    },
-    avatarContainer: {
-        position: 'relative',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 8,
-    },
-    glowRing: {
-        position: 'absolute',
-    },
-    avatarBorder: {
-        borderWidth: 3,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#161B22',
-    },
-    avatar: {
-        backgroundColor: '#21262D',
-    },
-    medalBadge: {
-        position: 'absolute',
-        bottom: -4,
-        right: -4,
-        backgroundColor: '#161B22',
-        borderRadius: 14,
-        width: 28,
-        height: 28,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    medalText: {
-        fontSize: 18,
-    },
-    username: {
-        fontWeight: '700',
-        color: '#F0F6FC',
-        textAlign: 'center',
-        marginBottom: 6,
-    },
-    currentUserName: {
-        color: '#10B981',
-    },
-    creditsContainer: {
-        marginBottom: 8,
-    },
-    creditsGradient: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 12,
-        gap: 4,
-    },
-    creditsIcon: {
-        fontSize: 12,
-    },
-    creditsText: {
-        fontSize: 12,
-        fontWeight: '800',
-        color: '#0D1117',
-    },
-    podiumBase: {
-        width: '100%',
-        borderTopLeftRadius: 12,
-        borderTopRightRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    rankNumber: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: 'rgba(0, 0, 0, 0.3)',
-    },
-    emptyContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 60,
-    },
-    emptyIcon: {
-        fontSize: 48,
-        marginBottom: 12,
-    },
-    emptyText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#8B949E',
-    },
+  avatar: {
+    backgroundColor: '#111827',
+  },
+  avatarBorder: {
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+    borderRadius: 999,
+    justifyContent: 'center',
+    padding: 4,
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    position: 'relative',
+  },
+  container: {
+    marginBottom: 4,
+    paddingBottom: 18,
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    position: 'relative',
+  },
+  creditsChip: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    borderColor: 'rgba(148, 163, 184, 0.24)',
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  creditsText: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginLeft: 4,
+  },
+  currentUserName: {
+    color: '#93C5FD',
+  },
+  decorDot: {
+    backgroundColor: '#3D4E68',
+    borderRadius: 2,
+    height: 4,
+    position: 'absolute',
+    width: 4,
+  },
+  decorLayer: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    borderColor: 'rgba(148, 163, 184, 0.16)',
+    borderRadius: 22,
+    borderWidth: 1,
+    marginHorizontal: 16,
+    marginTop: 18,
+    paddingHorizontal: 24,
+    paddingVertical: 36,
+  },
+  emptyIconWrap: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(17, 24, 39, 0.9)',
+    borderColor: 'rgba(148, 163, 184, 0.18)',
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: 'center',
+    marginBottom: 12,
+    width: 36,
+  },
+  emptyText: {
+    color: '#7F8EA4',
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  emptyTitle: {
+    color: '#D3DDEB',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  glowRing: {
+    position: 'absolute',
+  },
+  pedestal: {
+    alignItems: 'center',
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+    justifyContent: 'center',
+    width: '100%',
+  },
+  pedestalNumber: {
+    color: 'rgba(17, 24, 39, 0.42)',
+    fontSize: 28,
+    fontWeight: '900',
+  },
+  podiumItem: {
+    alignItems: 'center',
+    flex: 1,
+    maxWidth: (SCREEN_WIDTH - 48) / 3,
+  },
+  podiumRow: {
+    alignItems: 'flex-end',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  username: {
+    color: '#E4ECF8',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
 });

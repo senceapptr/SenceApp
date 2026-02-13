@@ -1,16 +1,30 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SubmittedQuestion } from '../../types';
 import { StatusBadge } from './StatusBadge';
 import { formatDate } from '../../utils';
 
 interface QuestionStatusCardProps {
   question: SubmittedQuestion;
+  onOpenQuestionDetail?: (questionId: string) => void;
 }
 
-export const QuestionStatusCard: React.FC<QuestionStatusCardProps> = ({ question }) => {
+export const QuestionStatusCard: React.FC<QuestionStatusCardProps> = ({
+  question,
+  onOpenQuestionDetail,
+}) => {
+  const canOpenDetail = question.isApprovedAndPublished && !!onOpenQuestionDetail;
+
   return (
-    <View style={styles.questionCard}>
+    <TouchableOpacity
+      activeOpacity={canOpenDetail ? 0.8 : 1}
+      disabled={!canOpenDetail}
+      onPress={() => {
+        if (!canOpenDetail) return;
+        onOpenQuestionDetail?.(question.id);
+      }}
+      style={[styles.questionCard, canOpenDetail && styles.questionCardClickable]}
+    >
       <View style={styles.questionHeader}>
         <View style={styles.questionContent}>
           <Text style={styles.questionTitle}>{question.title}</Text>
@@ -25,6 +39,8 @@ export const QuestionStatusCard: React.FC<QuestionStatusCardProps> = ({ question
         <Text style={styles.questionDate}>Gönderilme: {formatDate(question.submittedAt)}</Text>
         <Text style={styles.questionDate}>Bitiş: {formatDate(question.endDate)}</Text>
       </View>
+
+      {canOpenDetail && <Text style={styles.detailHint}>Detay için dokun</Text>}
       
       {question.status === 'rejected' && question.rejectionReason && (
         <View style={styles.rejectionContainer}>
@@ -32,7 +48,7 @@ export const QuestionStatusCard: React.FC<QuestionStatusCardProps> = ({ question
           <Text style={styles.rejectionText}>{question.rejectionReason}</Text>
         </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -43,6 +59,15 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#30363D',
+  },
+  questionCardClickable: {
+    borderColor: '#2F4F8C',
+  },
+  detailHint: {
+    color: '#93C5FD',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 10,
   },
   questionHeader: {
     flexDirection: 'row',
@@ -98,5 +123,3 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
-
-

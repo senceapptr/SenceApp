@@ -10,6 +10,7 @@ import { TicketListItem } from './TicketListItem';
 interface TicketsTabProps {
   tickets: Coupon[];
   onTicketPress: (ticket: Coupon) => void;
+  onQuestionPress?: (questionId: string) => void;
 }
 
 type QuestionCardAnswer = 'EVET' | 'HAYIR';
@@ -18,6 +19,7 @@ interface TicketQuestionCard {
   id: string;
   ticket: Coupon;
   question: string;
+  questionId: string;
   answer: QuestionCardAnswer;
   image: ImageSourcePropType;
 }
@@ -25,50 +27,10 @@ interface TicketQuestionCard {
 // Mevcut ticket listesi korunur; yeni grid görünüm aktif.
 const SHOW_LEGACY_TICKET_LIST = false;
 
-const MOCK_IMAGES: ImageSourcePropType[] = [
-  require('../../../../assets/images/global_new.png'),
-  require('../../../../assets/images/spor_new.png'),
-  require('../../../../assets/images/teknoloji_new.png'),
-  require('../../../../assets/images/finans_new.png'),
-  require('../../../../assets/images/politika_new.png'),
-  require('../../../../assets/images/sinema_new.png'),
-  require('../../../../assets/images/magazin_new.png'),
-  require('../../../../assets/images/muzik_new.png'),
-  require('../../../../assets/images/sosyal_medya_new.png'),
-];
-
-const MOCK_IMAGE_BY_CATEGORY: Record<string, ImageSourcePropType> = {
-  finans: require('../../../../assets/images/finans_new.png'),
-  genel: require('../../../../assets/images/global_new.png'),
-  global: require('../../../../assets/images/global_new.png'),
-  magazin: require('../../../../assets/images/magazin_new.png'),
-  muzik: require('../../../../assets/images/muzik_new.png'),
-  politika: require('../../../../assets/images/politika_new.png'),
-  sinema: require('../../../../assets/images/sinema_new.png'),
-  sosyal: require('../../../../assets/images/sosyal_medya_new.png'),
-  'sosyal medya': require('../../../../assets/images/sosyal_medya_new.png'),
-  spor: require('../../../../assets/images/spor_new.png'),
-  teknoloji: require('../../../../assets/images/teknoloji_new.png'),
-};
-
-const normalizeCategory = (category?: string): string =>
-  (category || '')
-    .toLocaleLowerCase('tr-TR')
-    .replace(/ı/g, 'i')
-    .replace(/ü/g, 'u')
-    .replace(/ö/g, 'o')
-    .replace(/ç/g, 'c')
-    .replace(/ş/g, 's')
-    .replace(/ğ/g, 'g')
-    .trim();
-
-const getMockImage = (category: string | undefined, index: number): ImageSourcePropType => {
-  const normalized = normalizeCategory(category);
-  return MOCK_IMAGE_BY_CATEGORY[normalized] || MOCK_IMAGES[index % MOCK_IMAGES.length];
-};
+const FALLBACK_QUESTION_IMAGE: ImageSourcePropType = require('../../../../assets/images/global_new.png');
 
 const buildQuestionCards = (tickets: Coupon[]): TicketQuestionCard[] => {
-  return tickets.reduce<TicketQuestionCard[]>((acc, ticket, ticketIndex) => {
+  return tickets.reduce<TicketQuestionCard[]>((acc, ticket) => {
     (ticket.predictions || []).forEach((prediction, predictionIndex) => {
       const answer: QuestionCardAnswer = prediction.choice === 'yes' ? 'EVET' : 'HAYIR';
       const cardIdBase = prediction.id || prediction.questionId || `${ticket.id}-${predictionIndex}`;
@@ -76,8 +38,9 @@ const buildQuestionCards = (tickets: Coupon[]): TicketQuestionCard[] => {
       acc.push({
         answer,
         id: `${ticket.rawId}-${cardIdBase}-${predictionIndex}`,
-        image: getMockImage(prediction.category, ticketIndex + predictionIndex),
+        image: prediction.questionImage ? { uri: prediction.questionImage } : FALLBACK_QUESTION_IMAGE,
         question: prediction.question || 'Soru bilgisi bulunamadı',
+        questionId: prediction.questionId || '',
         ticket,
       });
     });
@@ -86,7 +49,7 @@ const buildQuestionCards = (tickets: Coupon[]): TicketQuestionCard[] => {
   }, []);
 };
 
-export const TicketsTab: React.FC<TicketsTabProps> = ({ onTicketPress, tickets }) => {
+export const TicketsTab: React.FC<TicketsTabProps> = ({ onQuestionPress, onTicketPress, tickets }) => {
   if (!tickets || tickets.length === 0) {
     return (
       <View style={styles.emptyContainer}>
@@ -130,7 +93,14 @@ export const TicketsTab: React.FC<TicketsTabProps> = ({ onTicketPress, tickets }
           <TouchableOpacity
             key={card.id}
             activeOpacity={0.88}
-            onPress={() => onTicketPress(card.ticket)}
+            onPress={() => {
+              if (card.questionId && onQuestionPress) {
+                onQuestionPress(card.questionId);
+                return;
+              }
+
+              onTicketPress(card.ticket);
+            }}
             style={styles.questionCardWrapper}
           >
             <ImageBackground source={card.image} style={styles.questionCard} imageStyle={styles.questionCardImage}>
@@ -143,15 +113,15 @@ export const TicketsTab: React.FC<TicketsTabProps> = ({ onTicketPress, tickets }
               </View>
 
               <LinearGradient
-                colors={['transparent', 'rgba(13,17,23,0.88)']}
-                start={{ x: 0.5, y: 0.2 }}
+                colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.62)', 'rgba(0,0,0,0.95)']}
+                locations={[0, 0.42, 0.76, 1]}
+                start={{ x: 0.5, y: 0 }}
                 end={{ x: 0.5, y: 1 }}
                 style={styles.cardBottomOverlay}
               >
                 <Text numberOfLines={2} style={styles.questionTitle}>
                   {card.question}
                 </Text>
-                <Text style={styles.answerLine}>Yanıt: {card.answer}</Text>
               </LinearGradient>
             </ImageBackground>
           </TouchableOpacity>
@@ -174,24 +144,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.3,
   },
-  answerLine: {
-    color: 'rgba(240, 246, 252, 0.78)',
-    fontSize: 10,
-    fontWeight: '500',
-    marginTop: 2,
-  },
   answerNoBadge: {
-    backgroundColor: 'rgba(239, 68, 68, 0.24)',
-    borderColor: 'rgba(239, 68, 68, 0.55)',
+    backgroundColor: '#FF453A',
+    borderColor: 'rgba(255, 69, 58, 0.9)',
   },
   answerYesBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.24)',
-    borderColor: 'rgba(16, 185, 129, 0.55)',
+    backgroundColor: '#22C55E',
+    borderColor: 'rgba(34, 197, 94, 0.9)',
   },
   cardBottomOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 14,
+    justifyContent: 'flex-end',
     paddingBottom: 8,
     paddingHorizontal: 8,
-    paddingTop: 20,
   },
   cardTopRow: {
     alignItems: 'flex-start',
@@ -250,8 +216,11 @@ const styles = StyleSheet.create({
   },
   questionTitle: {
     color: '#F8FAFC',
-    fontSize: 11,
-    fontWeight: '600',
-    lineHeight: 14,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 17,
+    textShadowColor: 'rgba(0, 0, 0, 0.45)',
+    textShadowOffset: { height: 1, width: 0 },
+    textShadowRadius: 2,
   },
 });

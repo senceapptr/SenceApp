@@ -1,92 +1,110 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+import { ACCENT_DARK } from '../../LeaguePage/shared/theme';
 import { TabSwitcherProps, LeaderboardTab } from '../types';
 
+const TAB_CONFIG: { key: LeaderboardTab; label: string }[] = [
+  { key: 'global', label: 'Genel' },
+  { key: 'friends', label: 'Arkadaşlar' },
+];
+
 export function TabSwitcher({ activeTab, onTabChange }: TabSwitcherProps) {
-    const tabs: { key: LeaderboardTab; label: string }[] = [
-        { key: 'global', label: 'Global' },
-        { key: 'friends', label: 'Arkadaşlar' },
-    ];
+  const [tabsContainerWidth, setTabsContainerWidth] = useState(0);
+  const indicatorTranslateX = useRef(new Animated.Value(0)).current;
+  const tabWidth = tabsContainerWidth > 0 ? tabsContainerWidth / TAB_CONFIG.length : 0;
 
-    return (
-        <View style={styles.container}>
-            <View style={styles.tabsWrapper}>
-                {tabs.map((tab) => {
-                    const isActive = activeTab === tab.key;
+  const activeIndex = useMemo(() => TAB_CONFIG.findIndex(tab => tab.key === activeTab), [activeTab]);
 
-                    return (
-                        <TouchableOpacity
-                            key={tab.key}
-                            style={styles.tabButton}
-                            onPress={() => onTabChange(tab.key)}
-                            activeOpacity={0.8}
-                        >
-                            {isActive ? (
-                                <LinearGradient
-                                    colors={['#10B981', '#059669']}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={styles.activeTab}
-                                >
-                                    <Text style={styles.activeTabText}>{tab.label}</Text>
-                                </LinearGradient>
-                            ) : (
-                                <View style={styles.inactiveTab}>
-                                    <Text style={styles.inactiveTabText}>{tab.label}</Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-                    );
-                })}
-            </View>
-        </View>
-    );
+  useEffect(() => {
+    if (!tabWidth || activeIndex < 0) return;
+
+    Animated.spring(indicatorTranslateX, {
+      damping: 18,
+      mass: 0.75,
+      stiffness: 210,
+      toValue: activeIndex * tabWidth,
+      useNativeDriver: true,
+    }).start();
+  }, [activeIndex, indicatorTranslateX, tabWidth]);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.tabs} onLayout={event => setTabsContainerWidth(event.nativeEvent.layout.width)}>
+        {tabWidth > 0 && (
+          <Animated.View
+            style={[
+              styles.activeIndicator,
+              {
+                left: 4,
+                transform: [{ translateX: indicatorTranslateX }],
+                width: tabWidth - 8,
+              },
+            ]}
+          />
+        )}
+
+        {TAB_CONFIG.map(tab => {
+          const isActive = activeTab === tab.key;
+
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={styles.tab}
+              onPress={() => onTabChange(tab.key)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.tabText, isActive && styles.activeTabText]}>{tab.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-    },
-    tabsWrapper: {
-        flexDirection: 'row',
-        backgroundColor: '#161B22',
-        borderRadius: 12,
-        padding: 3,
-        borderWidth: 1,
-        borderColor: '#30363D',
-    },
-    tabButton: {
-        flex: 1,
-    },
-    activeTab: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 8,
-        borderRadius: 9,
-        shadowColor: '#10B981',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.5,
-        shadowRadius: 12,
-        elevation: 8,
-    },
-    inactiveTab: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 8,
-        borderRadius: 9,
-    },
-    activeTabText: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: '#FFFFFF',
-    },
-    inactiveTabText: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#8B949E',
-    },
+  activeIndicator: {
+    backgroundColor: ACCENT_DARK,
+    borderRadius: 16,
+    bottom: 4,
+    elevation: 2,
+    position: 'absolute',
+    shadowColor: 'rgba(0,0,0,0.45)',
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    top: 4,
+  },
+  activeTabText: {
+    color: '#FFFFFF',
+  },
+  container: {
+    paddingBottom: 12,
+    paddingHorizontal: 24,
+    paddingTop: 8,
+  },
+  tab: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    zIndex: 2,
+  },
+  tabs: {
+    backgroundColor: '#0F172A',
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    padding: 4,
+    position: 'relative',
+  },
+  tabText: {
+    color: '#9CA3AF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
 });

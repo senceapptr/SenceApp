@@ -1,10 +1,26 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
-import { TabType, QuestionFormData, SubmittedQuestion } from './types';
+import { TabType, QuestionFormData, QuestionStatus, SubmittedQuestion } from './types';
 import { submittedQuestionsData, validateQuestionForm } from './utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { questionsService } from '@/services/questions.service';
 import { categoriesService } from '@/services/categories.service';
+
+const APPROVED_BACKEND_STATUSES = ['active', 'closed', 'resolved'];
+
+const mapBackendStatusToUiStatus = (status: string): QuestionStatus => {
+  if (status === 'draft') return 'pending';
+  if (APPROVED_BACKEND_STATUSES.includes(status)) return 'approved';
+  return 'rejected';
+};
+
+const isQuestionPublished = (question: any): boolean => {
+  if (!APPROVED_BACKEND_STATUSES.includes(question.status)) return false;
+  if (!question.publish_date) return true;
+
+  const publishTimestamp = new Date(question.publish_date).getTime();
+  return Number.isFinite(publishTimestamp) && publishTimestamp <= Date.now();
+};
 
 export const useWriteQuestionState = () => {
   const [activeTab, setActiveTab] = useState<TabType>('write');
@@ -28,15 +44,23 @@ export const useWriteQuestionState = () => {
       }
 
       // Backend verilerini frontend formatına çevir
-      const mappedQuestions: SubmittedQuestion[] = data?.map((q: any) => ({
-        id: parseInt(q.id.replace(/-/g, '').substring(0, 8), 16), // UUID'yi sayıya çevir
-        title: q.title,
-        description: q.description || '',
-        endDate: new Date(q.end_date).toLocaleDateString('tr-TR'),
-        status: q.status === 'draft' ? 'pending' : q.status === 'active' ? 'approved' : 'rejected',
-        submittedAt: new Date(q.created_at).toLocaleDateString('tr-TR'),
-        rejectionReason: q.status === 'rejected' ? 'İçerik kurallarına uygun değil' : undefined,
-      })) || [];
+      const mappedQuestions: SubmittedQuestion[] =
+        data?.map((q: any) => {
+          const status = mapBackendStatusToUiStatus(q.status);
+          const published = isQuestionPublished(q);
+
+          return {
+            id: q.id,
+            title: q.title,
+            description: q.description || '',
+            endDate: q.end_date,
+            status,
+            submittedAt: q.created_at,
+            isPublished: published,
+            isApprovedAndPublished: status === 'approved' && published,
+            rejectionReason: status === 'rejected' ? 'İçerik kurallarına uygun değil' : undefined,
+          };
+        }) || [];
 
       setSubmittedQuestions(mappedQuestions);
     } catch (error) {
@@ -84,8 +108,6 @@ export const useQuestionForm = () => {
     categoryIds,
   };
 
-  console.log('useQuestionForm categoryIds:', categoryIds);
-
   return {
     question,
     setQuestion,
@@ -113,7 +135,6 @@ export const useFormHandlers = (
   // Kategorileri yükle
   const loadCategories = async () => {
     try {
-      console.log('Loading categories...');
       const { data, error } = await categoriesService.getActiveCategories();
       
       if (error) {
@@ -121,7 +142,6 @@ export const useFormHandlers = (
         return;
       }
 
-      console.log('Categories loaded:', data);
       setCategories(data || []);
     } catch (error) {
       console.error('Load categories error:', error);
@@ -140,10 +160,10 @@ export const useFormHandlers = (
 
     const { question, description, endDate, categoryIds } = formData;
 
-      if (!validateQuestionForm(question, description, endDate) || categoryIds.length === 0) {
-        Alert.alert('Hata', 'Lütfen soru metni, bitiş tarihi ve en az bir kategori seçin.');
-        return;
-      }
+    if (!validateQuestionForm(question, description, endDate) || categoryIds.length === 0) {
+      Alert.alert('Hata', 'Lütfen soru metni, bitiş tarihi ve en az bir kategori seçin.');
+      return;
+    }
 
     if (categoryIds.length > 3) {
       Alert.alert('Hata', 'En fazla 3 kategori seçebilirsiniz.');
@@ -198,5 +218,4 @@ export const useFormHandlers = (
     categories,
   };
 };
-
 

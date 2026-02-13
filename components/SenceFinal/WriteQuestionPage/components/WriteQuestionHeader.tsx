@@ -4,13 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 
 interface WriteQuestionHeaderProps {
   onBack: () => void;
-  onMenuToggle: () => void;
 }
 
-export const WriteQuestionHeader: React.FC<WriteQuestionHeaderProps> = ({
-  onBack,
-  onMenuToggle,
-}) => {
+export const WriteQuestionHeader: React.FC<WriteQuestionHeaderProps> = ({ onBack }) => {
   return (
     <View style={styles.header}>
       <TouchableOpacity onPress={onBack} style={styles.headerButton} activeOpacity={0.7}>
@@ -19,16 +15,9 @@ export const WriteQuestionHeader: React.FC<WriteQuestionHeaderProps> = ({
       
       <View style={styles.headerContent}>
         <Text style={styles.headerTitle}>Soru Yaz</Text>
-        <Text style={styles.headerSubtitle}>Toplulukla paylaşmak istediğin soruları yaz</Text>
       </View>
-      
-      <TouchableOpacity onPress={onMenuToggle} style={styles.headerButton} activeOpacity={0.7}>
-        <View style={styles.hamburgerIcon}>
-          <View style={styles.hamburgerLine} />
-          <View style={styles.hamburgerLine} />
-          <View style={styles.hamburgerLine} />
-        </View>
-      </TouchableOpacity>
+
+      <View style={styles.headerButtonPlaceholder} />
     </View>
   );
 };
@@ -57,27 +46,13 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 16,
   },
+  headerButtonPlaceholder: {
+    width: 40,
+    height: 40,
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '900',
     color: '#F0F6FC',
   },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#8B949E',
-    marginTop: 2,
-  },
-  hamburgerIcon: {
-    width: 20,
-    height: 16,
-    justifyContent: 'space-between',
-  },
-  hamburgerLine: {
-    width: 20,
-    height: 2.5,
-    backgroundColor: '#F0F6FC',
-    borderRadius: 1.25,
-  },
 });
-
-

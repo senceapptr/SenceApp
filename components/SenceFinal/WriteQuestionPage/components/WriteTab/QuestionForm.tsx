@@ -53,9 +53,6 @@ export const QuestionForm: React.FC<QuestionFormProps> = ({
     setShowDatePicker(true);
   };
 
-  console.log('QuestionForm categories:', categories);
-  console.log('QuestionForm categoryIds:', categoryIds);
-
   return (
     <View style={styles.formCard}>
       <View style={styles.formHeader}>
@@ -148,12 +145,6 @@ export const QuestionForm: React.FC<QuestionFormProps> = ({
                   }}
                   disabled={!isSelected && categoryIds.length >= 3}
                 >
-                  <Text style={[
-                    styles.categoryPillIcon,
-                    isSelected && styles.categoryPillIconSelected
-                  ]}>
-                    {category.icon}
-                  </Text>
                   <Text style={[
                     styles.categoryPillText,
                     isSelected && styles.categoryPillTextSelected
@@ -374,12 +365,12 @@ const styles = StyleSheet.create({
     color: '#8B949E',
   },
   categoryItemSelected: {
-    backgroundColor: 'rgba(16,185,129,0.15)',
-    borderColor: '#10B981',
+    backgroundColor: 'rgba(59, 130, 246, 0.18)',
+    borderColor: '#3B82F6',
   },
   categoryItemCheckmark: {
     fontSize: 18,
-    color: '#10B981',
+    color: '#60A5FA',
     fontWeight: 'bold',
   },
   categoryDescription: {
@@ -396,7 +387,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   categoryPill: {
-    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#21262D',
     borderRadius: 24,
@@ -409,34 +399,26 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   categoryPillSelected: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
+    backgroundColor: '#2F4F8C',
+    borderColor: '#256EFF',
   },
   categoryPillPrimary: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
+    backgroundColor: '#1D4ED8',
+    borderColor: '#1D4ED8',
     transform: [{ scale: 1.05 }],
-    shadowColor: '#10B981',
+    shadowColor: '#1D4ED8',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   categoryPillSecondary: {
-    backgroundColor: '#059669',
-    borderColor: '#059669',
+    backgroundColor: '#256EFF',
+    borderColor: '#256EFF',
   },
   categoryPillThird: {
-    backgroundColor: '#047857',
-    borderColor: '#047857',
-  },
-  categoryPillIcon: {
-    fontSize: 18,
-    marginRight: 8,
-    color: '#8B949E',
-  },
-  categoryPillIconSelected: {
-    color: '#FFFFFF',
+    backgroundColor: '#256EFF',
+    borderColor: '#256EFF',
   },
   categoryPillText: {
     fontSize: 14,
@@ -450,7 +432,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: '#10B981',
+    backgroundColor: '#60A5FA',
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -463,5 +445,3 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
 });
-
-

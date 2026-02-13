@@ -11,7 +11,6 @@ export const GuidelinesCard: React.FC = () => {
         style={styles.guidelinesGradient}
       >
         <View style={styles.guidelinesHeader}>
-          <Text style={styles.guidelinesIcon}>📋</Text>
           <Text style={styles.guidelinesTitle}>Soru Yazım Kuralları</Text>
         </View>
         <View style={styles.guidelinesList}>
@@ -39,13 +38,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   guidelinesHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
     marginBottom: 16,
-  },
-  guidelinesIcon: {
-    fontSize: 20,
   },
   guidelinesTitle: {
     fontSize: 18,
@@ -72,5 +65,4 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
-
 

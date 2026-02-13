@@ -1,29 +1,40 @@
-
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator, Text, Alert, Share, StatusBar, RefreshControl } from 'react-native';
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  Text,
+  Alert,
+  Share,
+  StatusBar,
+  RefreshControl,
+} from 'react-native';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { profileService } from '@/services/profile.service';
-import { predictionsService } from '@/services/predictions.service';
 import { couponsService } from '@/services/coupons.service';
 import { storageService } from '@/services/storage.service';
-import { ProfilePageProps, ProfileStats, TabType, CreditHistoryItem } from './types';
-import { useProfileAnimations, useProfileState } from './hooks';
-import { ANIMATION_CONSTANTS, profileData, creditHistory } from './utils';
-import { ProfileHeader } from './components/ProfileHeader';
-import { ProfileImage } from './components/ProfileImage';
-import { ProfileInfo } from './components/ProfileInfo';
-import { ProfileTabs } from './components/ProfileTabs';
-import { TicketsTab } from './components/TicketsTab';
-import { StatisticsTab } from './components/StatisticsTab';
-import { ProfileImageModal } from './components/ProfileImageModal';
-import { FollowListModal, FollowUserItem } from './components/FollowListModal';
-import { EditProfilePage } from '../EditProfilePage';
-import { mapBackendCouponsToFrontend } from '@/components/SenceFinal/CouponsPage/couponMapper';
 import { Coupon } from '@/components/SenceFinal/CouponsPage/types';
+import { predictionsService } from '@/services/predictions.service';
+import { mapBackendCouponsToFrontend } from '@/components/SenceFinal/CouponsPage/couponMapper';
 import { CouponDetailModal } from '@/components/SenceFinal/CouponsPage/components/CouponDetailModal';
 
-export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePageProps) {
-  const { user, profile, updateProfile } = useAuth();
+import { TicketsTab } from './components/TicketsTab';
+import { EditProfilePage } from '../EditProfilePage';
+import { ProfileInfo } from './components/ProfileInfo';
+import { ProfileTabs } from './components/ProfileTabs';
+import { ProfileImage } from './components/ProfileImage';
+import { ProfileHeader } from './components/ProfileHeader';
+import { StatisticsTab } from './components/StatisticsTab';
+import { ANIMATION_CONSTANTS, profileData } from './utils';
+import { useProfileAnimations, useProfileState } from './hooks';
+import { ProfileImageModal } from './components/ProfileImageModal';
+import { ProfilePageProps, ProfileStats, CreditHistoryItem } from './types';
+import { FollowListModal, FollowUserItem } from './components/FollowListModal';
+
+export function ProfilePage({ onBack, onMenuToggle, onOpenQuestionDetail, userProfile }: ProfilePageProps) {
+  const { profile, updateProfile, user } = useAuth();
 
   // State
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -48,18 +59,12 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
   const [showCoverModal, setShowCoverModal] = useState(false); // Added state
   const [showCouponDetail, setShowCouponDetail] = useState(false);
 
-  const {
-    scrollY,
-    followButtonScale,
-    profileImageScale,
-    handleScroll,
-    animateButtonPress,
-    animateButtonHover,
-  } = useProfileAnimations();
+  const { animateButtonHover, animateButtonPress, followButtonScale, handleScroll, profileImageScale, scrollY } =
+    useProfileAnimations();
 
   const {
-    isFollowing,
     activeTab,
+    isFollowing,
     // showProfileModal, // Removed from here as it's now a local state
     setActiveTab,
     // setShowProfileModal, // Removed from here as it's now a local state
@@ -78,7 +83,7 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
     const totalPredictions = userPredictions.length;
     const correctPredictions = userPredictions.filter((p: any) => p.win === true || p.status === 'won').length;
     const predictionsEarnings = userPredictions.reduce((sum: number, p: any) => {
-      return sum + (p.status === 'won' ? (p.potential_win || 0) : 0);
+      return sum + (p.status === 'won' ? p.potential_win || 0 : 0);
     }, 0);
 
     // Correct Predictions from Coupons (Iterate through selections)
@@ -93,13 +98,13 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
       // Let's rely on coupon.predictions (mapped selections)
       coupon.predictions.forEach(p => {
         // If result exists and matches choice, or status is won (if available in mapped type)
-        // The mapped type has 'result' in CouponPrediction. 
+        // The mapped type has 'result' in CouponPrediction.
         // Logic: if result === 'won' then it is correct? No result is 'won'|'lost'.
         // Wait, PredictionResult is 'won'|'lost'.
         // If p.result === 'won' it means the PREDICTION won? Or the QUESTION result?
         // Usually result is the outcome. Detailed check needed.
-        // Simplest: Check if p.result is defined. 
-        // Actually, let's look at couponMapper.ts if possible, or assume p.result === p.choice implies win? 
+        // Simplest: Check if p.result is defined.
+        // Actually, let's look at couponMapper.ts if possible, or assume p.result === p.choice implies win?
         // Better: if coupon status is 'won' (meaning the selection won).
         if (p.result === 'won') {
           couponCorrectPredictions++;
@@ -124,26 +129,26 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
     const highestOddsWon = Math.max(
       ...userPredictions.filter((p: any) => p.status === 'won').map((p: any) => p.odds || 0),
       ...userCoupons.filter(c => c.status === 'won').map(c => c.totalOdds),
-      0
+      0,
     );
 
     const maxWinAmount = Math.max(
       ...userPredictions.filter((p: any) => p.status === 'won').map((p: any) => p.potential_win || 0),
       ...userCoupons.filter(c => c.status === 'won').map(c => c.potentialEarnings),
-      0
+      0,
     );
 
     return {
-      totalPredictions: totalPredictionsTotal,
-      correctPredictions: correctPredictionsTotal,
       accuracyRate,
-      totalEarnings: predictionsEarnings + couponTotalEarnings,
+      correctPredictions: correctPredictionsTotal,
+      couponAccuracyRate,
+      couponTotalEarnings,
       highestOddsWon,
       maxWinAmount,
       totalCoupons,
+      totalEarnings: predictionsEarnings + couponTotalEarnings,
+      totalPredictions: totalPredictionsTotal,
       wonCoupons,
-      couponAccuracyRate,
-      couponTotalEarnings
     };
   };
 
@@ -153,8 +158,8 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
       return [{ date: new Date().toISOString(), value: currentCredits }];
     }
 
-    const sortedCoupons = [...userCoupons].sort((a, b) =>
-      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    const sortedCoupons = [...userCoupons].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
 
     let runningBalance = currentCredits;
@@ -163,7 +168,7 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
     // Push the current state as the last point
     historyPoints.push({
       date: new Date().toISOString(),
-      value: runningBalance
+      value: runningBalance,
     });
 
     // Walk backwards through sorted coupons (from newest to oldest) to reconstruct history
@@ -171,13 +176,13 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
 
     reversedCoupons.forEach(coupon => {
       const investment = coupon.investmentAmount || 0;
-      const wonAmount = coupon.status === 'won' ? (coupon.potentialEarnings || 0) : 0;
+      const wonAmount = coupon.status === 'won' ? coupon.potentialEarnings || 0 : 0;
 
       runningBalance = runningBalance - wonAmount + investment;
 
       historyPoints.push({
         date: new Date(coupon.createdAt).toISOString(),
-        value: runningBalance
+        value: runningBalance,
       });
     });
 
@@ -225,7 +230,6 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
       const currentCredits = profile?.credits || 0;
       const history = generateCreditHistory(userCoupons, currentCredits);
       setHistoryData(history);
-
     } catch (err) {
       console.error('Profile data load error:', err);
       Alert.alert('Hata', 'Profil verileri yüklenirken bir hata oluştu');
@@ -286,9 +290,7 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
       if (type === 'profile') setShowProfileModal(false);
       if (type === 'cover') setShowCoverModal(false);
 
-      const { uri, error } = source === 'camera'
-        ? await storageService.takePhoto()
-        : await storageService.pickImage();
+      const { error, uri } = source === 'camera' ? await storageService.takePhoto() : await storageService.pickImage();
 
       if (error || !uri) return;
 
@@ -308,9 +310,7 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
       }
 
       // Update profile in DB
-      const updateData = type === 'profile'
-        ? { profile_image: uploadRes.data }
-        : { cover_image: uploadRes.data };
+      const updateData = type === 'profile' ? { profile_image: uploadRes.data } : { cover_image: uploadRes.data };
 
       const { error: updateError } = await profileService.updateProfile(user.id, updateData);
 
@@ -320,7 +320,7 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
         return;
       }
 
-      // Update Auth Context directly 
+      // Update Auth Context directly
       // (Assuming updateProfile supports partial update, checking AuthContext...)
       // The snippet in Step 29 shows updateProfile usage.
       await updateProfile(updateData);
@@ -336,22 +336,28 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
 
   const mergedProfileData = {
     ...profileData,
-    coverImage: profile?.cover_image || userProfile?.coverImage || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
-    profileImage: profile?.profile_image || userProfile?.profileImage || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
-    name: profile?.full_name || userProfile?.fullName || user?.email?.split('@')[0] || 'Kullanıcı',
-    username: `@${profile?.username || userProfile?.username || user?.email?.split('@')[0] || 'kullanici'}`,
     bio: profile?.bio || userProfile?.bio || 'Henüz bio eklenmedi',
-    predictions: stats?.totalPredictions || 0,
+    coverImage:
+      profile?.cover_image ||
+      userProfile?.coverImage ||
+      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
     credits: profile?.credits || 10000,
     followers: followerCount,
     following: followingCount,
+    name: profile?.full_name || userProfile?.fullName || user?.email?.split('@')[0] || 'Kullanıcı',
+    predictions: stats?.totalPredictions || 0,
+    profileImage:
+      profile?.profile_image ||
+      userProfile?.profileImage ||
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
+    username: `@${profile?.username || userProfile?.username || user?.email?.split('@')[0] || 'kullanici'}`,
   };
 
   if (showEditProfile) {
     return (
       <EditProfilePage
         onBack={() => setShowEditProfile(false)}
-        onUpdateProfile={(updated) => {
+        onUpdateProfile={updated => {
           // Local update if needed, but we rely on AuthContext and refresh
           handleRefresh();
         }}
@@ -408,11 +414,8 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-
-        contentContainerStyle={{ paddingTop: HEADER_MAX_HEIGHT, backgroundColor: '#0D1117' }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#10B981" />
-        }
+        contentContainerStyle={{ backgroundColor: '#0D1117', paddingTop: HEADER_MAX_HEIGHT }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#10B981" />}
       >
         <ProfileInfo
           profileData={mergedProfileData}
@@ -429,16 +432,18 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
           onPressFollowing={handlePressFollowing}
         />
 
-        <ProfileTabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
+        <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
         <View style={styles.tabContent}>
           {activeTab === 'tickets' && (
             <TicketsTab
               tickets={coupons}
-              onTicketPress={(ticket) => {
+              onQuestionPress={questionId => {
+                if (onOpenQuestionDetail) {
+                  onOpenQuestionDetail(questionId);
+                }
+              }}
+              onTicketPress={ticket => {
                 setSelectedCoupon(ticket);
                 setShowCouponDetail(true);
               }}
@@ -491,41 +496,41 @@ export function ProfilePage({ onBack, onMenuToggle, userProfile }: ProfilePagePr
         visible={showCouponDetail}
         coupon={selectedCoupon}
         onClose={() => setShowCouponDetail(false)}
-      // onClaimReward not handled here as typically specific to coupons page, but could add if needed
+        // onClaimReward not handled here as typically specific to coupons page, but could add if needed
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  bottomPadding: {
+    height: 24,
+  },
   container: {
-    flex: 1,
     backgroundColor: '#0D1117',
-  },
-  loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#10B981',
-  },
-  errorText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#EF4444',
-    textAlign: 'center',
-    paddingHorizontal: 32,
+    flex: 1,
   },
   content: {
     flex: 1,
   },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 16,
+    fontWeight: '600',
+    paddingHorizontal: 32,
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: '#10B981',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 16,
+  },
   tabContent: {
     paddingHorizontal: 16,
-  },
-  bottomPadding: {
-    height: 24,
   },
 });

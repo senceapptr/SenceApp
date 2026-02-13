@@ -1,44 +1,36 @@
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Image } from 'react-native';
-
+import { adminService } from '@/services/admin.service';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Dimensions,
+  StatusBar,
+  Image,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { adminService } from '@/services/admin.service';
-
 import { NotificationBadge } from './ui/NotificationBadge';
 
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-type PageType =
-  | 'home'
-  | 'discover'
-  | 'newDiscover'
-  | 'discoverNew'
-  | 'coupons'
-  | 'leagues'
-  | 'writeQuestion'
-  | 'tasks'
-  | 'settings'
-  | 'market'
-  | 'notifications'
-  | 'profile'
-  | 'questionCardDesign'
-  | 'adminPanel'
-  | 'leaderboard';
+type PageType = 'home' | 'discover' | 'newDiscover' | 'discoverNew' | 'coupons' | 'leagues' | 'writeQuestion' | 'tasks' | 'settings' | 'market' | 'notifications' | 'profile' | 'questionCardDesign' | 'adminPanel' | 'leaderboard';
 
 interface SlideOutMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  children: React.ReactNode;
   onNavigate: (page: PageType) => void;
+  children: React.ReactNode;
 }
 
-export function SlideOutMenu({ children, isOpen, onClose, onNavigate }: SlideOutMenuProps) {
-  const { profile, unreadNotificationsCount, user } = useAuth();
-  const { isDarkMode, theme } = useTheme();
+export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOutMenuProps) {
+  const { user, profile, unreadNotificationsCount } = useAuth();
+  const { theme, isDarkMode } = useTheme();
   const slideAnim = useRef(new Animated.Value(0)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [isAnimating, setIsAnimating] = useState(false);
@@ -49,25 +41,25 @@ export function SlideOutMenu({ children, isOpen, onClose, onNavigate }: SlideOut
   const touchStartY = useRef(0);
 
   const menuItems = [
-    { highlight: false, id: 1, page: 'notifications' as PageType, title: 'Bildirimler' },
-    { highlight: true, id: 2, page: 'newDiscover' as PageType, title: 'Keşfet' },
-    { highlight: true, id: 3, page: 'discoverNew' as PageType, title: 'Yeni Keşfet' },
-    { highlight: false, id: 4, page: 'writeQuestion' as PageType, title: 'Soru Yaz' },
-    { highlight: false, id: 5, page: 'questionCardDesign' as PageType, title: 'Soru Kartları' },
-    { highlight: false, id: 6, page: 'tasks' as PageType, title: 'Görevler' },
-    { highlight: false, id: 7, page: 'market' as PageType, title: 'Market' },
-    { highlight: true, id: 8, page: 'leaderboard' as PageType, title: 'Sıralama' },
-    { highlight: false, id: 9, page: 'settings' as PageType, title: 'Ayarlar' },
-    { adminOnly: true, highlight: true, id: 10, page: 'adminPanel' as PageType, title: 'Admin Panel' },
+    { id: 1, title: 'Bildirimler', highlight: false, page: 'notifications' as PageType },
+    { id: 2, title: 'Keşfet', highlight: true, page: 'newDiscover' as PageType },
+    { id: 3, title: 'Yeni Keşfet', highlight: true, page: 'discoverNew' as PageType },
+    { id: 4, title: 'Soru Yaz', highlight: false, page: 'writeQuestion' as PageType },
+    { id: 5, title: 'Soru Kartları', highlight: false, page: 'questionCardDesign' as PageType },
+    { id: 6, title: 'Görevler', highlight: false, page: 'tasks' as PageType },
+    { id: 7, title: 'Market', highlight: false, page: 'market' as PageType },
+    { id: 8, title: 'Sıralama', highlight: true, page: 'leaderboard' as PageType },
+    { id: 9, title: 'Ayarlar', highlight: false, page: 'settings' as PageType },
+    { id: 10, title: 'Admin Panel', highlight: true, page: 'adminPanel' as PageType, adminOnly: true },
   ];
 
   // Create individual animation values for each menu item
   const menuItemAnims = useRef(
     menuItems.map(() => ({
       opacity: new Animated.Value(0),
-      scale: new Animated.Value(0.8),
       translateX: new Animated.Value(50),
-    })),
+      scale: new Animated.Value(0.8),
+    }))
   ).current;
 
   // Admin kontrolü
@@ -94,14 +86,14 @@ export function SlideOutMenu({ children, isOpen, onClose, onNavigate }: SlideOut
       // Open animation
       Animated.parallel([
         Animated.spring(slideAnim, {
-          friction: 12,
-          tension: 60,
           toValue: 1,
           useNativeDriver: true,
+          tension: 60,
+          friction: 12,
         }),
         Animated.timing(overlayOpacity, {
-          duration: 500,
           toValue: 1,
+          duration: 500,
           useNativeDriver: true,
         }),
       ]).start(() => {
@@ -111,25 +103,25 @@ export function SlideOutMenu({ children, isOpen, onClose, onNavigate }: SlideOut
             Animated.delay(index * 80), // Stagger each item by 80ms
             Animated.parallel([
               Animated.spring(anim.opacity, {
-                friction: 8,
-                tension: 100,
                 toValue: 1,
                 useNativeDriver: true,
+                tension: 100,
+                friction: 8,
               }),
               Animated.spring(anim.translateX, {
-                friction: 8,
-                tension: 100,
                 toValue: 0,
                 useNativeDriver: true,
+                tension: 100,
+                friction: 8,
               }),
               Animated.spring(anim.scale, {
-                friction: 6,
-                tension: 120,
                 toValue: 1,
                 useNativeDriver: true,
+                tension: 120,
+                friction: 6,
               }),
-            ]),
-          ]),
+            ])
+          ])
         );
 
         Animated.parallel(itemAnimations).start(() => {
@@ -149,14 +141,14 @@ export function SlideOutMenu({ children, isOpen, onClose, onNavigate }: SlideOut
       // Close animation
       Animated.parallel([
         Animated.spring(slideAnim, {
-          friction: 9,
-          tension: 120,
           toValue: 0,
           useNativeDriver: true,
+          tension: 120,
+          friction: 9,
         }),
         Animated.timing(overlayOpacity, {
-          duration: 300,
           toValue: 0,
+          duration: 300,
           useNativeDriver: true,
         }),
       ]).start(() => {
@@ -194,7 +186,9 @@ export function SlideOutMenu({ children, isOpen, onClose, onNavigate }: SlideOut
   };
 
   // Admin olmayan kullanıcılar için admin paneli gizle
-  const filteredMenuItems = menuItems.filter(item => !item.adminOnly || isAdmin);
+  const filteredMenuItems = menuItems.filter(item =>
+    !item.adminOnly || isAdmin
+  );
 
   return (
     <View style={styles.container}>
@@ -206,8 +200,7 @@ export function SlideOutMenu({ children, isOpen, onClose, onNavigate }: SlideOut
             opacity: overlayOpacity,
           },
         ]}
-        pointerEvents="none"
-      >
+        pointerEvents="none">
         <LinearGradient
           colors={['#0D1117', '#161B22', '#21262D']}
           style={styles.gradientBackground}
@@ -235,34 +228,37 @@ export function SlideOutMenu({ children, isOpen, onClose, onNavigate }: SlideOut
                 inputRange: [0, 1],
                 outputRange: [0, 0.3],
               }),
-              transform: [{ translateX: pageTranslateX }],
+              transform: [
+                { translateX: pageTranslateX },
+              ],
             },
           ]}
           pointerEvents="none"
         />
       )}
 
+
+
       {/* Main Content (moved to left) */}
       <Animated.View
         style={[
           styles.mainContent,
           {
-            transform: [{ translateX: pageTranslateX }],
+            transform: [
+              { translateX: pageTranslateX },
+            ],
           },
-        ]}
-      >
+        ]}>
         <TouchableOpacity
           style={styles.contentTouchable}
           activeOpacity={1}
           onPress={isOpen ? onClose : undefined}
-          disabled={!isOpen}
-        >
+          disabled={!isOpen}>
           <View
             style={styles.disabledContent}
-            pointerEvents={isOpen ? 'none' : 'auto'}
+            pointerEvents={isOpen ? "none" : "auto"}
             onTouchStart={isOpen ? handleTouchStart : undefined}
-            onTouchEnd={isOpen ? handleTouchEnd : undefined}
-          >
+            onTouchEnd={isOpen ? handleTouchEnd : undefined}>
             {children}
           </View>
         </TouchableOpacity>
@@ -276,12 +272,14 @@ export function SlideOutMenu({ children, isOpen, onClose, onNavigate }: SlideOut
             transform: [{ translateX: menuTranslateX }],
           },
         ]}
-        pointerEvents={isOpen ? 'auto' : 'none'}
-      >
+        pointerEvents={isOpen ? 'auto' : 'none'}>
         <SafeAreaView style={styles.menuContent}>
           {/* Close Button - Top Right */}
           <View style={styles.topSection}>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={onClose}
+            >
               <Ionicons name="close" size={22} color="#F0F6FC" />
             </TouchableOpacity>
           </View>
@@ -299,11 +297,7 @@ export function SlideOutMenu({ children, isOpen, onClose, onNavigate }: SlideOut
               <View style={styles.profileRow}>
                 <View style={styles.avatarWrapper}>
                   <Image
-                    source={{
-                      uri:
-                        profile?.profile_image ||
-                        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&h=160&fit=crop&crop=face',
-                    }}
+                    source={{ uri: profile?.profile_image || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&h=160&fit=crop&crop=face" }}
                     style={styles.userAvatar}
                   />
                   <View style={styles.onlineDot} />
@@ -319,12 +313,7 @@ export function SlideOutMenu({ children, isOpen, onClose, onNavigate }: SlideOut
                     </Text>
                   </View>
                 </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color="rgba(255,255,255,0.35)"
-                  style={styles.profileChevron}
-                />
+                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.35)" style={styles.profileChevron} />
               </View>
             </View>
           </TouchableOpacity>
@@ -338,21 +327,30 @@ export function SlideOutMenu({ children, isOpen, onClose, onNavigate }: SlideOut
                   styles.menuItemContainer,
                   {
                     opacity: menuItemAnims[index].opacity,
-                    transform: [{ translateX: menuItemAnims[index].translateX }, { scale: menuItemAnims[index].scale }],
+                    transform: [
+                      { translateX: menuItemAnims[index].translateX },
+                      { scale: menuItemAnims[index].scale },
+                    ],
                   },
-                ]}
-              >
+                ]}>
                 <TouchableOpacity
-                  style={[styles.menuItem, item.highlight && styles.menuItemHighlight]}
+                  style={[
+                    styles.menuItem,
+                    item.highlight && styles.menuItemHighlight
+                  ]}
                   onPress={() => {
                     if (item.page) {
                       onNavigate(item.page);
                     }
                     onClose();
-                  }}
-                >
+                  }}>
                   <View style={styles.menuItemContent}>
-                    <Text style={[styles.menuText, item.highlight && styles.menuTextHighlight]}>{item.title}</Text>
+                    <Text style={[
+                      styles.menuText,
+                      item.highlight && styles.menuTextHighlight
+                    ]}>
+                      {item.title}
+                    </Text>
                     {item.page === 'notifications' && unreadNotificationsCount > 0 && (
                       <NotificationBadge
                         count={unreadNotificationsCount}
@@ -378,35 +376,26 @@ export function SlideOutMenu({ children, isOpen, onClose, onNavigate }: SlideOut
 }
 
 const styles = StyleSheet.create({
-  avatarWrapper: {
-    marginRight: 14,
-    position: 'relative',
+  container: {
+    flex: 1,
+    backgroundColor: '#0D1117',
   },
-  balanceLabel: {
-    color: 'rgba(255,255,255,0.55)',
-    fontSize: 14,
-    fontWeight: '500',
+  movedContentBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#0D1117',
+    zIndex: 1000,
   },
 
-  balanceRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 5,
-    marginTop: 6,
-  },
-  closeButton: {
-    alignItems: 'center',
-    backgroundColor: '#21262D',
-    borderColor: '#30363D',
-    borderRadius: 22,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  container: {
-    backgroundColor: '#0D1117',
+  mainContent: {
     flex: 1,
+    borderRadius: 30,
+    overflow: 'hidden',
+    zIndex: 1002,
+    backgroundColor: '#0D1117',
   },
   contentTouchable: {
     flex: 1,
@@ -414,179 +403,188 @@ const styles = StyleSheet.create({
   disabledContent: {
     flex: 1,
   },
-  fluidGradient1: {
-    borderRadius: 200,
-    bottom: 100,
-    left: -50,
+  overlay: {
     position: 'absolute',
-    right: 50,
-    top: -100,
-    transform: [{ rotate: '15deg' }],
-  },
-  fluidGradient2: {
-    borderRadius: 150,
-    bottom: -50,
-    left: 50,
-    position: 'absolute',
-    right: -100,
-    top: 100,
-    transform: [{ rotate: '-25deg' }],
-  },
-  fluidOverlay: {
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    right: 0,
     top: 0,
-  },
-  footerText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 12,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+    backgroundColor: '#0D1117',
   },
   gradientBackground: {
     flex: 1,
   },
-  mainContent: {
-    backgroundColor: '#0D1117',
-    borderRadius: 30,
-    flex: 1,
-    overflow: 'hidden',
-    zIndex: 1002,
+  fluidOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  fluidGradient1: {
+    position: 'absolute',
+    top: -100,
+    left: -50,
+    right: 50,
+    bottom: 100,
+    borderRadius: 200,
+    transform: [{ rotate: '15deg' }],
+  },
+  fluidGradient2: {
+    position: 'absolute',
+    top: 100,
+    left: 50,
+    right: -100,
+    bottom: -50,
+    borderRadius: 150,
+    transform: [{ rotate: '-25deg' }],
   },
   menu: {
-    backgroundColor: '#161B22',
-    height: SCREEN_HEIGHT,
     position: 'absolute',
-    right: 0,
     top: 0,
+    right: 0,
     width: SCREEN_WIDTH * 0.75,
+    height: SCREEN_HEIGHT,
     zIndex: 1003,
+    backgroundColor: '#161B22',
   },
   menuContent: {
+    flex: 1,
     backgroundColor: '#161B22',
-    flex: 1,
   },
-  menuFooter: {
-    alignItems: 'center',
-    borderTopColor: '#30363D',
-    borderTopWidth: 1,
-    padding: 24,
-  },
-  menuItem: {
-    alignItems: 'center',
-    borderRadius: 12,
-    flexDirection: 'row',
-    marginHorizontal: 12,
-    marginVertical: 2,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-  },
-  menuItemContainer: {
-    marginBottom: 4,
-  },
-  menuItemContent: {
-    alignItems: 'center',
-    flex: 1,
-    flexDirection: 'row',
-  },
-  menuItemHighlight: {
-    backgroundColor: '#21262D',
-    borderColor: '#30363D',
-    borderWidth: 1,
-  },
-  menuItems: {
-    flex: 1,
-    paddingBottom: 20,
-    paddingTop: 5,
-  },
-  menuText: {
-    color: '#F0F6FC',
-    flex: 1,
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  menuTextHighlight: {
-    color: '#10B981',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  movedContentBackground: {
-    backgroundColor: '#0D1117',
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    zIndex: 1000,
-  },
-  notificationBadge: {
-    marginLeft: 8,
-  },
-  onlineDot: {
-    backgroundColor: '#34C759',
-    borderColor: '#161B22',
-    borderRadius: 7,
-    borderWidth: 2.5,
-    bottom: 0,
-    height: 14,
-    position: 'absolute',
-    right: 0,
-    width: 14,
-  },
-  overlay: {
-    backgroundColor: '#0D1117',
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    zIndex: 1000,
+  topSection: {
+    paddingTop: 8,
+    paddingRight: 20,
+    alignItems: 'flex-end',
+    marginBottom: 2,
   },
   profileArea: {
-    marginBottom: 20,
     marginHorizontal: 20,
+    marginBottom: 20,
     marginTop: 8,
   },
   profileCard: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 16,
-    elevation: 4,
     overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
-    shadowOffset: { height: 4, width: 0 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
+    elevation: 4,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+  },
+  avatarWrapper: {
+    position: 'relative',
+    marginRight: 14,
+  },
+  userAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  onlineDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#34C759',
+    borderWidth: 2.5,
+    borderColor: '#161B22',
+  },
+  profileInfo: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  },
+  userName: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
+  },
+  balanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 5,
+  },
+  balanceLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.55)',
   },
   profileChevron: {
     marginLeft: 4,
   },
-  profileInfo: {
-    flex: 1,
+  closeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
-    minWidth: 0,
-  },
-  profileRow: {
     alignItems: 'center',
+    borderWidth: 1,
+    backgroundColor: '#21262D',
+    borderColor: '#30363D',
+  },
+  menuItems: {
+    flex: 1,
+    paddingTop: 5,
+    paddingBottom: 20,
+  },
+  menuItemContainer: {
+    marginBottom: 4,
+  },
+  menuItem: {
     flexDirection: 'row',
-    paddingHorizontal: 18,
-    paddingVertical: 16,
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginHorizontal: 12,
+    marginVertical: 2,
   },
-  topSection: {
-    alignItems: 'flex-end',
-    marginBottom: 2,
-    paddingRight: 20,
-    paddingTop: 8,
+  menuItemHighlight: {
+    borderWidth: 1,
+    backgroundColor: '#21262D',
+    borderColor: '#30363D',
   },
-  userAvatar: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 28,
-    height: 56,
-    width: 56,
+  menuItemContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  userName: {
-    color: '#FFFFFF',
+  menuText: {
     fontSize: 17,
     fontWeight: '600',
-    letterSpacing: -0.2,
+    flex: 1,
+    color: '#F0F6FC',
+  },
+  notificationBadge: {
+    marginLeft: 8,
+  },
+  menuTextHighlight: {
+    fontWeight: '700',
+    fontSize: 18,
+    color: '#10B981',
+  },
+  menuFooter: {
+    padding: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#30363D',
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
   },
 });
