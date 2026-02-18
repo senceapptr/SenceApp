@@ -27,6 +27,7 @@ type PageType =
   | 'profile'
   | 'questionCardDesign'
   | 'adminPanel'
+  | 'adminRedesignLab'
   | 'leaderboard';
 
 interface SlideOutMenuProps {
@@ -59,6 +60,7 @@ export function SlideOutMenu({ children, isOpen, onClose, onNavigate }: SlideOut
     { highlight: true, id: 8, page: 'leaderboard' as PageType, title: 'Sıralama' },
     { highlight: false, id: 9, page: 'settings' as PageType, title: 'Ayarlar' },
     { adminOnly: true, highlight: true, id: 10, page: 'adminPanel' as PageType, title: 'Admin Panel' },
+    { adminOnly: true, highlight: false, id: 11, page: 'adminRedesignLab' as PageType, title: 'Redesign Testleri' },
   ];
 
   // Create individual animation values for each menu item

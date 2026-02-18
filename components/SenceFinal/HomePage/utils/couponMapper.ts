@@ -25,7 +25,7 @@ const getLatestEndDate = (predictions: CouponPrediction[]): Date | null => {
   
   const validEndDates = predictions
     .map(prediction => prediction.endDate)
-    .filter(endDate => endDate instanceof Date && !isNaN(endDate.getTime()));
+    .filter((endDate): endDate is Date => endDate instanceof Date && !isNaN(endDate.getTime()));
   
   if (validEndDates.length === 0) return null;
   
@@ -78,7 +78,7 @@ export const mapCouponToActiveCoupon = (coupon: any): ActiveCoupon => {
     endsIn,
     colors: ['#432870', '#5A3A8B'] as [string, string],
     // CouponDetailModal için gerekli alanlar
-    predictions: predictions.map((p, index) => ({
+    predictions: predictions.map((p: CouponPrediction, index: number) => ({
       id: String(p.id || `prediction-${index}`),
       questionId: String(p.questionId || ''),
       question: p.question,

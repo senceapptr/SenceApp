@@ -12,6 +12,19 @@ export interface Category {
 }
 
 export const categoriesService = {
+  mapCategoryRow(categoryRow: any): Category {
+    return {
+      color: categoryRow?.color ?? '#6B7280',
+      created_at: categoryRow?.created_at ?? new Date().toISOString(),
+      description: categoryRow?.description ?? '',
+      icon: categoryRow?.icon ?? 'help-circle',
+      id: categoryRow?.id ?? '',
+      is_active: Boolean(categoryRow?.is_active ?? true),
+      name: categoryRow?.name ?? '',
+      slug: categoryRow?.slug ?? '',
+    };
+  },
+
   /**
    * Tüm aktif kategorileri getir
    */
@@ -40,7 +53,7 @@ export const categoriesService = {
         return { data: null, error };
       }
 
-      return { data, error: null };
+      return { data: (data || []).map(row => this.mapCategoryRow(row)), error: null };
     } catch (error) {
       console.error('Get categories error:', error);
       return { data: null, error: error as Error };
@@ -63,7 +76,7 @@ export const categoriesService = {
         return { data: null, error };
       }
 
-      return { data, error: null };
+      return { data: data ? this.mapCategoryRow(data) : null, error: null };
     } catch (error) {
       console.error('Get category error:', error);
       return { data: null, error: error as Error };
@@ -86,11 +99,10 @@ export const categoriesService = {
         return { data: null, error };
       }
 
-      return { data, error: null };
+      return { data: data ? this.mapCategoryRow(data) : null, error: null };
     } catch (error) {
       console.error('Get category by slug error:', error);
       return { data: null, error: error as Error };
     }
   },
 };
-

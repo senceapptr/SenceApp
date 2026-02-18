@@ -6,8 +6,8 @@
     <true/>
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
-    <key>CFBundleDisplayName</key>
-    <string>expo-nativewind-typescript-boilerplate</string>
+	    <key>CFBundleDisplayName</key>
+	    <string>Sence</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -22,16 +22,16 @@
     <string>1.0.0</string>
     <key>CFBundleSignature</key>
     <string>????</string>
-    <key>CFBundleURLTypes</key>
-    <array>
-      <dict>
-        <key>CFBundleURLSchemes</key>
-        <array>
-          <string>myapp</string>
-          <string>com.teczer.expo-nativewind-typescript-boilerplate</string>
-        </array>
-      </dict>
-    </array>
+	    <key>CFBundleURLTypes</key>
+	    <array>
+	      <dict>
+	        <key>CFBundleURLSchemes</key>
+	        <array>
+	          <string>senceapp</string>
+	          <string>com.senceapp.mobile</string>
+	        </array>
+	      </dict>
+	    </array>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
@@ -45,12 +45,10 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
-    <key>NSCameraUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your camera</string>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your microphone</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your photos</string>
+	    <key>NSCameraUsageDescription</key>
+	    <string>Profil fotoğrafı çekmek ve görsel yüklemek için kameranıza erişim gerekiyor.</string>
+	    <key>NSPhotoLibraryUsageDescription</key>
+	    <string>Profil ve içerik görsellerini seçebilmeniz için fotoğraf arşivinize erişim gerekiyor.</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>

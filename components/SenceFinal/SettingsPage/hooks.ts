@@ -120,16 +120,16 @@ export function useSettings(props: {
           style: 'destructive',
           onPress: async () => {
             try {
-              const { error } = await profileService.deleteAccount(user.id);
-              
-              if (error) {
-                Alert.alert('Hata', 'Hesap silinirken bir hata oluştu.');
+              const result = await profileService.deleteAccount(user.id);
+
+              if (!result.success) {
+                Alert.alert('Hata', result.message);
                 return;
               }
 
               Alert.alert(
                 '✅ Hesap Silindi',
-                'Hesabınız başarıyla silindi. Sence\'i kullandığınız için teşekkürler.',
+                result.message,
                 [{ text: 'Tamam', onPress: () => router.replace('/auth') }]
               );
             } catch (error) {
@@ -186,4 +186,3 @@ export function useSettings(props: {
     handleDeleteAccount,
   };
 }
-

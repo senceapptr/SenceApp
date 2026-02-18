@@ -5,11 +5,13 @@ import { supabaseStorage } from './supabase-storage';
 // Environment variables - Expo public prefix kullanarak
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabaseServiceKey = process.env.EXPO_PUBLIC_SUPABASE_SERVICE_KEY || '';
+const hasPlaceholderConfig =
+  supabaseUrl.includes('your-project-ref.supabase.co') ||
+  supabaseAnonKey.includes('your-anon-key');
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!supabaseUrl || !supabaseAnonKey || hasPlaceholderConfig) {
   throw new Error(
-    'Supabase URL ve Anon Key gerekli! .env dosyasında EXPO_PUBLIC_SUPABASE_URL ve EXPO_PUBLIC_SUPABASE_ANON_KEY değerlerini ayarlayın.'
+    'Supabase konfigürasyonu eksik veya placeholder. .env.local dosyasına gerçek EXPO_PUBLIC_SUPABASE_URL ve EXPO_PUBLIC_SUPABASE_ANON_KEY değerlerini girin.'
   );
 }
 
@@ -22,16 +24,3 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
-
-// Service role client (RLS bypass için)
-export const supabaseService = createClient<Database>(
-  supabaseUrl, 
-  supabaseServiceKey || supabaseAnonKey, // Service key yoksa anon key kullan
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
-

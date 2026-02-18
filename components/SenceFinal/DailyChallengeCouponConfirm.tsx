@@ -6,6 +6,7 @@ import Animated, {
   useSharedValue, 
   useAnimatedStyle, 
   withSpring,
+  withDelay,
   withTiming,
   withSequence,
   withRepeat
@@ -130,16 +131,10 @@ export function DailyChallengeCouponConfirm({
                   {
                     transform: [
                       { 
-                        translateX: withTiming(0, { 
-                          duration: 300, 
-                          delay: index * 100 
-                        }) 
+                        translateX: withDelay(index * 100, withTiming(0, { duration: 300 }))
                       }
                     ],
-                    opacity: withTiming(1, { 
-                      duration: 300, 
-                      delay: index * 100 
-                    })
+                    opacity: withDelay(index * 100, withTiming(1, { duration: 300 }))
                   }
                 ]}
               >
@@ -180,8 +175,8 @@ export function DailyChallengeCouponConfirm({
                 {isEditingStake ? (
                   <TextInput
                     defaultValue={stake.toString()}
-                    onBlur={(e) => handleStakeChange(e.nativeEvent.text)}
-                    onSubmitEditing={(e) => handleStakeChange(e.nativeEvent.text)}
+                    onBlur={(e) => handleStakeChange((e as any).nativeEvent?.text || '')}
+                    onSubmitEditing={(e) => handleStakeChange((e as any).nativeEvent?.text || '')}
                     style={styles.stakeInput}
                     keyboardType="numeric"
                     autoFocus
@@ -617,5 +612,4 @@ const styles = StyleSheet.create({
     height: 32,
   },
 });
-
 

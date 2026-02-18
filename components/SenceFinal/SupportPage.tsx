@@ -9,11 +9,13 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
+import { supportService } from '@/services/support.service';
 
 interface SupportPageProps {
   onBack: () => void;
@@ -33,8 +35,9 @@ export function SupportPage({ onBack }: SupportPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedCategory) {
       Alert.alert('Hata', 'Lütfen bir konu seçin.');
       return;
@@ -48,9 +51,18 @@ export function SupportPage({ onBack }: SupportPageProps) {
       return;
     }
 
-    // In real app, send email via API
-    const categoryLabel = SUPPORT_CATEGORIES.find(c => c.id === selectedCategory)?.label;
-    console.log('Sending support email:', { category: categoryLabel, subject, message });
+    setSubmitting(true);
+    const result = await supportService.submitSupportRequest({
+      category: selectedCategory,
+      message,
+      subject,
+    });
+    setSubmitting(false);
+
+    if (result.error) {
+      Alert.alert('Hata', result.error.message || 'Destek talebi gönderilirken bir hata oluştu.');
+      return;
+    }
 
     Alert.alert(
       '✅ Gönderildi',
@@ -176,14 +188,21 @@ export function SupportPage({ onBack }: SupportPageProps) {
             <TouchableOpacity
               style={styles.submitButton}
               onPress={handleSubmit}
+              disabled={submitting}
               activeOpacity={0.8}
             >
               <LinearGradient
                 colors={['#432870', '#B29EFD']}
                 style={styles.submitGradient}
               >
-                <Ionicons name="send" size={20} color="white" />
-                <Text style={styles.submitText}>Destek Talebi Gönder</Text>
+                {submitting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="send" size={20} color="white" />
+                    <Text style={styles.submitText}>Destek Talebi Gönder</Text>
+                  </>
+                )}
               </LinearGradient>
             </TouchableOpacity>
 
@@ -361,5 +380,4 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
-
 

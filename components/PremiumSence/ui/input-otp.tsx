@@ -34,7 +34,9 @@ function InputOTP({ length = 6, value, onChange, style }: InputOTPProps) {
       {Array.from({ length }).map((_, idx) => (
         <TextInput
           key={idx}
-          ref={ref => (inputs.current[idx] = ref)}
+          ref={(ref) => {
+            inputs.current[idx] = ref;
+          }}
           style={styles.input}
           keyboardType="number-pad"
           maxLength={1}

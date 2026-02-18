@@ -88,7 +88,6 @@
 # .env.local dosyası içeriği kontrol listesi
 EXPO_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-EXPO_PUBLIC_SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (opsiyonel)
 ```
 
 **Kontrol Komutu:**
@@ -169,7 +168,7 @@ Settings > API
 
 📋 Project URL: Kopyala → .env.local'e EXPO_PUBLIC_SUPABASE_URL olarak ekle
 📋 anon public key: Kopyala → .env.local'e EXPO_PUBLIC_SUPABASE_ANON_KEY olarak ekle
-📋 service_role key: Kopyala → .env.local'e EXPO_PUBLIC_SUPABASE_SERVICE_KEY olarak ekle (opsiyonel)
+📋 service_role key: Sadece backend/Edge Function secret olarak sakla (istemciye koyma)
 ```
 
 ### 3.2 Supabase CLI Kurulumu

@@ -10,6 +10,7 @@ import { StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
+import { LEGAL_CONFIG, openExternalUrl, openSupportEmail } from '@/constants/legal';
 
 interface HelpCenterPageProps {
   onBack: () => void;
@@ -56,13 +57,15 @@ export function HelpCenterPage({ onBack, onSupport, onFAQ, onTerms }: HelpCenter
   const handleOptionPress = (key: string) => {
     switch(key) {
       case 'support':
-        onSupport?.();
+        if (onSupport) onSupport();
+        else openExternalUrl(LEGAL_CONFIG.supportUrl);
         break;
       case 'faq':
         onFAQ?.();
         break;
       case 'terms':
-        onTerms?.();
+        if (onTerms) onTerms();
+        else openExternalUrl(LEGAL_CONFIG.termsOfUseUrl);
         break;
     }
   };
@@ -146,9 +149,11 @@ export function HelpCenterPage({ onBack, onSupport, onFAQ, onTerms }: HelpCenter
           <Text style={[styles.contactTitle, { color: theme.textPrimary }]}>
             📧 Bize Ulaşın
           </Text>
-          <Text style={[styles.contactText, { color: theme.textSecondary }]}>
-            support@sence.app
-          </Text>
+          <TouchableOpacity onPress={openSupportEmail}>
+            <Text style={[styles.contactText, { color: theme.textSecondary }]}>
+              {LEGAL_CONFIG.supportEmail}
+            </Text>
+          </TouchableOpacity>
           <Text style={[styles.contactSubtext, { color: theme.textMuted }]}>
             7/24 destek ekibimiz sizinle
           </Text>
@@ -300,4 +305,3 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
 });
-

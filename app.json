@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "expo-nativewind-typescript-boilerplate",
-    "slug": "expo-nativewind-typescript-boilerplate",
+    "name": "Sence",
+    "slug": "sence",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "senceapp",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
@@ -14,7 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.teczer.expo-nativewind-typescript-boilerplate"
+      "usesAppleSignIn": true,
+      "bundleIdentifier": "com.senceapp.mobile"
     },
     "android": {
       "edgeToEdgeEnabled": true,
@@ -22,7 +23,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.teczer.exponativewindtypescriptboilerplate"
+      "package": "com.senceapp.mobile"
     },
     "web": {
       "bundler": "metro",
@@ -32,7 +33,9 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-apple-authentication",
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true,

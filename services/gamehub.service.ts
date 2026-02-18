@@ -38,6 +38,28 @@ const REWARDS = {
  * Günlük oyun işlemleri
  */
 export const gamehubService = {
+    mapDailyGameState(row: any): DailyGameState {
+        const today = new Date().toISOString().split('T')[0];
+        const nowIso = new Date().toISOString();
+
+        return {
+            created_at: row?.created_at ?? nowIso,
+            daily_bonus_amount: row?.daily_bonus_amount ?? 0,
+            daily_bonus_claimed: Boolean(row?.daily_bonus_claimed ?? false),
+            daily_progress: row?.daily_progress ?? 0,
+            daily_spin_reward: row?.daily_spin_reward ?? 0,
+            daily_spin_used: Boolean(row?.daily_spin_used ?? false),
+            date: row?.date ?? today,
+            higher_lower_completed: Boolean(row?.higher_lower_completed ?? false),
+            higher_lower_reward: row?.higher_lower_reward ?? 0,
+            id: row?.id ?? '',
+            updated_at: row?.updated_at ?? nowIso,
+            user_id: row?.user_id ?? '',
+            zip_completed: Boolean(row?.zip_completed ?? false),
+            zip_reward: row?.zip_reward ?? 0,
+        };
+    },
+
     /**
      * Kullanıcının günlük oyun durumunu getir
      * Eğer bugün için kayıt yoksa yeni oluşturur
@@ -60,7 +82,7 @@ export const gamehubService = {
             }
 
             if (existingRecord) {
-                return { data: existingRecord, error: null };
+                return { data: this.mapDailyGameState(existingRecord), error: null };
             }
 
             // Bugün için kayıt yok, yeni oluştur
@@ -75,7 +97,7 @@ export const gamehubService = {
 
             if (insertError) throw insertError;
 
-            return { data: newRecord, error: null };
+            return { data: newRecord ? this.mapDailyGameState(newRecord) : null, error: null };
         } catch (error) {
             console.error('Get daily game state error:', error);
             return { data: null, error: error as Error };

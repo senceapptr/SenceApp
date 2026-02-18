@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PageType } from './types';
@@ -54,11 +55,10 @@ export function SlideOutMenu({ isOpen, onClose, onNavigate, children }: SlideOut
   };
 
   const handleItemPress = (page: PageType | null, title: string) => {
-    console.log('Menu item pressed:', title);
     if (page) {
       onNavigate(page);
     } else {
-      console.log('Feature not implemented yet:', title);
+      Alert.alert('Bilgi', `${title} sayfası şu anda kullanılamıyor.`);
       onClose();
     }
   };
@@ -220,7 +220,6 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
 });
-
 
 
 

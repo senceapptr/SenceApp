@@ -11,25 +11,16 @@ Kupon oluşturulduğunda `coupon_selections` tablosuna ekleme yapılıyordu ama 
 ### 1. Frontend Değişikliği
 **Dosya:** `services/coupons.service.ts`
 
-`createCoupon` fonksiyonuna predictions ekleme mantığı eklendi:
+`createCoupon` fonksiyonunda işlem server-side güvenli endpoint'e taşındı:
 
 ```typescript
-// Her selection için predictions tablosuna da ekle (vote counts için)
-const amountPerQuestion = Math.floor(stake_amount / selections.length);
-
-const predictionsData = selections.map((sel) => ({
-  user_id: user.id,
-  question_id: sel.question_id,
-  vote: sel.vote,
-  odds: sel.odds,
-  amount: amountPerQuestion,
-  potential_win: Math.floor(amountPerQuestion * sel.odds),
-  status: 'pending' as const,
-}));
-
-await supabaseService
-  .from('predictions')
-  .insert(predictionsData);
+await supabase.functions.invoke('coupon-service', {
+  body: {
+    action: 'create_coupon',
+    selections,
+    stake_amount,
+  },
+});
 ```
 
 **Mantık:**
@@ -158,4 +149,3 @@ LIMIT 10;
 - [ ] Batch operations için optimize et
 - [ ] Predictions'a coupon_id kolonu ekle (ilişkiyi net göster)
 - [ ] Kupon iptal edilince predictions'ları da iptal et
-

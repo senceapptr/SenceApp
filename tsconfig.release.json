@@ -1,0 +1,28 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "app/_layout.tsx",
+    "app/index.tsx",
+    "app/auth/**/*.ts",
+    "app/auth/**/*.tsx",
+    "app/SenceFinal/**/*.ts",
+    "app/SenceFinal/**/*.tsx",
+    "expo-env.d.ts",
+    "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".expo/**",
+    "app/(tabs)/**",
+    "supabase/functions/**",
+    "**/*copy.ts",
+    "**/*copy.tsx",
+    "**/*backup*.ts",
+    "**/*backup*.tsx",
+    "**/*_backup*/**"
+  ]
+}

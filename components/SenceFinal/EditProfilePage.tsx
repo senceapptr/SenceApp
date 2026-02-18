@@ -77,7 +77,7 @@ export function EditProfilePage({ onBack, userProfile, onUpdateProfile }: EditPr
         }
 
         // Local state'i güncelle
-        setProfile(prev => ({ ...prev, profile_image: uploadedUrl }));
+        setProfileData(prev => ({ ...prev, profileImage: uploadedUrl }));
         Alert.alert('Başarılı', 'Profil fotoğrafı başarıyla güncellendi.');
       }
     } catch (error) {
@@ -117,7 +117,7 @@ export function EditProfilePage({ onBack, userProfile, onUpdateProfile }: EditPr
         }
 
         // Local state'i güncelle
-        setProfile(prev => ({ ...prev, cover_image: uploadedUrl }));
+        setProfileData(prev => ({ ...prev, coverImage: uploadedUrl }));
         Alert.alert('Başarılı', 'Kapak fotoğrafı başarıyla güncellendi.');
       }
     } catch (error) {
@@ -564,4 +564,3 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 });
-

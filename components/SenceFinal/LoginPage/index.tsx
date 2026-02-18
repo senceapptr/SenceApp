@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import { LEGAL_CONFIG, openExternalUrl } from '@/constants/legal';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -22,7 +23,31 @@ export function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  const { signIn, signUp } = useAuth();
+  const { signIn, signInWithApple, signInWithGoogle, signUp } = useAuth();
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      const { error } = await signInWithGoogle();
+      if (error) {
+        Alert.alert('Google ile Giriş', error.message || 'Google ile giriş başarısız oldu.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setLoading(true);
+    try {
+      const { error } = await signInWithApple();
+      if (error) {
+        Alert.alert('Apple ile Giriş', error.message || 'Apple ile giriş başarısız oldu.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -102,6 +127,26 @@ export function LoginPage() {
 
         {/* Form */}
         <View style={styles.form}>
+          {!isSignUp && (
+            <View style={styles.socialContainer}>
+              <TouchableOpacity
+                style={[styles.socialButton, loading && styles.actionButtonDisabled]}
+                onPress={handleGoogleLogin}
+                disabled={loading}
+              >
+                <Text style={styles.socialButtonText}>Google ile Giriş Yap</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.socialButton, loading && styles.actionButtonDisabled]}
+                onPress={handleAppleLogin}
+                disabled={loading}
+              >
+                <Text style={styles.socialButtonText}>Apple ile Giriş Yap</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {isSignUp && (
             <>
               <View style={styles.inputContainer}>
@@ -193,13 +238,17 @@ export function LoginPage() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Devam ederek{' '}
-            <Text style={styles.linkText}>Kullanım Şartları</Text>
-            {' '}ve{' '}
-            <Text style={styles.linkText}>Gizlilik Politikası</Text>
-            'nı kabul etmiş olursunuz.
-          </Text>
+          <View style={styles.footerLine}>
+            <Text style={styles.footerText}>Devam ederek </Text>
+            <TouchableOpacity onPress={() => openExternalUrl(LEGAL_CONFIG.termsOfUseUrl)}>
+              <Text style={styles.linkText}>Kullanım Şartları</Text>
+            </TouchableOpacity>
+            <Text style={styles.footerText}> ve </Text>
+            <TouchableOpacity onPress={() => openExternalUrl(LEGAL_CONFIG.privacyPolicyUrl)}>
+              <Text style={styles.linkText}>Gizlilik Politikası</Text>
+            </TouchableOpacity>
+            <Text style={styles.footerText}>'nı kabul etmiş olursunuz.</Text>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -241,6 +290,21 @@ const styles = StyleSheet.create({
   },
   form: {
     flex: 1,
+  },
+  socialContainer: {
+    gap: 10,
+    marginBottom: 18,
+  },
+  socialButton: {
+    alignItems: 'center',
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
+  socialButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
   },
   inputContainer: {
     marginBottom: 20,
@@ -296,10 +360,15 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: 'center',
   },
+  footerLine: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
   footerText: {
     fontSize: 14,
     color: '#9CA3AF',
-    textAlign: 'center',
     lineHeight: 20,
   },
   linkText: {

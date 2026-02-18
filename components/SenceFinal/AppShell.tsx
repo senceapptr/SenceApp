@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   View,
@@ -23,11 +22,13 @@ import { HomePage } from '@/components/SenceFinal/HomePage';
 import { TasksPage } from '@/components/SenceFinal/TasksPage';
 import { AboutPage } from '@/components/SenceFinal/AboutPage';
 import { LoginPage } from '@/components/SenceFinal/LoginPage';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { LeaguePage } from '@/components/SenceFinal/LeaguePage';
 import { MarketPage } from '@/components/SenceFinal/MarketPage';
 import { BottomTabs } from '@/components/SenceFinal/BottomTabs';
 import { AdminPanel } from '@/components/SenceFinal/AdminPanel';
+import { AdminRedesignLabPage } from '@/components/SenceFinal/AdminRedesignLabPage';
+import { AdminProfileRedesignMockPage } from '@/components/SenceFinal/AdminProfileRedesignMockPage';
 import { CouponsPage } from '@/components/SenceFinal/CouponsPage';
 import { ProfilePage } from '@/components/SenceFinal/ProfilePage';
 import { SupportPage } from '@/components/SenceFinal/SupportPage';
@@ -51,6 +52,7 @@ import { CategoryQuestionsPage } from '@/components/SenceFinal/CategoryQuestions
 import { QuestionCardDesignPage } from '@/components/SenceFinal/QuestionCardDesignPage';
 // EmailVerificationPage is defined inline in this file
 import { InputOTP } from '@/components/PremiumSence/ui/input-otp';
+import { LEGAL_CONFIG, openExternalUrl } from '@/constants/legal';
 import { verificationService } from '@/services/verification.service';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -78,6 +80,8 @@ type PageType =
   | 'feedback'
   | 'about'
   | 'adminPanel'
+  | 'adminRedesignLab'
+  | 'adminProfileRedesignMock'
   | 'allQuestions'
   | 'emailVerification'
   | 'leaderboard';
@@ -568,8 +572,10 @@ function AppContent() {
               if (!isEmailVerified) {
                 setCurrentPage('emailVerification');
               } else {
-                // İleride SecuritySettingsPage eklenecek
-                console.log('Security page - to be implemented');
+                Alert.alert(
+                  'Hesap Güvenliği',
+                  'Email doğrulamanız tamamlandı. Şifre yenileme ve hesap silme işlemlerini Ayarlar menüsünden yönetebilirsiniz.',
+                );
               }
             }}
             onFeedback={() => setCurrentPage('feedback')}
@@ -601,7 +607,9 @@ function AppContent() {
             onBack={handleBack}
             onSupport={() => setCurrentPage('support')}
             onFAQ={() => setCurrentPage('faq')}
-            onTerms={() => console.log('Terms page - to be implemented')}
+            onTerms={() => {
+              openExternalUrl(LEGAL_CONFIG.termsOfUseUrl);
+            }}
           />
         );
       case 'support':
@@ -614,6 +622,16 @@ function AppContent() {
         return <AboutPage onBack={handleBack} />;
       case 'adminPanel':
         return <AdminPanel onBack={handleBack} />;
+      case 'adminRedesignLab':
+        return (
+          <AdminRedesignLabPage
+            onBack={handleBack}
+            onMenuToggle={handleMenuToggle}
+            onOpenProfileRedesignMock={() => setCurrentPage('adminProfileRedesignMock')}
+          />
+        );
+      case 'adminProfileRedesignMock':
+        return <AdminProfileRedesignMockPage onBack={() => setCurrentPage('adminRedesignLab')} onMenuToggle={handleMenuToggle} />;
       case 'market':
         return <MarketPage onBack={handleBack} userCredits={userCredits} />;
       case 'notifications':
@@ -757,13 +775,9 @@ function AppContent() {
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <ThemeProvider>
-            <AppWithAuth />
-          </ThemeProvider>
-        </AuthProvider>
-      </SafeAreaProvider>
+      <ThemeProvider>
+        <AppWithAuth />
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

@@ -208,13 +208,13 @@ export const mockPredictions: Prediction[] = [
 ];
 
 export const creditHistory: CreditHistoryItem[] = [
-  { day: 'Pzt', credits: 2200 },
-  { day: 'Sal', credits: 2350 },
-  { day: 'Çar', credits: 2100 },
-  { day: 'Per', credits: 2600 },
-  { day: 'Cum', credits: 2850 },
-  { day: 'Cmt', credits: 2750 },
-  { day: 'Paz', credits: 2850 }
+  { date: '2026-02-09', value: 2200 },
+  { date: '2026-02-10', value: 2350 },
+  { date: '2026-02-11', value: 2100 },
+  { date: '2026-02-12', value: 2600 },
+  { date: '2026-02-13', value: 2850 },
+  { date: '2026-02-14', value: 2750 },
+  { date: '2026-02-15', value: 2850 }
 ];
 
 export const badges: Badge[] = [
@@ -267,5 +267,4 @@ export const badges: Badge[] = [
     rarity: "epic"
   }
 ];
-
 

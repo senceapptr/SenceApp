@@ -47,7 +47,7 @@ export interface CreditHistoryItem {
   value: number;
 }
 
-export type TabType = 'tickets' | 'statistics';
+export type TabType = 'tickets' | 'statistics' | 'predictions';
 
 export interface UserProfile {
   bio: string;

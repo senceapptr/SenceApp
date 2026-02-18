@@ -172,7 +172,7 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
         { text: 'İptal', style: 'cancel' },
         {
           text: 'Reddet',
-          onPress: async (reason) => {
+          onPress: async (reason?: string) => {
             if (!reason?.trim()) {
               Alert.alert('Hata', 'Red sebebi belirtilmelidir');
               return;

@@ -147,11 +147,9 @@ export class AdminService {
       if (error) throw error;
 
       // Tüm kategori ID'lerini topla
-      const allCategoryIds = data?.flatMap(q => [
-        q.category_id,
-        q.secondary_category_id,
-        q.third_category_id
-      ]).filter(Boolean) || [];
+      const allCategoryIds: string[] = (
+        data?.flatMap(q => [q.category_id, q.secondary_category_id, q.third_category_id]) || []
+      ).filter((categoryId): categoryId is string => typeof categoryId === 'string' && categoryId.length > 0);
 
       let categoryNames: { [key: string]: string } = {};
 

@@ -24,7 +24,39 @@ export interface UserProfile {
   updated_at: string;
 }
 
+export interface AccountDeletionResult {
+  success: boolean;
+  code:
+    | 'OK'
+    | 'UNAUTHORIZED'
+    | 'FORBIDDEN'
+    | 'NOT_FOUND'
+    | 'FUNCTION_ERROR'
+    | 'NETWORK_ERROR'
+    | 'UNKNOWN_ERROR';
+  message: string;
+  error: Error | null;
+}
+
 export const profileService = {
+  mapProfileRow(profileRow: any): UserProfile {
+    const nowIso = new Date().toISOString();
+    return {
+      bio: profileRow?.bio ?? '',
+      cover_image: profileRow?.cover_image ?? '',
+      created_at: profileRow?.created_at ?? nowIso,
+      credits: profileRow?.credits ?? 0,
+      email: profileRow?.email ?? '',
+      experience: profileRow?.experience ?? 0,
+      full_name: profileRow?.full_name ?? '',
+      id: profileRow?.id ?? '',
+      level: profileRow?.level ?? 1,
+      profile_image: profileRow?.profile_image ?? '',
+      updated_at: profileRow?.updated_at ?? nowIso,
+      username: profileRow?.username ?? '',
+    };
+  },
+
   /**
    * Kullanıcı profilini getir
    */
@@ -41,7 +73,7 @@ export const profileService = {
         return { data: null, error };
       }
 
-      return { data, error: null };
+      return { data: this.mapProfileRow(data), error: null };
     } catch (error) {
       console.error('Get profile error:', error);
       return { data: null, error: error as Error };
@@ -68,7 +100,7 @@ export const profileService = {
         return { data: null, error };
       }
 
-      return { data, error: null };
+      return { data: this.mapProfileRow(data), error: null };
     } catch (error) {
       console.error('Update profile error:', error);
       return { data: null, error: error as Error };
@@ -103,6 +135,10 @@ export const profileService = {
       console.error('Check username error:', error);
       return { available: false, error: error as Error };
     }
+  },
+
+  async checkUsernameAvailable(username: string, currentUserId: string): Promise<{ available: boolean; error: Error | null }> {
+    return this.checkUsernameAvailability(username, currentUserId);
   },
 
   /**
@@ -153,8 +189,8 @@ export const profileService = {
         correctPredictions: correctPredictions?.length || 0,
         accuracyRate: predictions?.length > 0 ? (correctPredictions?.length || 0) / predictions.length : 0,
         totalEarnings,
-        longestStreak: 0, // TODO: Implement streak calculation
-        currentStreak: 0, // TODO: Implement streak calculation
+        longestStreak: 0, // Streak hesaplama sonraki iterasyonda eklenecek.
+        currentStreak: 0, // Streak hesaplama sonraki iterasyonda eklenecek.
       };
 
       return { data: stats, error: null };
@@ -167,20 +203,41 @@ export const profileService = {
   /**
    * Kullanıcı hesabını sil
    */
-  async deleteAccount(userId: string): Promise<{ error: Error | null }> {
+  async deleteAccount(userId: string): Promise<AccountDeletionResult> {
     try {
-      // Önce auth'dan sil
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (authError) {
-        console.error('Delete auth user error:', authError);
-        return { error: authError };
+      const { data, error } = await supabase.functions.invoke<{
+        code?: string;
+        message?: string;
+        success?: boolean;
+      }>('delete-account', {
+        body: { userId },
+      });
+
+      if (error) {
+        console.error('Delete account function error:', error);
+        return {
+          code: 'FUNCTION_ERROR',
+          error,
+          message: 'Hesap silme işlemi başlatılamadı. Lütfen tekrar deneyin.',
+          success: false,
+        };
       }
 
-      return { error: null };
+      const success = Boolean(data?.success ?? true);
+      return {
+        code: success ? 'OK' : ((data?.code as AccountDeletionResult['code']) ?? 'UNKNOWN_ERROR'),
+        error: null,
+        message: data?.message || (success ? 'Hesabınız başarıyla silindi.' : 'Hesap silme işlemi tamamlanamadı.'),
+        success,
+      };
     } catch (error) {
       console.error('Delete account error:', error);
-      return { error: error as Error };
+      return {
+        code: 'NETWORK_ERROR',
+        error: error as Error,
+        message: 'Ağ hatası nedeniyle hesap silme işlemi tamamlanamadı.',
+        success: false,
+      };
     }
   },
 

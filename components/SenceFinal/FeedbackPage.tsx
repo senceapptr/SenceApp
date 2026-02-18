@@ -9,11 +9,13 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
+import { supportService } from '@/services/support.service';
 
 interface FeedbackPageProps {
   onBack: () => void;
@@ -33,8 +35,9 @@ export function FeedbackPage({ onBack }: FeedbackPageProps) {
   const [selectedType, setSelectedType] = useState<string>('');
   const [subject, setSubject] = useState('');
   const [feedback, setFeedback] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedType) {
       Alert.alert('Hata', 'Lütfen bir geri bildirim türü seçin.');
       return;
@@ -48,8 +51,18 @@ export function FeedbackPage({ onBack }: FeedbackPageProps) {
       return;
     }
 
-    const typeLabel = FEEDBACK_TYPES.find(t => t.id === selectedType)?.label;
-    console.log('Sending feedback email:', { type: typeLabel, subject, feedback });
+    setSubmitting(true);
+    const result = await supportService.submitFeedback({
+      message: feedback,
+      subject,
+      type: selectedType,
+    });
+    setSubmitting(false);
+
+    if (result.error) {
+      Alert.alert('Hata', result.error.message || 'Geri bildirim gönderilemedi.');
+      return;
+    }
 
     Alert.alert(
       '✅ Gönderildi',
@@ -175,14 +188,21 @@ export function FeedbackPage({ onBack }: FeedbackPageProps) {
             <TouchableOpacity
               style={styles.submitButton}
               onPress={handleSubmit}
+              disabled={submitting}
               activeOpacity={0.8}
             >
               <LinearGradient
                 colors={['#432870', '#B29EFD']}
                 style={styles.submitGradient}
               >
-                <Ionicons name="paper-plane" size={20} color="white" />
-                <Text style={styles.submitText}>Geri Bildirimi Gönder</Text>
+                {submitting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="paper-plane" size={20} color="white" />
+                    <Text style={styles.submitText}>Geri Bildirimi Gönder</Text>
+                  </>
+                )}
               </LinearGradient>
             </TouchableOpacity>
 
@@ -360,5 +380,4 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
-
 

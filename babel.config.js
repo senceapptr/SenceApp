@@ -19,8 +19,9 @@ module.exports = function (api) {
               const targetPath = path.join(projectRoot, sourcePath.slice(2));
               const currentDir = path.dirname(currentFile);
               let relative = path.relative(currentDir, targetPath);
+              relative = relative.split(path.sep).join('/');
               if (!relative.startsWith('.')) relative = './' + relative;
-              return path.normalize(relative);
+              return relative;
             }
             return sourcePath;
           },

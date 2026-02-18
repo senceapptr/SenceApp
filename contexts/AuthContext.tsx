@@ -1,7 +1,10 @@
 import { Session, User, AuthError } from '@supabase/supabase-js';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import Constants from 'expo-constants';
 import React, { createContext, useContext, useLayoutEffect, useState } from 'react';
+import { Platform } from 'react-native';
 
-import { supabase, supabaseService } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { verificationService } from '@/services/verification.service';
 
 // Profil tipi
@@ -40,10 +43,44 @@ interface AuthContextType {
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
   pendingVerificationUser: { id: string; email: string; password?: string } | null; // SignUp sonrası user bilgileri (user null olsa bile)
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signInWithApple: () => Promise<{ error: AuthError | null }>;
+  signInWithGoogle: () => Promise<{ error: AuthError | null }>;
   signUp: (email: string, password: string, username: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+type GoogleSigninAdapter = {
+  configure: (options: {
+    forceCodeForRefreshToken?: boolean;
+    iosClientId?: string;
+    webClientId?: string;
+  }) => void;
+  getTokens: () => Promise<{ idToken?: string }>;
+  hasPlayServices: (options?: { showPlayServicesUpdateDialog?: boolean }) => Promise<boolean>;
+  signIn: () => Promise<{ idToken?: string; data?: { idToken?: string } }>;
+  signOut: () => Promise<void>;
+};
+
+function getGoogleSigninModule(): GoogleSigninAdapter | null {
+  const isExpoGo =
+    (Constants as any)?.appOwnership === 'expo' ||
+    (Constants as any)?.executionEnvironment === 'storeClient';
+
+  // Expo Go binary does not include RNGoogleSignin native module.
+  if (isExpoGo) {
+    return null;
+  }
+
+  try {
+    const mod = require('@react-native-google-signin/google-signin') as {
+      GoogleSignin?: GoogleSigninAdapter;
+    };
+    return mod.GoogleSignin || null;
+  } catch {
+    return null;
+  }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -58,6 +95,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string;
     password?: string;
   } | null>(null);
+  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+
+  const createAuthError = (message: string) => ({ message } as AuthError);
 
   // Profil bilgilerini yükle
   const loadProfile = async (userId: string, retries = 3) => {
@@ -109,6 +150,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Auth state değişikliklerini dinle
   useLayoutEffect(() => {
+    const googleSignin = getGoogleSigninModule();
+    if (googleSignin) {
+      googleSignin.configure({
+        forceCodeForRefreshToken: false,
+        iosClientId: googleIosClientId,
+        webClientId: googleWebClientId,
+      });
+    }
+
     // Mevcut session'ı kontrol et
     const initializeAuth = async () => {
       try {
@@ -257,125 +307,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Giriş yap
-  // NOT: Email verification kontrolü yapmıyoruz - verified olmayan kullanıcılar da girebilir
-  // Verification uygulama içinde yapılacak
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        // "Email not confirmed" hatası - Supabase email confirmation açık olduğunda session oluşturmuyor
-        // Service Role Key ile Admin API kullanarak session oluşturmayı deneyelim
         if (
           error.message?.toLowerCase().includes('email') &&
           (error.message?.toLowerCase().includes('confirm') ||
             error.message?.toLowerCase().includes('verified') ||
             error.message?.toLowerCase().includes('not confirmed'))
         ) {
-          console.warn('Email not confirmed - attempting to create session using Admin API');
-
-          try {
-            // Önce şifre kontrolü yap (email ve password ile)
-            // Service Role Key ile direkt auth.users tablosundan user'ı bul
-            const { data: authUsers, error: adminError } = await supabaseService.auth.admin.listUsers();
-
-            if (adminError) {
-              console.error('Admin API error:', adminError);
-              // Admin API kullanılamıyorsa, normal hata mesajını döndür
-              return {
-                error: {
-                  ...error,
-                  message:
-                    'Email adresiniz doğrulanmadı. Lütfen Supabase Dashboard\'da "Enable email confirmations" ayarını kapatın veya email doğrulama yapın.',
-                } as AuthError,
-              };
-            }
-
-            // Email ile user'ı bul
-            const user = authUsers?.users?.find(u => u.email === email);
-
-            if (!user) {
-              // Email bulunamadı
-              return { error };
-            }
-
-            // Şifre kontrolü için tekrar signInWithPassword dene - bu sefer bypass edelim
-            // Alternatif: Service Role ile user'ın email_confirmed_at'ini güncelle
-            // Ama bu güvenlik riski - şifre kontrolü yapmıyor
-
-            // En güvenli yaklaşım: Email confirmation'ı Supabase Dashboard'da kapatmak
-            // Geçici çözüm: Admin API ile user'ı getir ve session oluştur
-            // NOT: Bu güvenlik riski - şifre doğrulaması yapılmıyor!
-
-            // Email doğru - şimdi şifre kontrolü yapmalıyız
-            // Service Role Key ile email_confirmed_at'i güncelleyerek email confirmation'ı bypass edelim
-            // Bu güvenli bir yaklaşım - şifre kontrolü zaten ilk signInWithPassword çağrısında yapıldı
-
-            // User'ın email_confirmed_at'ini güncelle (şifre doğru olduğu için güvenli)
-            const { data: updateData, error: updateError } = await supabaseService.auth.admin.updateUserById(user.id, {
-              email_confirm: true, // Email'i confirmed olarak işaretle
-            });
-
-            if (updateError) {
-              console.error('Failed to update email confirmation status:', updateError);
-              // Update başarısız - normal signIn'i tekrar dene
-              const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-              });
-
-              if (retryError) {
-                return { error: retryError };
-              }
-
-              if (retryData?.user && retryData?.session) {
-                return { error: null };
-              }
-            }
-
-            // Email confirmation güncellendi - tekrar signIn dene
-            const { data: retrySignInData, error: retrySignInError } = await supabase.auth.signInWithPassword({
-              email,
-              password,
-            });
-
-            if (retrySignInError) {
-              return { error: retrySignInError };
-            }
-
-            if (retrySignInData?.user && retrySignInData?.session) {
-              // Başarılı - session oluşturuldu
-              console.log('Session created successfully after updating email confirmation');
-              return { error: null };
-            }
-
-            // Session oluşturulamadı
-            return {
-              error: {
-                ...error,
-                message:
-                  'Email adresiniz doğrulanmadı. Lütfen Supabase Dashboard\'da "Enable email confirmations" ayarını kapatın.',
-              } as AuthError,
-            };
-          } catch (bypassError) {
-            console.error('Error attempting to bypass email confirmation:', bypassError);
-            // Bypass başarısız - kullanıcıya açıklayıcı mesaj göster
-            return {
-              error: {
-                ...error,
-                message:
-                  'Email adresiniz doğrulanmadı. Lütfen Supabase Dashboard\'da Authentication > Settings > "Enable email confirmations" ayarını kapatın.',
-              } as AuthError,
-            };
-          }
+          return { error: createAuthError('Email adresinizi doğrulayıp tekrar deneyin.') };
         }
         return { error };
       }
 
-      // SignIn başarılı - profil yüklenecek (onAuthStateChange ile)
       return { error: null };
     } catch (error) {
       console.error('Sign in error:', error);
@@ -383,9 +333,97 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const googleSignin = getGoogleSigninModule();
+      if (!googleSignin) {
+        return {
+          error: createAuthError('Google girisi Expo Go icinde desteklenmez. Development build kullanin.'),
+        };
+      }
+
+      if (!googleWebClientId && !googleIosClientId) {
+        return { error: createAuthError('Google giriş yapılandırması eksik.') };
+      }
+
+      if (Platform.OS === 'android') {
+        await googleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      }
+
+      const signInResult = (await googleSignin.signIn()) as any;
+      let idToken: string | undefined = signInResult?.idToken ?? signInResult?.data?.idToken;
+
+      if (!idToken) {
+        const tokens = await googleSignin.getTokens();
+        idToken = tokens?.idToken;
+      }
+
+      if (!idToken) {
+        return { error: createAuthError('Google kimlik doğrulama tokenı alınamadı.') };
+      }
+
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: idToken,
+      });
+
+      if (error) {
+        return { error };
+      }
+
+      return { error: null };
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      return { error: createAuthError('Google ile giriş tamamlanamadı.') };
+    }
+  };
+
+  const signInWithApple = async () => {
+    try {
+      if (Platform.OS !== 'ios') {
+        return { error: createAuthError('Apple ile giriş sadece iOS cihazlarda kullanılabilir.') };
+      }
+
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME, AppleAuthentication.AppleAuthenticationScope.EMAIL],
+      });
+
+      if (!credential.identityToken) {
+        return { error: createAuthError('Apple kimlik tokenı alınamadı.') };
+      }
+
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      });
+
+      if (error) {
+        return { error };
+      }
+
+      return { error: null };
+    } catch (error) {
+      if ((error as { code?: string })?.code === 'ERR_REQUEST_CANCELED') {
+        return { error: createAuthError('Apple ile giriş iptal edildi.') };
+      }
+
+      console.error('Apple sign in error:', error);
+      return { error: createAuthError('Apple ile giriş tamamlanamadı.') };
+    }
+  };
+
   // Çıkış yap
   const signOut = async () => {
     try {
+      try {
+        const googleSignin = getGoogleSigninModule();
+        if (googleSignin) {
+          await googleSignin.signOut();
+        }
+      } catch {
+        // Ignore Google sign out errors for non-Google sessions
+      }
+
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
@@ -517,6 +555,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshUnreadCount,
     session,
     signIn,
+    signInWithApple,
+    signInWithGoogle,
     signOut,
     signUp,
     unreadNotificationsCount,

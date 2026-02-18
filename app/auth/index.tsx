@@ -36,7 +36,7 @@ const springConfig = { damping: 28, stiffness: 150 };
 export default function AuthWelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user, signIn, signUp } = useAuth();
+  const { signIn, signInWithApple, signInWithGoogle, signUp, user } = useAuth();
 
   const [phase, setPhase] = useState<'welcome' | 'signup' | 'login'>('welcome');
   const [showEmailForm, setShowEmailForm] = useState<'none' | 'signup' | 'login'>('none');
@@ -109,8 +109,33 @@ export default function AuthWelcomeScreen() {
     });
   };
 
-  const handleGoogle = () => Alert.alert('Google', 'Google ile giriş yakında eklenecek.');
-  const handleApple = () => Alert.alert('Apple', 'Apple ile giriş yakında eklenecek.');
+  const handleGoogle = async () => {
+    setLoading(true);
+    try {
+      const { error } = await signInWithGoogle();
+      if (error) {
+        Alert.alert('Google ile Giriş', error.message || 'Google ile giriş başarısız oldu.');
+        return;
+      }
+      router.replace('/SenceFinal');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApple = async () => {
+    setLoading(true);
+    try {
+      const { error } = await signInWithApple();
+      if (error) {
+        Alert.alert('Apple ile Giriş', error.message || 'Apple ile giriş başarısız oldu.');
+        return;
+      }
+      router.replace('/SenceFinal');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEmailSignUp = async () => {
     if (!username.trim() || !email.trim() || !password || !confirmPassword) {

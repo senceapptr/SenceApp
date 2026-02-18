@@ -26,6 +26,18 @@ export interface UserRankResponse {
 // ===== SERVICE =====
 
 export const leaderboardService = {
+    mapLeaderboardUser(user: any, rank: number): LeaderboardUser {
+        return {
+            credits: user?.credits ?? 0,
+            full_name: user?.full_name ?? null,
+            id: user?.id ?? '',
+            level: user?.level ?? 1,
+            profile_image: user?.profile_image ?? null,
+            rank,
+            username: user?.username ?? 'Kullanıcı',
+        };
+    },
+
     /**
      * Global Leaderboard - Top users sorted by credits (descending)
      */
@@ -43,10 +55,9 @@ export const leaderboardService = {
             }
 
             // Add rank numbers
-            const rankedData: LeaderboardUser[] = (data || []).map((user, index) => ({
-                ...user,
-                rank: index + 1,
-            }));
+            const rankedData: LeaderboardUser[] = (data || []).map((user, index) =>
+                this.mapLeaderboardUser(user, index + 1),
+            );
 
             return { data: rankedData, error: null };
         } catch (error) {
@@ -107,10 +118,9 @@ export const leaderboardService = {
             }
 
             // Add rank numbers within friends group
-            const rankedData: LeaderboardUser[] = (profiles || []).map((user, index) => ({
-                ...user,
-                rank: index + 1,
-            }));
+            const rankedData: LeaderboardUser[] = (profiles || []).map((user, index) =>
+                this.mapLeaderboardUser(user, index + 1),
+            );
 
             return { data: rankedData, error: null };
         } catch (error) {
@@ -135,7 +145,7 @@ export const leaderboardService = {
             }
 
             return {
-                data: data ? [{ ...data, rank: 1 }] : [],
+                data: data ? [this.mapLeaderboardUser(data, 1)] : [],
                 error: null,
             };
         } catch (error) {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TextInput, Image, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Image, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import type { Theme } from '@/contexts/ThemeContext';

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Modal, AsyncStorage } from 'react-native';
+import { View, StyleSheet, Modal } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { 
   useSharedValue, 
@@ -437,5 +438,4 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
 });
-
 

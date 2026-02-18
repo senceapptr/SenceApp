@@ -77,7 +77,7 @@ export function StatsCard({ stats }: StatsCardProps) {
           {statItems.map((item, index) => (
             <View key={index} style={styles.statCard}>
               <LinearGradient
-                colors={item.gradient}
+                colors={item.gradient as [string, string]}
                 style={styles.statGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}

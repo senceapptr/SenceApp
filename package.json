@@ -14,6 +14,7 @@
     "ios:rebuild": "PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\" npx expo run:ios --no-build-cache",
     "web": "npx expo start --web",
     "test": "npx jest --watchAll",
+    "typecheck": "tsc --noEmit -p tsconfig.release.json",
     "format": "npx prettier --write .",
     "format:check": "npx prettier --check .",
     "clean": "rm -rf node_modules; rm -rf ios/build; rm -rf ios/build; rm -rf ios/Pods; rm -rf ios/Podfile.lock; rm -rf ~/Library/Developer/Xcode/DerivedData/",
@@ -27,6 +28,7 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-community/slider": "5.0.1",
+    "@react-native-google-signin/google-signin": "^16.1.1",
     "@react-native-picker/picker": "2.11.1",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/drawer": "^7.3.9",
@@ -38,6 +40,7 @@
     "date-fns": "^2.29.3",
     "dotenv": "^17.2.3",
     "expo": "~54.0.33",
+    "expo-apple-authentication": "~8.0.8",
     "expo-blur": "~15.0.8",
     "expo-clipboard": "~8.0.8",
     "expo-constants": "~18.0.13",
@@ -59,7 +62,7 @@
     "react-dom": "19.1.0",
     "react-hook-form": "^7.60.0",
     "react-native": "0.81.5",
-    "react-native-calendars": "^1.1313.0",
+    "react-native-calendars": "1.1314",
     "react-native-chart-kit": "^6.12.0",
     "react-native-collapsible": "^1.6.2",
     "react-native-gesture-handler": "~2.28.0",
@@ -102,6 +105,13 @@
     "prettier": "^3.5.3",
     "tailwindcss": "3.3.2",
     "typescript": "~5.9.2"
+  },
+  "expo": {
+    "doctor": {
+      "appConfigFieldsNotSyncedCheck": {
+        "enabled": false
+      }
+    }
   },
   "private": true
 }

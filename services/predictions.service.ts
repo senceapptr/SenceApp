@@ -118,8 +118,8 @@ export const predictionsService = {
 
       // Kullanıcının kredisini düş
       await supabase.rpc('decrease_user_credits', {
-        user_id: user.id,
-        amount: amount,
+        amount_param: amount,
+        user_id_param: user.id,
       });
 
       return { data, error: null };
@@ -188,4 +188,3 @@ export const predictionsService = {
     }
   }
 };
-

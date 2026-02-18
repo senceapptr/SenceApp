@@ -16,7 +16,8 @@ export const mockFeaturedQuestions: FeaturedQuestion[] = [
     category: "Teknoloji",
     yesOdds: 2.4,
     noOdds: 1.6,
-    dominantColor: "#4F46E5"
+    dominantColor: "#4F46E5",
+    endDate: "2026-03-20T20:00:00.000Z"
   },
   {
     id: '2',
@@ -27,7 +28,8 @@ export const mockFeaturedQuestions: FeaturedQuestion[] = [
     category: "Spor",
     yesOdds: 3.2,
     noOdds: 1.8,
-    dominantColor: "#059669"
+    dominantColor: "#059669",
+    endDate: "2026-03-22T18:00:00.000Z"
   },
   {
     id: '3',
@@ -38,7 +40,8 @@ export const mockFeaturedQuestions: FeaturedQuestion[] = [
     category: "Ekonomi",
     yesOdds: 2.1,
     noOdds: 2.0,
-    dominantColor: "#F59E0B"
+    dominantColor: "#F59E0B",
+    endDate: "2026-03-24T14:00:00.000Z"
   },
   {
     id: '4',
@@ -49,7 +52,8 @@ export const mockFeaturedQuestions: FeaturedQuestion[] = [
     category: "Teknoloji",
     yesOdds: 1.9,
     noOdds: 2.1,
-    dominantColor: "#6366F1"
+    dominantColor: "#6366F1",
+    endDate: "2026-03-19T10:00:00.000Z"
   },
   {
     id: '5',
@@ -60,7 +64,8 @@ export const mockFeaturedQuestions: FeaturedQuestion[] = [
     category: "Ekonomi",
     yesOdds: 2.8,
     noOdds: 1.6,
-    dominantColor: "#DC2626"
+    dominantColor: "#DC2626",
+    endDate: "2026-03-23T12:00:00.000Z"
   }
 ];
 
@@ -121,48 +126,59 @@ export const mockTrendQuestions: TrendQuestion[] = [
     id: '6',
     title: "Netflix Türkiye'de abonelik fiyatları %50 artacak mı?",
     category: "Teknoloji",
+    categoryId: "teknoloji",
     image: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&h=400&fit=crop",
     votes: 89400,
     timeLeft: "3 gün 12 saat",
     yesOdds: 2.8,
     noOdds: 1.6,
-    yesPercentage: 68
+    yesPercentage: 68,
+    publishDate: "2026-03-12T08:00:00.000Z",
+    endDate: "2026-03-21T08:00:00.000Z"
   },
   {
     id: '7',
     title: "Yapay zeka 2024 sonuna kadar %25 işsizlik artışına sebep olacak mı?",
     category: "Teknoloji",
+    categoryId: "teknoloji",
     image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=600&h=400&fit=crop",
     votes: 156000,
     timeLeft: "1 gün 8 saat",
     yesOdds: 3.2,
     noOdds: 1.4,
-    yesPercentage: 78
+    yesPercentage: 78,
+    publishDate: "2026-03-13T08:00:00.000Z",
+    endDate: "2026-03-18T08:00:00.000Z"
   },
   {
     id: '8',
     title: "Türkiye'de enflasyon 2024 sonunda %20'nin altına düşecek mi?",
     category: "Ekonomi",
+    categoryId: "ekonomi",
     image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=400&fit=crop",
     votes: 234000,
     timeLeft: "5 gün 2 saat",
     yesOdds: 2.1,
     noOdds: 1.9,
-    yesPercentage: 45
+    yesPercentage: 45,
+    publishDate: "2026-03-11T08:00:00.000Z",
+    endDate: "2026-03-24T08:00:00.000Z"
   },
   {
     id: '9',
     title: "Galatasaray bu sezon şampiyon olacak mı?",
     category: "Spor",
+    categoryId: "spor",
     image: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600&h=400&fit=crop",
     votes: 445000,
     timeLeft: "2 gün 18 saat",
     yesOdds: 1.8,
     noOdds: 2.2,
-    yesPercentage: 55
+    yesPercentage: 55,
+    publishDate: "2026-03-10T08:00:00.000Z",
+    endDate: "2026-03-20T08:00:00.000Z"
   }
 ];
-
 
 
 

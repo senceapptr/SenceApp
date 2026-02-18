@@ -20,6 +20,21 @@ export interface ZipPuzzleRecord {
 }
 
 export const zipPuzzleService = {
+    mapPuzzleRecord(record: any): ZipPuzzleRecord {
+        return {
+            approved_at: record?.approved_at ?? null,
+            approved_by: record?.approved_by ?? null,
+            cells: (record?.cells as ZipCell[][]) ?? [],
+            created_at: record?.created_at ?? new Date().toISOString(),
+            daily_date: record?.daily_date ?? '',
+            difficulty: (record?.difficulty as ZipPuzzleRecord['difficulty']) ?? 'easy',
+            id: record?.id ?? '',
+            size: record?.size ?? 0,
+            status: (record?.status as ZipPuzzleRecord['status']) ?? 'draft',
+            total_numbers: record?.total_numbers ?? 0,
+        };
+    },
+
     /**
      * Get puzzle for a specific date (live puzzles only for users)
      */
@@ -36,7 +51,7 @@ export const zipPuzzleService = {
                 throw error;
             }
 
-            return { data, error: null };
+            return { data: data ? this.mapPuzzleRecord(data) : null, error: null };
         } catch (error) {
             return { data: null, error: error as Error };
         }
@@ -54,7 +69,7 @@ export const zipPuzzleService = {
 
             if (error) throw error;
 
-            return { data: data || [], error: null };
+            return { data: (data || []).map(row => this.mapPuzzleRecord(row)), error: null };
         } catch (error) {
             return { data: [], error: error as Error };
         }
@@ -77,7 +92,7 @@ export const zipPuzzleService = {
                     daily_date: puzzle.daily_date,
                     size: puzzle.size,
                     total_numbers: puzzle.total_numbers,
-                    cells: puzzle.cells,
+                    cells: puzzle.cells as any,
                     difficulty: puzzle.difficulty,
                     status: 'draft',
                 })
@@ -86,7 +101,7 @@ export const zipPuzzleService = {
 
             if (error) throw error;
 
-            return { data, error: null };
+            return { data: data ? this.mapPuzzleRecord(data) : null, error: null };
         } catch (error) {
             return { data: null, error: error as Error };
         }

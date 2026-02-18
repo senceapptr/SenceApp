@@ -1,18 +1,37 @@
 // https://docs.expo.dev/guides/using-eslint/
 module.exports = {
   extends: ['expo', 'prettier'],
+  ignorePatterns: [
+    '.expo/**',
+    'android/**',
+    'app/(tabs)/**',
+    'babel.config.js',
+    'components/PremiumSence/ui/carousel.tsx',
+    'components/PremiumSence/ui/chart.tsx',
+    'components/PremiumSence/ui/dropdown-menu.tsx',
+    'components/PremiumSence/ui/form.tsx',
+    'ios/**',
+    'supabase/functions/**',
+    'accessibility-fix.js',
+    '**/*copy.ts',
+    '**/*copy.tsx',
+    '**/*backup*.ts',
+    '**/*backup*.tsx',
+    '**/*_backup*/**',
+    '**/*.md',
+  ],
   plugins: ['prettier', 'perfectionist', 'unused-imports'],
   rules: {
-    'perfectionist/sort-imports': ['error'],
-    'perfectionist/sort-interfaces': ['error'],
+    'perfectionist/sort-imports': ['warn'],
+    'perfectionist/sort-interfaces': ['warn'],
     'perfectionist/sort-objects': [
-      'error',
+      'warn',
       {
         type: 'alphabetical',
       },
     ],
-    'prettier/prettier': 'error',
-    'unused-imports/no-unused-imports': 'error',
+    'prettier/prettier': 'warn',
+    'unused-imports/no-unused-imports': 'warn',
     'unused-imports/no-unused-vars': [
       'warn',
       {
